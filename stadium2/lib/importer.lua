@@ -1,0 +1,784 @@
+local Rom = require("mods.KIM_ARENA.stadium2.lib.rom")
+local Extract = require("mods.KIM_ARENA.stadium2.lib.extract")
+local ExportPool = require("mods.KIM_ARENA.stadium2.lib.export_pool")
+local Cache = require("mods.KIM_ARENA.stadium2.lib.cache")
+local Discovery = require("mods.KIM_ARENA.stadium2.lib.discovery")
+local Palette = require("mods.KIM_ARENA.stadium2.lib.palette")
+local Handlers = require("mods.KIM_ARENA.stadium2.lib.model_handlers")
+local Pack = require("mods.KIM_ARENA.stadium2.lib.pack")
+local Renderer = require("mods.KIM_ARENA.stadium2.lib.renderer")
+local BattleFxRom = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_rom")
+local BattleFxResources = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_resources")
+local BattleFxNative = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_native")
+local BattleFxPlayer = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_player")
+
+local Importer = {}
+
+local modRef
+local job
+local romMeta
+local modelCache = {}
+local modelOrder = {}
+local battleFxCatalog
+local battleFxResourceArchive
+local ownedModels = setmetatable({}, {__mode="k"})
+local MODEL_KEEP = 4
+local configuredCount = 151
+local playthroughReady = false
+local status = {
+  state = "idle",
+  done = 0,
+  total = configuredCount,
+  phase = nil,
+  error = nil,
+  rom = nil,
+}
+
+local function fail(stage, reason)
+  status.state = "failed"
+  status.phase = stage
+  status.error = tostring(reason or "unknown error")
+  Cache.writeError(("Stage: %s\nReason: %s"):format(stage, status.error))
+  if modRef and modRef.log then
+    pcall(function() modRef.log:error("stadium2 importer: %s: %s", stage, status.error) end)
+  end
+  job = nil
+  return false, status.error
+end
+
+local function setReady()
+  status.state = "ready"
+  status.done = configuredCount
+  status.total = configuredCount
+  status.progress = 1
+  status.phase = nil
+  status.species = nil
+  status.error = nil
+end
+
+function Importer.bind(mod)
+  modRef = mod
+  Cache.bind(mod)
+  Discovery.bind(mod)
+  return Importer
+end
+
+function Importer.setPlaythroughReady(value)
+  local ready = value == true
+  if not ready then
+    playthroughReady = false
+    if status.state == "ready" then
+      status.state = "idle"
+      status.done = 0
+      status.progress = 0
+      status.phase = nil
+      status.species = nil
+      status.error = nil
+    end
+    return Importer
+  end
+
+  playthroughReady = true
+  if Cache.available(configuredCount) and status.state ~= "building"
+      and status.state ~= "picking" then
+    setReady()
+  end
+  return Importer
+end
+
+function Importer.configure(options)
+  options = type(options) == "table" and options or {}
+  local requested = math.floor(tonumber(options.count) or configuredCount)
+  if requested < 151 then requested = 151 end
+  if requested > 251 then requested = 251 end
+  configuredCount = math.max(configuredCount, requested)
+  status.total = configuredCount
+  Extract.configure({
+    count = configuredCount,
+    cache = options.cache,
+    shinyPalettes = options.shinyPalettes,
+    palettePairs = options.palettePairs,
+  })
+  if playthroughReady and Cache.available(configuredCount)
+      and status.state ~= "building" and status.state ~= "picking" then
+    setReady()
+  end
+  return Importer
+end
+
+function Importer.status()
+  return status
+end
+
+function Importer.cacheStatus()
+  if not playthroughReady then
+    return { state = "error", code = "not_in_playthrough",
+      message = "Start or continue a game before checking Stadium 2 cache" }
+  end
+  return Cache.inspect(configuredCount)
+end
+
+function Importer.available(count)
+  if not playthroughReady then return false end
+  return Cache.inspect(count or configuredCount).state == "valid"
+end
+
+function Importer.modelsEnabled()
+  if modRef and modRef.options and modRef.options.get then
+    local ok, value = pcall(modRef.options.get, modRef.options, "stadium2_models")
+    if ok and value == false then return false end
+  end
+  return true
+end
+
+function Importer.battleEnabled()
+  if modRef and modRef.options and modRef.options.get then
+    local ok, value = pcall(modRef.options.get, modRef.options, "stadium2_battle")
+    if ok and value == false then return false end
+  end
+  return true
+end
+
+function Importer.battleHudEnabled()
+  if modRef and modRef.options and modRef.options.get then
+    local ok, value = pcall(modRef.options.get, modRef.options,
+      "stadium2_battle_hud")
+    if ok and value == false then return false end
+  end
+  return true
+end
+
+function Importer.weatherStyle()
+  if modRef and modRef.options and modRef.options.get then
+    local ok,value=pcall(modRef.options.get,modRef.options,"stadium2_weather")
+    if ok and (value=="rain" or value=="storm") then return value end
+  end
+  return "off"
+end
+
+-- CAMERA option: "stadium" (Stadium 2's own camera) or "free".
+function Importer.cameraMode()
+  if modRef and modRef.options and modRef.options.get then
+    local ok, value = pcall(modRef.options.get, modRef.options, "stadium2_camera")
+    if ok and value == "stadium" then return "stadium" end
+  end
+  return "free"
+end
+
+function Importer.shaderStyle()
+  if modRef and modRef.options and modRef.options.get then
+    local ok, value = pcall(modRef.options.get, modRef.options, "stadium2_shader")
+    if ok and value == "cel" then return "cel" end
+  end
+  return "stadium"
+end
+
+function Importer.environmentStyle()
+  if modRef and modRef.options and modRef.options.get then
+    local ok,value=pcall(modRef.options.get,modRef.options,"stadium2_environment")
+    if ok and value=="kenney" then return "kenney" end
+  end
+  return "classic"
+end
+
+function Importer.visitorMode()
+  if modRef and modRef.options and modRef.options.get then
+    local ok,value=pcall(modRef.options.get,modRef.options,'stadium2_visitors')
+    if ok and (value=='off' or value=='preview') then return value end
+  end
+  return 'natural'
+end
+
+function Importer.arenaTest()
+  if modRef and modRef.options and modRef.options.get then
+    local ok,value=pcall(modRef.options.get,modRef.options,'stadium2_arena_test')
+    if ok and type(value)=='number' and value%1==0 and value>=0
+      and value<require('mods.KIM_ARENA.stadium2.lib.layout').STADIUM_MODEL_TABLE_RECORDS then return value end
+  end
+  return nil
+end
+
+function Importer.environmentTest()
+  if modRef and modRef.options and modRef.options.get then
+    local ok,value=pcall(modRef.options.get,modRef.options,"stadium2_environment_test")
+    if ok and type(value)=='string' and value~='unknown'
+      and require('mods.KIM_ARENA.stadium2.lib.battle_environment').catalog[value] then return value end
+  end
+  return 'automatic'
+end
+
+function Importer.rapidashCutEffectEnabled()
+  if modRef and modRef.options and modRef.options.get then
+    local ok,value=pcall(modRef.options.get,modRef.options,"stadium2_rapidash_cut_fx")
+    if ok and value~=nil then return value==true end
+  end
+  return true
+end
+
+function Importer.betaArenaEnabled()
+  if modRef and modRef.options and modRef.options.get then
+    local ok, value = pcall(modRef.options.get, modRef.options,
+      "stadium2_beta_arena_test")
+    if ok then return value == true end
+  end
+  return false
+end
+
+function Importer.betaArenaTimeOfDayEnabled()
+  if modRef and modRef.options and modRef.options.get then
+    local ok,value=pcall(modRef.options.get,modRef.options,
+      "stadium2_beta_arena_tod")
+    if ok then return value==true end
+  end
+  return false
+end
+
+function Importer.battleFxParticlesEnabled()
+  if modRef and modRef.options and modRef.options.get then
+    local ok,value=pcall(modRef.options.get,modRef.options,"stadium2_fx_particles")
+    if ok and value=="lite" then return "lite" end
+    if ok and value~=nil then return value==true end
+  end
+  return true
+end
+
+function Importer.battleFxSendOutEnabled()
+  if modRef and modRef.options and modRef.options.get then
+    local ok,value=pcall(modRef.options.get,modRef.options,"stadium2_fx_pokeball")
+    if ok and value~=nil then return value==true end
+  end
+  return false
+end
+
+-- EXTRA EFFECTS shares the stored PARTICLES key, so saved choices carry over.
+Importer.extraEffectsEnabled=function() return Importer.battleFxParticlesEnabled()==true end
+
+-- One info line per battle, so a player's log shows which settings the FX
+-- player actually reads (and which mod version is running).
+function Importer.logBattleFxSettings()
+  if not (modRef and modRef.log and modRef.log.info) then return end
+  local version=(modRef.manifest and modRef.manifest.version) or (modRef.exports and modRef.exports.version) or "?"
+  pcall(modRef.log.info,modRef.log,"stadium2 importer %s: move effects on; extra effects=%s, poke ball=%s",
+    tostring(version),tostring(Importer.battleFxParticlesEnabled()),tostring(Importer.battleFxSendOutEnabled()))
+end
+
+function Importer.betaBattleFxEnabled()
+  if modRef and modRef.options and modRef.options.get then
+    local ok,value=pcall(modRef.options.get,modRef.options,
+      "stadium2_beta_battle_fx")
+    if ok and value~=nil then return value==true end
+  end
+  return false
+end
+
+local function rendererOptions(options)
+  local out = {}
+  for key, value in pairs(type(options) == "table" and options or {}) do
+    out[key] = value
+  end
+  if out.shaderStyle == nil then out.shaderStyle = Importer.shaderStyle() end
+  -- Existing battle actors observe an option change immediately; this does
+  -- not rebuild packs, meshes, shaders, or the active battle scene.
+  if out.shaderStyleProvider == nil then out.shaderStyleProvider = Importer.shaderStyle end
+  if out.rapidashCutEffectProvider == nil then
+    out.rapidashCutEffectProvider=Importer.rapidashCutEffectEnabled
+  end
+  return out
+end
+
+function Importer.modelPath(species, variant)
+  species = tonumber(species)
+  if not species or species < 1 or species > configuredCount then return nil end
+  return Cache.path(species, variant)
+end
+
+function Importer.readPack(species, variant)
+  return Cache.read(species, variant)
+end
+
+local function modelKey(species, variant)
+  return tostring(variant == "shiny" and "shiny" or "normal") .. ":" .. tostring(species)
+end
+
+local function touchModel(key)
+  for i = #modelOrder, 1, -1 do
+    if modelOrder[i] == key then table.remove(modelOrder, i) end
+  end
+  modelOrder[#modelOrder + 1] = key
+  while #modelOrder > MODEL_KEEP do
+    local drop = table.remove(modelOrder, 1)
+    local model = modelCache[drop]
+    modelCache[drop] = nil
+    if model then Pack.release(model) end
+  end
+end
+
+function Importer.loadModel(species, variant)
+  species = math.floor(tonumber(species) or 0)
+  if species < 1 or species > configuredCount then return nil, "species out of range" end
+  variant = variant == "shiny" and "shiny" or "normal"
+  local key = modelKey(species, variant)
+  local hit = modelCache[key]
+  if hit then
+    touchModel(key)
+    return hit
+  end
+  local bytes = Cache.read(species, variant)
+  if not bytes then return nil, "model pack unavailable" end
+  local model, err = Pack.parse(bytes)
+  if not model then return nil, err end
+  model.variant = variant
+  modelCache[key] = model
+  touchModel(key)
+  return model
+end
+
+function Importer.newRenderer(species, variant, options)
+  if not Importer.modelsEnabled() then return nil, "Stadium 2 models disabled" end
+  local model, err = Importer.loadModel(species, variant)
+  if not model then return nil, err end
+  return Renderer.new(model, rendererOptions(options))
+end
+
+-- Return an independently owned model. Unlike loadModel(), this instance is
+-- never placed in the importer's small shared LRU and may be freely mutated by
+-- the caller. The caller must eventually pass it to releaseModel().
+function Importer.createModel(species, variant)
+  species = math.floor(tonumber(species) or 0)
+  if species < 1 or species > configuredCount then return nil, "species out of range" end
+  variant = variant == "shiny" and "shiny" or "normal"
+  local bytes = Cache.read(species, variant)
+  if not bytes then return nil, "model pack unavailable" end
+  local model, err = Pack.parse(bytes)
+  if not model then return nil, err end
+  model.variant = variant
+  ownedModels[model] = true
+  return model
+end
+
+function Importer.releaseModel(model)
+  if type(model) ~= "table" or not ownedModels[model] then
+    return false, "model is not owned by the caller"
+  end
+  ownedModels[model] = nil
+  Pack.release(model)
+  return true
+end
+
+-- Build a renderer from either an owned model or a compatible caller-created
+-- model table. Releasing the renderer does not release the model.
+function Importer.newRendererFromModel(model, options)
+  return Renderer.new(model, rendererOptions(options))
+end
+
+function Importer.createSpecialModel(name)
+  local bytes=Cache.readSpecial(name)
+  if not bytes then return nil,"special battle pack unavailable" end
+  local model,err=Pack.parse(bytes)
+  if not model then return nil,err end
+  model.variant="normal"
+  ownedModels[model]=true
+  return model
+end
+
+function Importer.loadSpecial(name)
+  local key="special:"..tostring(name)
+  local hit=modelCache[key]
+  if hit then touchModel(key);return hit end
+  local bytes=Cache.readSpecial(name)
+  if not bytes then return nil,"special battle pack unavailable" end
+  local model,err=Pack.parse(bytes)
+  if not model then return nil,err end
+  model.variant="normal"
+  modelCache[key]=model
+  touchModel(key)
+  return model
+end
+
+function Importer.newSpecialRenderer(name,options)
+  local model,err=Importer.loadSpecial(name)
+  if not model then return nil,err end
+  return Renderer.new(model,rendererOptions(options))
+end
+
+-- Decode the battle-effect graph cached from the user's own Stadium 2 ROM.
+-- The records stay ROM-native: routing IDs, bytecode, emitter timing,
+-- callbacks and lifecycle triples are never replaced by visual categories.
+function Importer.battleFxCatalog()
+  if battleFxCatalog then return battleFxCatalog end
+  local overlay=Cache.readSpecial("battle_fx_rom")
+  if not overlay then
+    return nil,"Stadium 2 battle FX cache unavailable; reimport the ROM"
+  end
+  local catalog,err=BattleFxRom.catalog(overlay,Cache.readSpecial("battle_fx_trig"))
+  if not catalog then return nil,err end
+  battleFxCatalog=catalog
+  return catalog
+end
+
+-- Return one decompressed Stadium 2 battle resource module by the exact ID
+-- named in a move's ROM resource list. Data remains private to the user's
+-- playthrough cache and is never included in the mod package.
+function Importer.battleFxResource(resourceId)
+  battleFxResourceArchive=battleFxResourceArchive
+    or Cache.readSpecial("battle_fx_resources")
+  if not battleFxResourceArchive then
+    return nil,"Stadium 2 battle FX resource cache unavailable; reimport the ROM"
+  end
+  return BattleFxResources.member(battleFxResourceArchive,resourceId)
+end
+
+-- Resolve the exact common and move-local export bindings installed by the
+-- game before it runs a move's native FX controller.
+function Importer.battleFxResources(moveId)
+  local catalog,catalogError=Importer.battleFxCatalog()
+  if not catalog then return nil,catalogError end
+  local move=catalog.moves[math.floor(tonumber(moveId) or -1)]
+  if not move then return nil,"move ID out of range" end
+  battleFxResourceArchive=battleFxResourceArchive
+    or Cache.readSpecial("battle_fx_resources")
+  if not battleFxResourceArchive then
+    return nil,"Stadium 2 battle FX resource cache unavailable; reimport the ROM"
+  end
+  return BattleFxResources.resolve(battleFxResourceArchive,move.resources)
+end
+
+function Importer.battleFxShape(moveId,shapeId,animationId)
+  local resources,err=Importer.battleFxResources(moveId)
+  if not resources then return nil,err end
+  return BattleFxResources.shapeFromResolved(resources,
+    math.floor(tonumber(shapeId) or -1),animationId)
+end
+
+function Importer.battleFxShapeModel(moveId,shapeId,animationId)
+  local shape,err=Importer.battleFxShape(moveId,shapeId,animationId)
+  if not shape then return nil,err end
+  return BattleFxResources.modelFromShape(shape,
+    ("stadium2_move_%03d_shape_%03d"):format(moveId,shapeId))
+end
+
+-- Construct the persistent runtime/player against models extracted from the
+-- user's own cached ROM. Placement/native callback resolvers are injected by
+-- the battle adapter; this factory never substitutes procedural effects.
+function Importer.newBattleFxPlayer(options)
+  options=type(options)=="table" and options or {}
+  local catalog,err=Importer.battleFxCatalog()
+  if not catalog then return nil,err end
+  local playerOptions={}
+  for key,value in pairs(options) do playerOptions[key]=value end
+  playerOptions.catalog=catalog
+  playerOptions.loadBeamTexture=playerOptions.loadBeamTexture or function(moveId,symbol,format,size)
+    local resources,err=Importer.battleFxResources(moveId)
+    if not resources then return nil,err end
+    return BattleFxResources.beamTexture(resources,symbol,format,size)
+  end
+  playerOptions.loadWaveGridTexture=playerOptions.loadWaveGridTexture or function(moveId,family)
+    local resources,err=Importer.battleFxResources(moveId)
+    if not resources then return nil,err end
+    return BattleFxResources.waveGridTexture(resources,family)
+  end
+  playerOptions.createGeometryRenderer=playerOptions.createGeometryRenderer or function(model)
+    return Importer.newRendererFromModel(model,{textureFilter="nearest",flipY=false})
+  end
+  if not playerOptions.loadRenderer then
+    playerOptions.loadRenderer=function(moveId,shapeId,animationId)
+      local model,modelError=Importer.battleFxShapeModel(moveId,shapeId,animationId)
+      if not model then return nil,modelError end
+      local renderer,rendererError=Importer.newRendererFromModel(model,{
+        textureFilter="nearest",anisotropy=4,flipY=false,
+      })
+      if not renderer then Pack.release(model);return nil,rendererError end
+      return renderer,model
+    end
+  end
+  if not playerOptions.releaseRenderer then
+    playerOptions.releaseRenderer=function(renderer,model)
+      if renderer and renderer.release then pcall(renderer.release,renderer) end
+      if model then Pack.release(model) end
+    end
+  end
+  if playerOptions.particlesEnabled==nil then
+    playerOptions.particlesEnabled=Importer.battleFxParticlesEnabled
+  end
+  return BattleFxPlayer.new(playerOptions)
+end
+
+function Importer.battleFxProgram(moveId,alternate,context)
+  local catalog,err=Importer.battleFxCatalog()
+  if not catalog then return nil,err end
+  local move=catalog.moves[math.floor(tonumber(moveId) or -1)]
+  if not move then return nil,"move ID out of range" end
+  local dispatch=alternate and move.alternateDispatch or move.primaryDispatch
+  local out={moveId=move.moveId,alternate=alternate==true,dispatch={},resources=move.resources}
+  for _,entry in ipairs(dispatch) do
+    if entry.kind=="program" then
+      local executionContext={moveId=move.moveId,alternate=alternate==true}
+      for key,value in pairs(type(context)=="table" and context or {}) do
+        executionContext[key]=value
+      end
+      out.dispatch[#out.dispatch]={kind="program",programId=entry.programId,
+        execution=BattleFxNative.execute(catalog.programs[entry.programId],executionContext)}
+    else
+      out.dispatch[#out.dispatch]=entry
+    end
+  end
+  return out
+end
+
+function Importer.releaseModels()
+  for _, model in pairs(modelCache) do Pack.release(model) end
+  modelCache, modelOrder = {}, {}
+  battleFxCatalog=nil
+  battleFxResourceArchive=nil
+end
+
+function Importer.parsePack(bytes)
+  local model,err=Pack.parse(bytes)
+  if model then ownedModels[model]=true end
+  return model,err
+end
+
+function Importer.readHandlers(species, variant)
+  local bytes = Importer.readPack(species, variant)
+  if not bytes then return nil end
+  return Handlers.readExtension(bytes)
+end
+
+function Importer.handlerInfo(address)
+  return Handlers.info(address)
+end
+
+function Importer.evaluateHandler(record, phase, runtime)
+  return Handlers.evaluate(record, phase, runtime)
+end
+
+function Importer.runHandlers(records, phase, runtime, state)
+  return Handlers.run(records, phase, runtime, state)
+end
+
+function Importer.runModelHandlers(species, variant, phase, runtime, state)
+  local extension = Importer.readHandlers(species, variant)
+  if not extension then return nil, nil end
+  return Handlers.runExtension(extension, phase, runtime, state)
+end
+
+function Importer.resolveHandlerPointer(extension, pointer, length)
+  return Handlers.resolvePointer(extension, pointer, length)
+end
+
+function Importer.beginFrom(bytes, label, options)
+  if not playthroughReady then
+    return false, "Start or continue a game before importing Stadium 2"
+  end
+  if job then return false, "Stadium 2 import is already running" end
+  options = type(options) == "table" and options or {}
+
+  -- FINAL DESTRUCTIVE GUARD: no automatic/internal path is allowed to clear a
+  -- valid persistent cache.  Only the Options-row manual reimport passes
+  -- forceReimport=true.  This protects against any stray caller above us --
+  -- exported beginPath/autoImport, retry UI, or a future hook -- reaching the
+  -- destructive cache-clear boundary after the cache was already proven valid.
+  if not options.forceReimport then
+    local cache = Cache.inspect(configuredCount)
+    if cache.state == "valid" then
+      setReady()
+      if modRef and modRef.log then
+        local ctx = cache.context or {}
+        pcall(function()
+          modRef.log:info(
+            "stadium2 import suppressed: valid cache game=%s playthrough=%s count=%s",
+            tostring(ctx.gameVersion or "?"), tostring(ctx.playthroughId or "?"),
+            tostring(cache.marker and cache.marker.count or "?"))
+        end)
+      end
+      return true, "ready"
+    end
+    if cache.state == "error" then
+      return fail("checking persistent cache",
+        ("%s: %s"):format(tostring(cache.code or "storage_error"),
+          tostring(cache.message or "persistent cache unavailable")))
+    end
+  end
+
+  if nativePickPending then clearNativePicker(false) end
+  local normalized, metaOrErr = Rom.validate(bytes)
+  if not normalized then return fail("validating ROM", metaOrErr) end
+  Importer.releaseModels()
+  local ok, clearErr = Cache.clear(configuredCount)
+  if not ok then return fail("preparing cache", clearErr) end
+  local began, beginErr = Cache.beginBuild(configuredCount)
+  if not began then return fail("preparing cache", beginErr) end
+  romMeta = metaOrErr
+  status.state = "building"
+  status.done = 0
+  status.total = configuredCount
+  status.progress = 0
+  status.phase = "scan"
+  status.error = nil
+  status.rom = label or "Pokemon Stadium 2 (US)"
+  local function writePack(species, normalBytes, shinyBytes)
+    return Cache.writePair(species, normalBytes, shinyBytes)
+  end
+  local function writeSpecial(name, bytes)
+    return Cache.writeSpecial(name, bytes)
+  end
+  -- Thread creation is capability/platform dependent. The serial job remains
+  -- a transparent fallback and produces the exact same cache/API surface.
+  if not options.serialExport then
+    local workerSource
+    if modRef and type(modRef.read) == "function" then
+      local okRead, source = pcall(modRef.read, modRef, "workers/export_worker.lua")
+      if okRead and type(source) == "string" then workerSource = source end
+    end
+    job = ExportPool.new(normalized, configuredCount, writePack, writeSpecial,
+      { root = modRef and modRef.path, workerSource = workerSource })
+  end
+  if not job then
+    job = Extract.newJob(normalized, writePack, writeSpecial)
+  end
+  job.label = status.rom
+  job.md5 = romMeta.md5
+  return true
+end
+
+local function beginCandidate(candidate, options)
+  options = type(options) == "table" and options or {}
+  local bytes, err = Discovery.read(candidate)
+  if not bytes then return fail("reading ROM", err) end
+  local started, beginErr = Importer.beginFrom(
+    bytes, options.label or candidate.path, options)
+  return started, beginErr
+end
+
+function Importer.beginPath(path)
+  return beginCandidate({ kind = "mod", path = path })
+end
+
+function Importer.autoImport()
+  if not playthroughReady then
+    return false, "Start or continue a game before importing Stadium 2"
+  end
+
+  local cache = Cache.inspect(configuredCount)
+  if cache.state == "valid" then
+    setReady()
+    return true, "ready"
+  end
+
+  -- A broken/unavailable persistence lookup is NOT evidence that the cache is
+  -- absent. Rebuilding in that situation causes the endless auto-import loop:
+  -- every failed read looks missing, so every gameplay entry extracts again.
+  if cache.state == "error" then
+    return fail("checking persistent cache",
+      ("%s: %s"):format(tostring(cache.code or "storage_error"),
+        tostring(cache.message or "persistent cache unavailable")))
+  end
+
+  -- missing / stale / incomplete are the only automatic rebuild states.
+  local candidate = Discovery.find()
+  if not candidate then
+    return fail("reading required ROM",
+      "the engine-managed Pokemon Stadium 2 required ROM is unavailable")
+  end
+  return beginCandidate(candidate)
+end
+
+function Importer.request(options)
+  if not playthroughReady then
+    return false, "Start or continue a game before importing Stadium 2"
+  end
+  if job then return false, "Stadium 2 import is already running" end
+  options = type(options) == "table" and options or {}
+
+  -- Generic request is SAFE by default: it cannot overwrite a valid cache.
+  -- A deliberate Options-row reimport supplies forceReimport=true below.
+  local candidate=Discovery.find()
+  if candidate then return beginCandidate(candidate, options) end
+  return fail("selecting ROM","The engine-managed Pokemon Stadium 2 ROM is unavailable. "
+    .."Open the mod's Imported Files panel and provide the required ROM.")
+end
+
+function Importer.reimport()
+  return Importer.request({ forceReimport = true, source = "options" })
+end
+
+function Importer.step()
+  if not job then return false end
+  local active = job
+  local ok, more = pcall(active.step, active)
+  if not ok then return fail("extracting ROM", more) end
+  status.done = active.done or 0
+  status.total = active.total or configuredCount
+  status.progress = active.progress and active:progress()
+    or (status.total > 0 and status.done / status.total or 0)
+  status.phase = active.buildStage or active.phase
+  status.species = active.species
+  status.modelSpecies = active.modelSpecies or 0
+  status.animatedSpecies = active.animatedSpecies or 0
+  status.animationClips = active.animationClips or 0
+  if active.error then return fail("building packs", active.error) end
+  if more == false then
+    if not active.success then return fail("building packs", active.error or "incomplete Stadium 2 import") end
+    local finished, markerErr = Cache.finish(romMeta, configuredCount)
+    if not finished then return fail("writing completion marker", markerErr) end
+    job = nil
+    setReady()
+    if modRef and modRef.log then
+      pcall(function()
+        modRef.log:info("stadium2 importer: built %d/%d species, %d Unown forms, Substitute; animation species=%d",
+          active.builtCount or 0,configuredCount,(active.unownBuilt or 0)+1,
+          active.animatedBuilt or 0)
+      end)
+    end
+    return false
+  end
+  return true
+end
+
+function Importer.row()
+  return {
+    id = "STADIUM2_IMPORTER:rom",
+    stadium2Importer = true,
+    label = "STADIUM 2 ROM",
+    value = function()
+      if status.state == "building" then
+        return ("%d/%d"):format(status.done or 0, status.total or configuredCount)
+      end
+      if status.state == "picking" then return "PICKING" end
+      if Importer.available() then return "READY" end
+      if status.state == "failed" then return "FAILED" end
+      return "IMPORT"
+    end,
+    -- This row opens a screen/activity; it is an action, not a value that
+    -- should cycle on Left/Right. Both Gen 1 and Gen 2 option menus give
+    -- action rows an explicit `activate` callback on A.
+    activate = function()
+      if status.state == "building" or status.state == "picking" then return true end
+      -- This is the one intentional destructive path: the player explicitly
+      -- selected STADIUM 2 ROM from Options while a valid cache may exist.
+      Importer.reimport()
+      return true
+    end,
+  }
+end
+
+function Importer.appendRow(rows)
+  if type(rows) ~= "table" then return rows end
+  for _, row in ipairs(rows) do
+    if type(row) == "table" and row.stadium2Importer then return rows end
+  end
+  rows[#rows + 1] = Importer.row()
+  return rows
+end
+
+Importer.US_MD5 = Rom.US_MD5
+Importer.FORMAT = Cache.FORMAT
+Importer.COUNT = function() return configuredCount end
+Importer.shinyPalettesFromTransformSource = Palette.fromTransformSource
+Importer.cache = Cache
+Importer.rom = Rom
+Importer.extract = Extract
+Importer.pack = Pack
+Importer.renderer = Renderer
+
+return Importer

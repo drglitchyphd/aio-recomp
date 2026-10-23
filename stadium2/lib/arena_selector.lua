@@ -1,0 +1,92 @@
+-- Pure Gen 2 battle-context to Stadium 2 field resolver.  This module owns no
+-- engine objects and consumes only the data copied from public mod events and
+-- hooks, so arena selection cannot retain or mutate the live world.
+local Selector = {}
+
+local MAP_ARENAS = {
+  VIOLET_GYM=0, AZALEA_GYM=1, GOLDENROD_GYM=2, ECRUTEAK_GYM=3,
+  OLIVINE_GYM=4, CIANWOOD_GYM=5, MAHOGANY_GYM=6,
+  BLACKTHORN_GYM_1F=7, BLACKTHORN_GYM_2F=7,
+  WILLS_ROOM=9, KOGAS_ROOM=10, BRUNOS_ROOM=11, KARENS_ROOM=12,
+  CHAMPIONS_ROOM=13, LANCES_ROOM=13,
+  PEWTER_GYM=14, CERULEAN_GYM=15, VERMILION_GYM=16,
+  CELADON_GYM=17, FUCHSIA_GYM=18, SAFFRON_GYM=19,
+  SEAFOAM_GYM=20, CINNABAR_GYM=20, VIRIDIAN_GYM=21, BATTLE_TOWER_BATTLE_ROOM=26,
+}
+
+local TRAINER_ARENAS = {
+  FALKNER=0, BUGSY=1, WHITNEY=2, MORTY=3, JASMINE=4, CHUCK=5,
+  PRYCE=6, CLAIR=7,
+  WILL=9, KOGA=10, BRUNO=11, KAREN=12, CHAMPION=13, LANCE=13,
+  BROCK=14, MISTY=15, LT_SURGE=16, LTSURGE=16, ERIKA=17,
+  JANINE=18, SABRINA=19, BLAINE=20, BLUE=21, RED=22,
+  RIVAL1=29, RIVAL2=29, RIVAL=29,
+}
+
+local function key(value)
+  return tostring(value or ""):upper():gsub("[^A-Z0-9_]", "")
+end
+
+local function rocketMap(mapId)
+  return mapId:find("TEAM_ROCKET_BASE",1,true)
+    or mapId:find("RADIO_TOWER",1,true)
+    or mapId:find("UNDERGROUND_WAREHOUSE",1,true)
+end
+
+local function rocketTrainer(trainerId)
+  return trainerId:find("GRUNT",1,true)
+    or trainerId:find("EXECUTIVE",1,true)
+    or trainerId:find("ROCKET",1,true)
+end
+
+function Selector.resolve(context,options)
+  local ctx=type(context)=="table" and context or {}
+  local fallback=options and options.environmentFallback
+  if tonumber(ctx.generation)~=2 and not (fallback and tonumber(ctx.generation)==1) then return nil,"not-gen2" end
+
+  -- battle.started.kind is the engine's authoritative distinction. Stadium
+  -- fields are presentation for trainer encounters only: every wild path
+  -- (grass, cave, surf, fishing, roaming and scripted wild Pokémon) retains
+  -- the established classic battle scene, regardless of its current map.
+  local battleKind=key(ctx.kind)
+  if battleKind=="WILD" and not fallback then return nil,"wild:classic" end
+  if battleKind~="TRAINER" and not (fallback and battleKind=="WILD") then return nil,"unsupported-kind:classic" end
+
+  local mapId=key(ctx.mapId)
+  local trainerId=key(ctx.trainerId)
+  local mapped=MAP_ARENAS[mapId]
+  if mapped~=nil then return mapped,"map:"..mapId end
+
+  if ctx.battleTower==true then return 26,"battle-tower" end
+  if trainerId=="RED" or mapId:find("MT_SILVER",1,true) then
+    return 22,"mt-silver"
+  end
+  if rocketMap(mapId) or rocketTrainer(trainerId) then
+    return 8,"team-rocket"
+  end
+
+  mapped=TRAINER_ARENAS[trainerId]
+  if mapped~=nil then return mapped,"trainer:"..trainerId end
+
+  if fallback and ctx.outside==nil then
+    local env=key(ctx.environment)
+    if env=='TOWN' or env=='ROUTE' or env=='FOREST' then return 28,'outdoor-fallback' end
+    if env~='' then return 27,'indoor-fallback' end
+  end
+  if ctx.outside==true then return 28,"outdoor" end
+  if ctx.outside==false then return 27,"indoor" end
+  if fallback then return 27,"unknown:arena-fallback" end
+  return nil,"unknown:classic"
+end
+
+-- Gym maps always show their leader's Stadium field (user preference): the
+-- index for a gym map, or nil for any other map.
+function Selector.gymArena(mapId)
+  mapId=key(mapId)
+  if not mapId:find("_GYM",1,true) then return nil end
+  return MAP_ARENAS[mapId]
+end
+
+Selector.MAP_ARENAS=MAP_ARENAS
+Selector.TRAINER_ARENAS=TRAINER_ARENAS
+return Selector

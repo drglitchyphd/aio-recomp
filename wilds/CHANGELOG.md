@@ -1,0 +1,2120 @@
+# Changelog
+
+> **This is a fork, published as Wilds of Kanto Revival.** This repository (`poooooby/wilds-of-kanto-gen-3`, mod id
+> `wilds_of_kanto_gen3`) forks
+> [YoDrehDenSwagAuf/overworld-spawn-mod](https://github.com/YoDrehDenSwagAuf/overworld-spawn-mod)
+> ("Wilds of Kanto", mod id `overworld_wild_spawns`) after v2.2.0. Everything
+> through v2.2.0 is the original project's history — full credit to
+> YoDrehDenSwagAuf and the original collaborators (see README.md). v2.3.0
+> onward is fork-specific work, marked **(fork)**.
+
+## 2.8.1 (fork)
+
+### Fixes
+
+- **National Dex follower sprites falling back to the "?" sprite** (e.g. Uxie) even though the
+  HGSS/True Size art exists on disk. Gen1 species resolution (`GameCompat.speciesId`) tried an
+  exact-key lookup against the live engine species tables, then fell straight through to a
+  hardcoded name→dex table that only covers the vanilla 151 Gen 1 species — which can never
+  resolve any National Dex species (152+) regardless of why the exact-key lookup missed (e.g. a
+  registered-casing mismatch). Added a case-insensitive sweep of those same tables before giving
+  up, so a species whose National Dex mod registration casing differs from the queried key still
+  resolves correctly instead of landing on the missing-sprite fallback.
+
+## 2.8.0 (fork)
+
+### Modern Spawns compatibility
+
+- **Visible wild Pokémon now follow [Modern Spawns](https://github.com/poooooby/g1r_modern_spawns).**
+  Wilds picks visible species straight from the encounter tables, so Modern Spawns' encounter
+  hooks never ran for them and every visible spawn stayed vanilla. With Modern Spawns installed
+  and MODERN SPAWNS ON, grass/cave and surf spawns, town Pokémon, Gen 1 Super Rod water mons and
+  the encounter index now use its generated tables (Red/Blue/Yellow and Gold), in every SPAWN
+  MODE (RANDOM draws afresh per spawn), and visible spawns get its rare LEGENDARIES roll.
+  Without Modern Spawns, or with it OFF, nothing changes. `lib/modern_spawns_bridge.lua` looks
+  the mod up at pick time, so no dependency is declared. Gold fishing water mons stay vanilla.
+
+### Bug fixes
+
+- **Town Pokemon no longer body-block the player.** They could spawn or wander into (or right
+  beside) a 1-tile-wide passage — a doorway, a gap between counters, a bridge — and, since they
+  collide like a normal NPC, fully block the only route through. Placement and every wander step
+  now keep a 2-tile buffer around both narrow passages and anything else already standing nearby
+  (the player, another NPC, another Town Pokemon), so they can no longer park themselves somewhere
+  that traps the player.
+
+### Features
+
+- **Random Enc is now Classic Encounters (CLASSIC ENC)** and is the single switch for classic
+  random encounters everywhere: grass, caves and water (Surf). Existing settings carry over.
+- **One Silhouette option for land and water.** A wild Pokemon standing on land gets the regular
+  blacked-out silhouette; one actually standing in the water gets the dark underwater
+  silhouette. It follows where the Pokemon is right now, so one that walks out of the water
+  switches to the land silhouette.
+- **Options tightened.** These now behave one fixed way and no longer have a toggle: Idle Mons ON,
+  Roam Mons ON, Chase Mons OFF, Hidden Mons OFF, Control Mode TRAINER, Trainer Trail OFF,
+  Sprite Scale ON, Sprite Fade SOLID, Spawn Amount NORMAL, Shiny Sparkle ON, Water Mons
+  SWIM SPRITES, Cave Spawns REACHABLE ONLY (cave Pokemon only appear where you can walk to them).
+  Old saved values for these are ignored.
+
+### Removed
+
+- **Overworld Catching.** Poke Ball throwing at visible wilds (and its OW CATCH, key, combo and
+  HUD options) has been removed from this mod. It is planned as a separate optional companion mod.
+- **Dev Overlay and Test Spawn** are no longer public options. Developers enable them by placing a
+  `wilds_dev.flag` file in the mod folder (never included in release builds).
+
+- **MODERN SPAWNS, LEGEND/MYTHIC and MAX GEN.** The built-in Spawn Table and Random modern-spawn
+  modes for Gen 1 have been removed, along with the two options that only existed to configure
+  them. Wild encounters use the original game tables everywhere those modes used to override them
+  (routes, caves, Safari Zone, Super Rod fishing). This functionality is moving to a separate
+  `g1r_modern_spawns` project with its own API.
+
+## 2.7.6 (fork)
+
+### Features
+
+- **Poke Followers / GSC now covers 416 more species beyond dex 251.** Overworld walker art
+  converted from the [Pokémon Wilds](https://github.com/SheerSt/pokewilds) project (SheerSt)
+  fills every gap the built-in GSC pack had, as a fallback the existing style already used for
+  dex 1-251 falls through to automatically — no new Sprite Style option, no changes to the art
+  those 251 species already had. Species without genuine shiny art in the source render with
+  their normal sheet, same as everywhere else that's missing shiny art.
+
+### Bug fixes
+
+- **Poke Followers / GSC followers keep the standard 1-tile trail spacing.** A cosmetic
+  push-back meant only for wide HGSS / True Size art was reading that art's width regardless
+  of the actual Sprite Style, so a species like Onix still got spaced out under Poke Followers /
+  GSC even though that style only ever draws plain 16x16 tiles.
+
+## 2.7.5 (fork)
+
+### Bug fixes
+
+- **Gold: the Unown letter sprites (2.7.4) now really show in the HGSS / PokeMMO style.** The
+  letter was drawn correctly at first, but the sprite-size step then looked the art up by
+  species and swapped every Unown back to the plain default one. It now keeps the letter's
+  own sheet.
+
+- **Pokemon Tower ghosts are ghosts again until you have the Silph Scope.** In Red, Blue and
+  Yellow every wild Pokemon in the Pokemon Tower is an unidentifiable GHOST until the Silph Scope
+  is in your bag, but the overworld spawns showed Gastly, Haunter and the rest, and touching one
+  started a normal battle, so you could fight and catch ghost Pokemon before you should. Without
+  the scope, Tower spawns now look like the new ghost sprite (in every sprite style, Voxel too), a
+  battle with one is the real "GHOST appeared!" battle (you are too scared to attack and it cannot
+  be caught), and a Poke Ball thrown at one is dodged ("It dodged the thrown BALL! This POKEMON
+  can't be caught!") and lost, as in the game. With the scope everything is as before. Gold is
+  unaffected. The check follows the game's own Silph Scope rule; if you pick the scope up while
+  standing in the Tower, battles and throws change straight away and spawns that are already out
+  lose the ghost look as new ones appear. The ghost sprite is by Nuclear-Blizzard.
+
+- **Gold: wild Pokemon no longer spawn in parts of a cave the player cannot reach.** The cave
+  reachability check that keeps sprites out of cut-off pockets worked from Red/Blue/Yellow's rules,
+  and Gold caves work differently: their walls have one-way edges (you can step up onto one but
+  never past it, and never step down onto one) and ledges you hop. The old check walked straight
+  across those and counted whole cave sections as reachable. On the real Gold maps that was
+  about 55% of the cells in the caves that have wild Pokemon (Dark Cave's Blackthorn entrance
+  96%, Union Cave 1F 59%, Ice Path 1F 63%). It now follows the game's own movement rules, so
+  spawns stay in areas you can walk to from where you arrive (areas that need Surf are not
+  included). It also stops treating ladder landing spots as walls, which had cut some corridors
+  in half and left parts of the Ruins of Alph inner chamber, Mt. Mortar and Tin Tower without
+  spawns. Red/Blue/Yellow are unchanged.
+
+### Features
+
+- **Terrarium water objects now react to followers and wild water Pokemon.** Terrarium's
+  new water garden (lilypads, reeds, kelp) only moved for the player on Surf and Terrarium's
+  own swimmers. Followers standing in water, and our visible wild water Pokemon, now count
+  as swimmers too: they splash in, leave a wake and foam, shove the lilypads and reeds aside
+  and rise and fall with the swell. Gen 1 only, and it does nothing without Terrarium.
+  Not tried against Terrarium's beta in the game yet.
+
+## 2.7.4 (fork)
+
+### Bug fixes
+
+- **Gold: Ruins of Alph and other dungeons now spawn wild Pokemon.** A map only got visible
+  spawns if it had grass or a name the mod recognised as a cave (it looked for "CAVE" in the
+  map id, a Red/Blue/Yellow rule). Every Gold dungeon without that word, such as the Ruins of
+  Alph chambers, Slowpoke Well, Ice Path, Mt. Mortar and Whirl Islands, had none. It now uses
+  the same rule as the game's own step encounters: any cave or dungeon floor.
+
+- **Gold: each Unown is now a specific letter, and it is the letter you fight.**
+  Unown used to spawn as one generic picture and the battle rolled a random letter.
+  Now a spawn picks its letter when it appears, from the letters your solved Ruins of Alph
+  wall puzzles have unlocked (none appear until you solve one, as in the game), and the
+  battle is that same Unown. With the HGSS / PokeMMO sprite style the overworld sprite is that
+  letter, all 25 letters from B to Z plus the base A, shiny too, at Unown's usual size. The
+  Poke Followers / GSC style only has one Unown picture, so it keeps showing that one, but the
+  fight is still the right letter. Not tried in a live Gold game yet.
+
+## 2.7.3 (fork)
+
+### Features
+
+- **Modern spawns for the last few Kanto areas.** Route 18, Route 24 and Victory Road (1F, 2F
+  and 3F) had no modern table, and five Super Rod spots (Cerulean Gym, Route 11, Route 24,
+  Safari Zone East, Vermilion Dock) still fished up the original species. They now use a mix of
+  Gen 3-9 Pokemon chosen to fit each area: Route 24 gets early basics (Wurmple, Starly, Ralts,
+  Sewaddle...), Route 18 gets birds and Normal types of the same strength as its Spearow and
+  Fearow (Taillow, Staravia, Tranquill, Corvisquire...), Victory Road gets cave dwellers from
+  small fighters and rocks up to Lairon, Medicham and Gurdurr, and each fishing spot gets water
+  Pokemon of a similar size. Levels are the original game's for each area, and each Super Rod
+  group keeps its original size so the bite chance does not change. Only species that suit the
+  area were allowed (a strength range, no fully evolved powerhouses in early areas, no
+  legendaries); the tool that builds these tables checks that and refuses anything outside it.
+
+- **Gen 2 as the MAX GEN cap no longer sends areas back to the original table.** With the cap at
+  Gen 2, 22 tables (Route 17 and 23 grass, Route 20 and 21 water, Route 18, Route 24 and
+  Victory Road, and the Super Rods of Route 20, 21, 23, 25, Cerulean Cave, Safari Zone and the
+  fishing spots above) had only Gen 3-9 species, so the cap emptied them and they fell back
+  to the original game's Pokemon. They now also have a Gen 2 set chosen the same way (Hoothoot,
+  Murkrow and Furret on Route 18, Phanpy, Sneasel and Magcargo in Victory Road, Marill,
+  Remoraid and Chinchou on the water, Lanturn and Qwilfish in Cerulean Cave), at the original
+  area's levels. A higher cap always includes everything a lower one does: those Gen 2
+  Pokemon are the whole table at cap Gen 2 and stay in the mix, alongside the Gen 3-9 species,
+  at every higher cap (each set's share follows how many species it has). A Super Rod group
+  holds at most four Pokemon, so there it keeps its size and mixes Gen 2 and modern entries.
+  At Gen 1 the original species stay.
+
+### Bug fixes
+
+- **Spawn Table levels now match the base game's level spread for each area.** The modern
+  table's levels ran far above the original game's: half the mapped areas were 13 or more
+  levels too high, up to 56 (Route 25 grass was Lv 66-68 against the original 7-14, Route 11
+  was 34-36 against 9-17, the Power Plant 60-62 against 20-36), and Super Rod levels were
+  about 22 too high. The table keeps its species and odds but now takes its levels from the
+  original game's table for the same area, so an area's lowest, highest and average level
+  are the original's, stronger species get the higher levels, and it follows the game you
+  are playing (Red, Blue or Yellow). Random mode uses the same levels on the areas the table
+  covers.
+
+## 2.7.2 (fork)
+
+### Features
+
+- **SHINY RATE now works in Pokemon Gold** (Gen 2), not just Red/Blue/Yellow. Visible
+  spawns roll at the chosen rate and show the shiny overworld sprite, the battle they
+  start is that same shiny, and classic grass, surf, fishing and other wild encounters
+  follow the setting too; OFF really means none. Trainers' Pokemon, starters, gifts and
+  eggs are untouched. The rate goes through the game's own shiny hook, so a shiny made
+  this way has ordinary stats/DVs (it will not pass shininess to bred offspring), and
+  static encounters such as legendaries keep Gold's normal 1/8192 chance. Gold support
+  is still beta, and this has not been tried in a live Gold game yet.
+
+### Bug fixes
+
+- Fixed SHINY RATE never applying to swimming (water) overworld Pokemon. Water spawns
+  skipped the shiny roll that grass and cave spawns get, so they never showed the shiny
+  sprite, and the battle they started was forced to a non-shiny Pokemon even with the
+  rate set to ALWAYS. They now roll like every other visible spawn: the shiny swimming
+  sprite appears and the battle fights that same shiny.
+
+## 2.7.1 (fork)
+
+### Bug fixes
+
+- Fixed the FOLLOWERS/GSC sprite style (the default) failing in the packaged 2.7.0
+  download. That release packs its sprite sheets into atlas images, and the Poke
+  Followers art loader checked whether each sheet existed by opening a file that no
+  longer exists, so every species was reported missing and the game fell back to the
+  HGSS / PokeMMO art or the placeholder. It now asks the game's asset system, which
+  knows about the atlas. Shiny and swimming (submerged) Poke Followers sheets were
+  affected the same way and are fixed too. A checkout of the repository, and the
+  HGSS / PokeMMO style, were not affected.
+
+## 2.7.0 (fork)
+
+### Packaging
+
+- The release ZIP now ships its ~15,400 small sprite sheets and 8,088 dialogue
+  portraits packed into a few atlas PNGs with JSON indexes, instead of one file
+  each. The ZIP goes from 23,698 to 277 files and from 33.9 MB to 20.1 MB, which
+  makes installing, extracting and scanning the mod much faster. The game asks for
+  sprites by the same paths as before and a new sprite atlas loader hands each one
+  back from the packed image, pixel for pixel identical to the old files (checked
+  at build time). A repo checkout keeps using the individual files. Build the old
+  layout with `scripts/build-mod.py --no-atlas`, or pick families with
+  `--atlas=classic,hgss,...`. The credit and license files stay as ordinary files.
+
+- The release ZIP is about 11 MB smaller (roughly 45 MB down to 34 MB, and
+  5,353 fewer files). It no longer ships the follow-sprite and water source
+  PNGs, the legacy Pokedex mapping files or a build-tool input folder. The
+  game only ever draws from the generated sprite sheets, which still ship, so
+  nothing changes in play; only the developer-mode Pokemon preview loses its
+  animated preview images. Pass `--with-source-art` to `scripts/build-mod.py`
+  for a full archive.
+
+## 2.6.5 (fork)
+
+### Bug fixes
+
+- Fixed Control Mode = Pokemon on Red/Blue/Yellow drawing half a sprite and
+  cycling through broken frames with the HGSS / PokeMMO sprite style. The
+  controlled Pokemon's sprite was built without its True Size frame size and
+  anchor, animation timing and presentation flags, so the game cut the sheet
+  into 16x16 pieces. It now uses the same sprite definition followers do.
+  The classic Followers style was not affected.
+
+## 2.6.4 (fork)
+
+### Features
+
+- Added a **SHINY SPARKLE** option (Start Menu -> Wilds of Kanto, or the Mod
+  Manager; Red/Blue/Yellow only, default ON). When a shiny Pokemon appears in
+  battle, a one-time sparkle burst and the game's own chime play over it. It
+  fires for a shiny wild Pokemon and for your own shiny lead when it is sent
+  out, once per Pokemon per battle, after the intro slide and send-out finish.
+  Turning the option off removes both the sparkle and the chime. There is
+  still no shiny recolor in battle.
+
+## 2.6.3 (fork)
+
+### Features
+
+- Added a **SHINY RATE** option (Start Menu -> Wilds of Kanto, or the Mod
+  Manager; Red/Blue/Yellow only): Off, 1/8192 (Gen 2), 1/4096 Modern
+  (default), 1/1024, 1/512, 1/100, 1/10 or Always. A wild Pokemon that rolls
+  shiny appears with its shiny overworld sprite, is a real shiny (shiny DVs)
+  in the battle it starts, stays shiny when caught, and its follower uses the
+  shiny sprite. Classic encounters (steps, Surf, rods) roll too. Off means no
+  shinies at all. There is no shiny recolor or sparkle in battle yet.
+  Based on the **Shiny Pokemon** mod by masterwebx (see README credits).
+
+### Compatibility
+
+- **Shiny Pokemon (`SHINY_POKEMON`) is now a declared conflict** and cannot be
+  enabled together with this mod; SHINY RATE replaces it. With Voxel off it
+  drew the follower with a fixed 16x16 box that ignores True Size frame size
+  and anchor, which put followers out of position. Voxel on, or the mod
+  disabled, was unaffected.
+
+### Upgrade notes
+
+- SHINY RATE defaults to 1/4096, so rare shinies now appear after updating.
+  Set it to Off to keep the old behavior.
+
+## 2.6.2 (fork)
+
+### Features
+
+- Added a **MAX GEN** option (Start Menu -> Wilds of Kanto, or the Mod
+  Manager; Gen 1, Gen 1-2, ... up to All, default All). It caps the
+  generations that Spawn Table and Random spawns may use, including Super
+  Rod. In Spawn Table, species above the cap are dropped and their share
+  goes to the other species in that area; in Random they are never drawn.
+  Off (the original game) is never limited, and alternate forms count as
+  above any cap below All.
+- DexNav-style mods, including Kanto Reforged's DEXNAV, now list the Pokemon
+  that actually spawn in the area you are standing in (Spawn Table or
+  Random, including Super Rod), with Kanto Reforged's usual seen/owned
+  reveal. Turning MODERN SPAWNS off, or leaving the area, hands the original
+  tables back untouched.
+
+## 2.6.0 (fork)
+
+### Features
+
+- Added a **MODERN SPAWNS** option (Start Menu -> Wilds of Kanto, or the Mod
+  Manager; Red/Blue/Yellow only) with three settings:
+  - **Spawn Table** (the default): when a Pokedex-expansion mod such as
+    National Dex has registered species past Gen 3, mapped Kanto areas
+    (routes, caves, the Safari Zone, Mt. Moon, Seafoam, and more) use a
+    modern species pool for visible spawns, step encounters, Surf, and Super
+    Rod fishing. Each area now has many more species and a spread of levels
+    per species (for example a species listed at levels 15-17 appears at 15,
+    16 and 17), instead of the original 10-slot tables. Without such a mod
+    the original tables are used, and any species that isn't installed falls
+    back to a matching original slot.
+  - **Random**: any installed Pokemon can spawn in every Kanto area that has
+    wild Pokemon, at that area's own levels, for visible spawns, step
+    encounters, Surf and Super Rod fishing. Each area shows 10 random species
+    (the same shape as the original tables and Kanto Reforged's random mode)
+    and gets a fresh 10 every time you enter it. It works without a
+    Pokedex-expansion mod too (Gen 1 species only). Alternate forms such as
+    Megas and regional variants are never picked.
+  - **Off**: the original game tables.
+- Added a **LEGEND/MYTHIC** option (default off). Random spawns leave out
+  legendary, mythical, Ultra Beast and Paradox Pokemon unless it is on. It
+  has no effect on Spawn Table or Off.
+- Changing MODERN SPAWNS or LEGEND/MYTHIC in the menu rebuilds the current
+  area right away.
+
+### Upgrade notes
+
+- MODERN SPAWNS used to be an on/off toggle. Saves that had it on carry over
+  as Spawn Table, and saves that had it off carry over as Off.
+
+### Performance
+
+- Entering an area no longer loads every species' sprite up front just to fill
+  in the diagnostics counters; that now only happens with debug or dev mode
+  on. Sprites still load when a Pokemon actually spawns. This mostly helps
+  areas with many possible species.
+
+## 2.5.4 (fork)
+
+### Features
+
+- Added a **PIKA FOLLOWER** option (Start Menu -> Wilds of Kanto, or the Mod
+  Manager) that gives Pokemon Yellow's starter Pikachu companion one of 12
+  costume looks: Alola, Belle, Hoenn, Kalos, Libre, OG Cap, Partner, PhD,
+  Pop Star, Rock Star, Sinnoh, and Unova. Only affects that one starter
+  Pikachu, not any other Pikachu used as a regular follower.
+
+## 2.5.3 (fork)
+
+### Features
+
+- Overworld and follow sprites for PokeMMO/HGSS have been updated to include every
+  Pokemon through Gen 9 (1025 total species) and their shiny counterparts.
+- Pokemon dialogue portraits have been updated for all species, and now display as
+  true color instead of being tinted by the active Gen 1 color palette.
+- Swimming and Levitate follow sprites now cover every Pokemon through Gen 9 that
+  has source art available (previously limited to Gen 1-3).
+
+### Bug fixes
+
+- Following Pokemon that fall far behind (e.g. after the player dashes several
+  tiles quickly) now catch up faster the further behind they are, instead of a
+  fixed speed regardless of how big the gap is.
+- Fixed some following Pokemon whose walking sprite is wider than one tile
+  visually overlapping the player.
+
+## 2.5.2 (fork)
+
+### Features
+
+- Expanded `lib/species_display_scale.lua`'s Voxel display-size scale table
+  from 386 to 1025 entries (full Gen 1-9 National Dex), re-derived with an
+  asymmetrical S-curve against a 1.5m child-height reference. Only takes
+  effect for species a Pokedex-expansion mod actually registers past the
+  active baseline; extra entries are otherwise inert.
+
+## 2.5.1 (fork)
+
+### Features
+
+- Added a **Sprite Scale** option (on by default) that toggles the per-species
+  Voxel-only display-size scale (`lib/species_display_scale.lua`). Turning
+  it off makes `SpeciesGeometry.displayScale` return 1 unconditionally, so
+  every HGSS/PokeMMO species renders at native True Size instead of its
+  hand-tuned custom size — a full escape hatch for players who prefer
+  unmodified True Size proportions. Live-toggleable from the Start Menu
+  (Wilds of Kanto → SPRITE SCALE) or Mod Settings; flipping it refreshes
+  already-spawned entities immediately, the same way changing Sprite Style
+  does, since the scale is baked into each entity's SpriteDef at resolve
+  time.
+
+### Removed
+
+- Removed `lib/species_display_scale_style_overrides.lua` (the per-style
+  override layer on top of the shared display-scale table). Since only
+  HGSS/PokeMMO ever consults the base table now (PMDCollab, the other style
+  that used to need its own differently-tuned values, was removed above),
+  there was no longer a second style for the override mechanism to
+  differentiate — it was pure unused indirection.
+
+- Removed PMDCollab as a selectable overworld Sprite Style (wild spawns,
+  followers, and ambient/town Pokemon). It was redundant with the existing
+  HGSS/PokeMMO and Poke Followers styles, and its ~11MB of walker sprite
+  sheets shipped as unused bloat. Gen2 dialogue portraits — a separate
+  feature that also derives from PMDCollab/SpriteCollab but is independent
+  of Sprite Style — are unaffected and remain fully supported.
+  - Deleted `lib/pmd_walk.lua` / `lib/pmd_idle.lua` (overworld walk/idle
+    animation, portrait-unrelated) and the PMDCollab sprite provider in
+    `lib/sprite_providers.lua`.
+  - Deleted `assets/pmdcollab/sprites/` and `sprite_table.lua`; kept
+    `assets/pmdcollab/portraits/` and `portrait_table.lua`.
+  - Trimmed `scripts/import_pmdcollab.py` to portraits-only and deleted
+    `scripts/audit_pmdcollab_walk.py` (audited only the now-removed walk
+    sheets).
+  - `lib/pmdcollab_assets.lua`'s portrait loading no longer depends on
+    `sprite_table.lua` existing — previously, deleting it would have also
+    broken portraits, since both were gated behind one shared readiness
+    flag.
+  - The Sprite Style option now offers 2 public choices (HGSS/PokeMMO,
+    Poke Followers) instead of 3; an existing save with PMDCollab selected
+    migrates silently to Poke Followers, the same fallback already used
+    for other retired style values.
+
+## 2.5.0 (fork)
+
+### Features
+
+- Added a per-species, per-sprite-style Voxel-only display-size scale
+  (`lib/species_display_scale.lua`, a fully hand-authored 386-entry
+  dex→multiplier table): followers and wild spawns can now render
+  smaller or larger than True Size under Voxel renderers, independently
+  per style (HGSS/PokeMMO, Poke Followers, PMDCollab). Only the quad's
+  world-space size changes — UVs stay on the real frame, so every source
+  pixel is still sampled at native resolution, and flat 2D never reads
+  these fields at all. Extended to the shared Terrarium/Stadium2/
+  Potato/Dramaless billboard factory, including a fix for species with
+  real anchor padding (Onix) and for exact mirror-symmetry under
+  quantization. Pokedex is removed from the Sprite Style menu/options
+  (kept as an internal fallback style only).
+- Added Battle Art Gen2 (`BATTLE_ART_VOXEL_GEN2`) as its own recognized
+  provider with a dedicated adapter (`lib/compat/battle_art_gen2_geometry.lua`),
+  rather than sharing Gen1's Battle Art fork file — Gen2's own
+  `SpriteBillboards.halfWidth` mirror-pivot behavior genuinely differs
+  from Gen1's. Fixes both wrong left/right sprite placement and, for
+  species whose art width coincidentally matches a genuine "big doll"
+  sprite's half-width (e.g. Charizard), placement drifting toward the
+  mirrored side.
+- Wilds now detects Pokedex-expansion mods (e.g. Kanto Reforged) at
+  load time instead of hardcoding a Gen 3-sized species cap for every
+  install: `Gen1.MAX_SPECIES`/`Gen2.MAX_SPECIES` are the true vanilla
+  151/251 baselines, raised only when a live scan of
+  `game.data.pokemon` (cached after the mod-load pass that Gen1Recomp
+  itself guarantees completes before gameplay starts) finds species
+  beyond that baseline.
+
+### Bug fixes
+
+- Fixed noisy `World billboard failed ...; spatial overlay emergency
+  (pose() returned nil sprite)` warning spam under Voxel renderers
+  (Terrarium, Battle Art) whenever wild Pokemon spawn — most visible in
+  dense-grass maps like Viridian Forest. Verified via live simulation:
+  every freshly-spawned entity has no billboard for its first ~0.3-0.6s by
+  design (`SpawnFx` keeps the body hidden until its reveal animation
+  finishes), so a Voxel renderer polling `pose()` during that exact window
+  always sees a transient nil sprite that self-heals a moment later — 12/12
+  simulated spawns failed at frame zero and 12/12 succeeded one second
+  later, regardless of species. `lib/voxel_adapter.lua`'s `markFallback`
+  now only logs when the entity's body is actually supposed to be visible
+  already (`SpawnFx.bodyVisible`), so a genuinely missing sprite still
+  surfaces while the expected spawn-reveal window stays silent.
+- Fixed Voxel walk-cycle "snapping" on asymmetric HGSS/PokeMMO sprites:
+  Gen1Recomp mirrors the whole up/down walk frame on `stepFlip` to fake a
+  second gait pose for symmetric human sprites, which visibly snapped
+  Wilds' left/right-asymmetric True Size art sideways, amplified by
+  Voxel display scaling. Opts the PokeMMO provider into
+  `disableVerticalStepFlip` (down/up facing only — left/right already
+  rely on a legitimate facing-based mirror that must stay untouched),
+  routed directly into followers'/wild spawns' own `pose()` since
+  Voxel/Battle Art billboards read `pose()`'s flip value directly and
+  never call `sprite:draw()`.
+- Followers are now frozen (`frozen=true`, `wanders=false`) so
+  third-party town-life mods (e.g. Terrarium's AGENDA system) stop
+  reading them as ordinary idle townspeople and pulling them toward a
+  scheduled post the moment the player stops walking — Wilds already
+  drives every trailer's position itself.
+- perf: Cached sprite-provider filesystem probes that were re-run on
+  every frame/spawn attempt (`_builtinPokeFollowersReady()`'s repeated
+  `mod:read` of a probe PNG, and `finalize()`'s per-`trySpawn` Gold
+  pack discovery), fixing measurable spawn and per-frame lag. Cherry-
+  picked from upstream YoDrehDenSwagAuf/overworld-spawn-mod#104
+  (credit: Max Coplan), closes upstream #95.
+- Finished the `overworld_wild_spawns` → `wilds_of_kanto_gen3` rename in
+  a handful of internal log/error strings and UI option-row namespace
+  prefixes that still referenced the pre-fork id after the 2.4.0
+  manifest identity change.
+
+## 2.4.2 (fork)
+
+### Bug fixes
+
+- Fixed wild Pokemon spawning onto, and wandering onto, cells occupied by
+  native map NPCs (Strength boulders, stationary trainers, signs) in caves
+  — visually indistinguishable from solid wall. Those objects live in the
+  engine's own `ow.npcs` list, never in Wilds' own `ow.entities`, so
+  neither the initial spawn-tile picker nor the wander/chase/flee
+  collision check had any visibility into them.
+  - Movement: `lib/behavior.lua`'s `occupiedBlocked` now also checks a
+    `mapNpcs` list (`lib/behavior_tick.lua` fills it from `ow.npcs`)
+    before allowing a step.
+  - Spawn placement: `lib/grass.lua`'s `validateWalkableTile` /
+    `validateEligibleTile` (and `pickFree` / `pickFreeWalkable`) now
+    reject a candidate tile the same way.
+  Reported live in MT_MOON_1F (wander first, then four mons found
+  spawned directly on wall-like NPC-occupied tiles).
+- Fixed cave reachability BFS crossing Gen1's directional elevation/ledge
+  collisions (a one-way tile pair, e.g. hopping down a ledge you can't
+  climb back through) as if they were plain two-way floor. `isWalkableCell`
+  only reports single-cell walkability and has no concept of *direction*,
+  so a pocket only reachable by looping through a completely different
+  route (typically a staircase) could read as directly connected to the
+  player's position, wrongly letting Pokemon spawn/wander there.
+  `lib/cave_reachability.lua`'s BFS now also checks the tileset's
+  directional tile-pair table (`game.data.field.tilePairs.land`, the same
+  data the engine's own player-movement collision uses) before crossing
+  between two cells, via `CaveReachability.build(map, player, { tilePairs
+  = ... })`. Verified against real MT_MOON_1F data: the exact pocket
+  reported live (`(17,20)`, `(17,28)`, `(17,31)`, `(18,34)`) now correctly
+  classifies as unreachable, while unrelated reachable cells are unaffected.
+
+### Known issues
+
+- Variable-geometry wild Pokemon (True Size) render floating well
+  above ground specifically under **Battle Art Voxel Fork** with Voxel mode
+  on (correct with Voxel off, and correct under Terrarium's Voxel mode).
+  Root cause not yet isolated — see the "KNOWN BUG" section in
+  [docs/analysis/TRUE_SIZE_SYSTEM.md](docs/analysis/TRUE_SIZE_SYSTEM.md).
+  To be corrected later.
+
+## 2.4.1 (fork)
+
+- Renamed to "Wilds of Kanto Revival" in manifest.json / mod.card.
+- Minor description wording ("Gen 3 dex support").
+- `.gitignore`: ignore `.claude/` and the local `/release` pre-release build
+  output folder.
+- **Generated asset path renamed**: `assets/generated/` is a path
+  Gen1Recomp's modkit reserves exclusively for the player's own ROM-derived
+  cache (rule MK301). This mod had shipped its own build output under that
+  same path since its first release, meaning real modkit validation had
+  always failed and every prior release was actually packed by
+  `scripts/build-mod.py`'s manual fallback rather than the validated modkit
+  path. Renamed to `assets/wilds_generated/` across the whole codebase (Lua,
+  Python tooling, docs, tests, CI workflow, mod.card) so real modkit
+  `validate`/`lint`/`pack` can now succeed against this mod's own files.
+- Fixed `scripts/build-mod.py`: two post-generation manifest-existence
+  checks (`ensure_runtime_sheets`, `ensure_water_runtime_sheets`) still
+  pointed at the old `assets/generated/...` path after the rename above,
+  which the generators themselves no longer wrote to.
+- Fixed `scripts/build-mod.py`'s manual-pack fallback: its directory walk
+  never pruned `os.walk`'s traversal (only filtered files after the fact),
+  so it fully descended into huge local-only directories (a bootstrapped
+  engine clone, a reference research checkout) that have nothing to do with
+  the mod payload, making local rebuilds dramatically slower than
+  necessary. Directories are now pruned in-place so the walk skips them
+  entirely.
+- Fixed `tools/generate_true_size_runtime.py` crashing on Windows
+  (`UnicodeEncodeError`) whenever it printed a unicode arrow in its
+  `--help` text or audit log, because Windows consoles default to the
+  system codepage rather than UTF-8; stdout/stderr are now forced to UTF-8
+  at startup.
+
+## 2.4.0 (fork)
+
+### Fork identity
+
+- Manifest identity updated for the fork: id `wilds_of_kanto_gen3`,
+  `conflicts: ["overworld_wild_spawns"]` (do not run both at once), github
+  points at `poooooby/wilds-of-kanto-gen-3`. See LICENSE, README.md, and
+  mod.card for fork attribution.
+
+### Gen 3 True Size geometry
+
+- Generated real `species_geometry.json` / `species_table.lua` entries for
+  all 135 Gen 3 species (dex 252–386) from the existing HGSS-format source
+  art in `assets/enhanced_overworld/followsprites`, via
+  `tools/generate_true_size_runtime.py`. HGSS/Pokédex packs: 135/135;
+  Swimming: 105/135; Levitate: 30/135 (matches actual source coverage);
+  Followers: 0/135 (no `poke_followers` art yet for Gen 3 — falls back to
+  HGSS-sized placeholder geometry). None of the existing 1–251 entries changed.
+- `lib/game_compat/gen1.lua` / `gen2.lua`: `MAX_SPECIES` raised from 151/251
+  to 386. This was the actual blocker for Gen 3 True Size sizing — the
+  geometry data alone was unreachable because `SpeciesGeometry.normalizeDex`
+  capped every lookup at the old generation ceiling before ever consulting
+  the table.
+
+### Bug fixes
+
+- Fixed **Chase Mons** (`enable_aggressive`) not disabling aggressive
+  behaviour for water/swimming Pokémon. `Behavior.weightsFor`'s
+  `water_aggressive_chance` rescale unconditionally recomputed
+  `WATER_AGGRESSIVE`'s weight from idle/wander weights, silently
+  resurrecting it after `enable_aggressive` had already zeroed it — since
+  `spawn_logic.lua` always passes a real `water_aggressive_chance` value,
+  this fired on every water spawn regardless of the option.
+- Fixed cave Pokémon spawning/wandering outside reachable areas after a
+  same-map warp into a different cave component. Every cave entity (not
+  just "Mixed"-mode scenery) was pinned to a per-entity snapshot of the
+  reachable-cells table captured at spawn time; `CaveReachability`
+  rebuilding that table on a same-map warp left existing entities validating
+  movement against stale, pre-rebuild data instead of the live mask.
+
+### Terrarium Voxel renderer compatibility
+
+- Added `lib/compat/terrarium_variable_geometry.lua`: True Size support for
+  the [Terrarium](https://github.com/BrenoBertucci/Terrarium) Dramatic Shape
+  fork, alongside the existing Battle Art / Potato / Dramaless / Stadium2
+  adapters. Terrarium exposes the same `exports.lib.require` /
+  `SpriteBillboards` / `Voxel3D` / `VoxelState` contract, so it reuses the
+  shared `compat/voxel_sprite_billboards_adapter` factory.
+
+## 2.3.0 (fork)
+
+### Gen 3 species preview (PMDCollab)
+
+- `lib/species_assets.lua` now maps Gen 1–3 (species IDs 1–386). Preview
+  quality: relies on the companion **Kanto Reforged** mod (GPLv3) for Gen 3
+  species data (stats, types, moves, dex entries) via `game.data.pokemon` at
+  runtime — no Kanto Reforged code or data is copied into this repository.
+- New PMDCollab overworld sprites and independent dialogue portraits for
+  species #252–386.
+- PMDCollab imported revision bumped to `a3acb77f05fb6649df2790031a1285066ffa32f2`.
+
+## 2.2.0
+
+### PMDCollab / SpriteCollab support
+
+- New optional **Sprite Style: PMDCollab** (`pmdcollab`) with derived Gen1–Gen2
+  Walk sheets and occasional presentation-only Idle animations. Default style
+  remains Poke Followers / GSC.
+- Independent **PMDCollab portraits** for Wilds follower talk, town Pokémon
+  talk, and generic cry text — works under every Sprite Style (Dex / HGSS /
+  Poke-Followers / PMDCollab).
+- Authoring importer: `scripts/import_pmdcollab.py` (local SpriteCollab
+  checkout → `assets/pmdcollab/`). CC BY-NC 4.0 attribution in
+  `THIRD_PARTY_ASSETS.md` and `assets/pmdcollab/CREDITS.txt`.
+- Water: no Swim in SpriteCollab for #001–251 → existing Wilds water system.
+
+## 2.1.9
+
+### Follower RELEASE / RECALL presentation FX
+
+- Intentional Follow / Dismiss / follower-count / party switch now play a short
+  Poké Ball-style scale / tint / alpha effect. Gameplay selection updates
+  immediately; recall uses presentation-only ghosts. Technical rebuilds stay
+  seamless.
+- Poké Center heal temporarily suppresses visible party trailers while the
+  nurse heal-machine animation runs (`ow.healAnim`), reusing the same FX.
+  Configured `follower_count` / options / save are never overwritten.
+- Talking to a Wilds trailer offers **Ok** / **Ball** after the follow message.
+  **Ball** sets `mon.stopFollowing`, decrements follower count, and reuses
+  recall FX so that mon stays excluded across map, battle, and Poké Center
+  restore. Yellow stock Pikachu keeps vanilla talk.
+- Gen1 talk-Ball recall is deferred until Overworld owns the tick (ChoiceBox
+  still holds the talked-to NPC). Recall ghosts attach to `ow.entities` only
+  with a dummy `def`, so `checkTrainerSight` never sees them. Gold talk-Ball
+  stays immediate.
+- Gen1 OverworldState draws via `e:draw(camX, camY)` (scale nil); the
+  presentation FX wrap now applies tint / scale on that camera-arity path and
+  rebinds recall ghost sprites so wraps sample the ghost. Gen2's scale path is
+  unchanged.
+
+### Follower faint failover
+
+- When the selected follower faints outside battle, permanently fail over to
+  the topmost healthy party mon via `selectFollower` so visible follower,
+  DISMISS, and save mirrors stay aligned.
+
+### Pokémon Tower Marowak spawn reserve
+
+- Reserve Pokémon Tower 6F `(10, 16)` from Wilds spawns until
+  `EVENT_BEAT_GHOST_MAROWAK` so the scripted Marowak battle cannot collide with
+  an overworld Wilds encounter.
+
+### Gold Farfetch'd Pokédex art
+
+- Prefer Gold's live `spriteFront` over stale Gen1 `registrationInfo` in the
+  Pokédex provider for Gen2 only.
+
+### Enc Silhouette — Undiscovered
+
+- `wild_silhouettes` is now **Off** / **Undiscovered** / **All** (bool
+  migration preserved). Undiscovered silhouettes species not yet caught /
+  registered in the Pokédex; a presentation fingerprint bit recolors on
+  discovery without a map change.
+
+## 2.1.8
+
+### Overworld throw Ball sprites
+
+- Thrown Overworld Catching Balls use new 22×22 source art packed into
+  `assets/balls/throw/*.png` (16×16 SpriteDef canvas, nearest-neighbor).
+- Visible throw art is ~8×8, centered at offset (4, 4) so the Ball sits
+  closer to overworld trainer/Pokémon scale than the previous ~10×10 pack.
+- Lookup is by stable Ball ID (`POKE_BALL` / `GREAT_BALL` / `ULTRA_BALL` /
+  `MASTER_BALL`). Catch HUD still uses `assets/balls/*.png`.
+- Catch HUD Size remains UI-only: size 0 hides the HUD, not the projectile.
+
+### Gen2 live settings movement
+
+- Toggling Idle / Roam / Chase / Hidden Mons now re-evaluates **existing**
+  overworld Pokémon once: disabled-behaviour state is cleared, entity identity
+  and sprites are preserved, and the ~30 Hz AI cadence is re-asserted.
+- Root cause: OPTIONS / `Pipelines.applyOptions` restored WILDS AI to OFF
+  (the pipeline row is hidden), so Gold wilds were only ticked from
+  `world.stepped` (per player tile) until the next map enter re-synced the
+  pipeline. Route reload looked like a movement fix because `initializeForMap`
+  called `syncPipelineLevel`.
+
+### Follower map seams
+
+- Outdoor walking seams (city ↔ route, route ↔ route) no longer require
+  `via=connection`. If the engine omits `via`, an outdoor edge walk still
+  carries the recent trail instead of parking the party on the player for
+  1–3 steps. Doors / warps still park on the player.
+
+### Settings / README
+
+- Public settings are exactly `options.lua`. Indoor Pokémon and WILDS AI are
+  no longer in-game menu rows (they were never Mod Manager options).
+- Enc Silhouette is documented. README settings tables match schema defaults.
+
+### Release ZIP packaging (Defender Wacatac investigation)
+
+- v2.1.6's published `Wilds.of.Kanto.v2.1.6.zip` was a GitHub source archive
+  (`overworld-spawn-mod-main/`), not `scripts/build-mod.py` output. It included
+  `scripts/`, `tools/` (PowerShell + Python), `tests/`, and `.github/`.
+- Official packer still excludes those paths. Hygiene verification now rejects
+  authoring/host scripts and source-archive wrappers so a source ZIP cannot
+  be published as the user-facing release asset.
+- Manager metadata (`manifest.description`, `mod.card`, `options.lua` labels
+  / descriptions) uses ASCII `Pokemon` / `Pokedex` / `Poke Ball` so the
+  release workflow can pack. The previous `é` / `×` / `→` failed
+  `validate-manager-ascii` and blocked the official ZIP. Runtime keys and
+  gameplay are unchanged.
+- Option label **Ball Switch Key** shortened to **Ball Switch** (14-char Mod
+  Manager limit). Internal key `catch_cycle_key` is unchanged.
+- See `docs/release-av-diagnosis-v2.1.6.md`.
+
+### Stadium2 Voxel — HGSS True Size billboards
+
+- HGSS True Size no longer falls back to Classic 16×16 when
+  **STADIUM2_OVERWORLD_MODELS** (Gen 2 voxel renderer) is the **active**
+  Voxel renderer. Wilds installs
+  `lib/compat/stadium2_variable_geometry.lua` through the existing
+  SpriteBillboards factory (same wrap as Potato / Dramaless): `mesh` /
+  `shadowQuad` consume `frameWidth` / `frameHeight` / `anchorX` /
+  `anchorY`. Vanilla 16×16 characters stay on the original mesh.
+- Native Stadium2 variable-geometry support (export flags or
+  `SpriteBillboards` using `frameWidth` / `getFrameGeometry`) is detected
+  and is **not** double-wrapped.
+- Missing / broken Stadium2 lib stays Classic with an honest fallback
+  reason. Wilds does not copy Stadium2 source or patch its files on disk.
+- This is **renderer** compatibility (Wilds SpriteDef → Stadium2
+  billboards) for wilds, followers, ambient, and water sprites. It does
+  not claim complete Gen 2 gameplay compatibility.
+- If a Stadium2 build embeds its own Wilds runtime, coexistence must be
+  fixed in that repository. Wilds only probes public exports; it does
+  not disable Stadium2 event handlers.
+
+### Catch HUD Size 0 = hidden
+
+- **Catch HUD Size** now allows **0–10**. **0** hides the Catch HUD only;
+  Overworld Catching, meter, range tiles, ball switching, and throws stay
+  active. Default remains **5**.
+
+### Configurable Overworld Catch controls
+
+- New Wilds settings: **Catch Key**, **Ball Switch**, **Catch Combo**,
+  **Switch Combo**. Defaults stay **C** / **Q** / **B+A** / **B+Left/Right**.
+- Bindings live in `lib/catching/bindings.lua`. Catch timing, meter, HUD,
+  projectile, and TouchControls are unchanged.
+- Desktop keys and logical Game Boy combos remain parallel. Controller/touch
+  presets use logical `a` / `b` / `select` / `left` / `right`.
+- Changing a Catch binding live-cancels an in-progress meter (no Ball consumed).
+- If Catch Key equals Ball Switch, throw wins and cycle falls back to Q
+  (or E when Catch Key is Q).
+
+### Species → canonical Wilds asset identity
+
+- Overworld / follower / water / True Size sprite lookup now maps
+  `mon.species` → `SpeciesAssets.idFor` → canonical Wilds asset ID.
+- Runtime Pokédex order (`mon.dex` / `GameCompat.speciesId`) is no longer
+  used as a Wilds sheet index. Reordered Dex mods keep the correct art
+  (MEWTWO → 150, TYRANITAR → 248). Unknown Fakemon use the missing-sprite
+  fallback instead of another Pokémon's sheet.
+- Numeric HGSS / Poké Followers / swimming / levitate / True Size asset
+  layout is unchanged. Gameplay Dex uses (encounters, battles, Pokédex)
+  are unchanged. Sandbox access stays on current `lib/wilds_fs.lua`.
+
+### Measure-driven performance
+
+- AI / occupancy / cave decision work runs at a fixed ~30 Hz. Movement
+  interpolation, spawn FX, animation sync, and battle-return reattach
+  stay per rendered frame so 60/120/144 Hz remains smooth and v2.1.5
+  battle-return is not delayed.
+- Occupancy rebuilds only when dirty or the player/trailer fingerprint
+  changes. Battle-return / follower / ambient / world-replacement
+  reattach still force a rebuild.
+- Voxel presence safety-polls about twice a second; inactive entities
+  take an early-out. Battle Art / Potato / Dramaless adapters are
+  unchanged.
+- Unchanged presentation skips sprite re-resolve and `SpriteRenderer.new`.
+  World attachment is a separate concern from rendering identity.
+- DEV-only `lib/perf_stats.lua` snapshot (no release log spam).
+
+### Yellow follower freeze without Pikachu
+
+- CONTROL=TRAINER trailers no longer freeze at spawn in Yellow when Pikachu
+  is not in the party. Vanilla `PikachuFollower.shouldSpawn` is only used as
+  a cutscene gate while the stock Yellow Pikachu follower is actually active.
+
+### Gold trainer-controlled followers
+
+- CONTROL=TRAINER trailers now construct Gold NPCs with the native
+  `NPC.new(mapId, objDef, spriteDef)` contract from
+  `src/world/gen2/Npc.lua` / `Follower.lua` (`MOVE.STANDING_DOWN`,
+  `passable`, `world.npcs` + `world.entities`). `Gen2.makeGuestNpc` no
+  longer sniffs `NPC.MOVE` to fall back to Gen1 `NPC.new(data, mapId,
+  def)`. That fallback is what unit tests were exercising: the mock
+  accepted Gen1 arity, while live Gold's Gen1 `draw(camX, camY)` is
+  invisible under `World:drawPeople`'s `draw(ox, oy, scale)`.
+- Player = Pokémon, wilds, and town Pokémon are unchanged. Gen1 follower
+  construction is unchanged.
+
+### Experimental Pokémon Gold wild encounters
+
+- Gold now shows visible overworld Wild Pokémon using the **shared** Wilds
+  entity / render / AI layer. Species, levels, and time-of-day groups come
+  from Gold's kind-first `data.gen2Encounters` tables via
+  `lib/gen2/encounters.lua` — not from Kanto tables and not from Pokédex
+  habitat data.
+- Gold HGSS / Poké Followers **water** Wilds were still monochrome after the
+  land color fix: Followers called `LuminanceSheet.pathFor` on the colored
+  `submergedFor` sheet whenever PaletteFX was not `redpp`, and HGSS swimming /
+  levitate packs used the same `not redpp` luma gate in `VariableSize.applyToDef`.
+  Gold `gbc` is not `redpp`, so SpriteRenderer baked DMG OBP. Gen2 water now
+  keeps colored RGBA (`trueColor = true`); foam/waterline stays. Enc Silhouette
+  / hidden silhouettes still black-out. Gen1 water luminance is unchanged.
+
+- Touching a visible wild starts a **normal Gold wild battle**
+  (`start_battle` / `wild` / species / level) exactly once.
+- Aggressive Wilds on Gold use the **Gold World emote contract**
+  (`{ image, entity, left }`). Writing the Gen1 `{ npc, frames, onDone }`
+  bubble onto Gold World was crashing in `World:update` when a spawned
+  Pokémon saw the player. The shared Behavior state machine is unchanged.
+- Curated Johto town Pokémon (`lib/gen2/town_pokemon.lua`) spawn as NPC-like
+  ambient guests (non-aggressive, no Pokédex, not encounter tables) on
+  New Bark, Cherrygrove, Violet, Azalea, Goldenrod, Ecruteak, Olivine,
+  Cianwood, Mahogany, and Blackthorn.
+- HGSS True Size / runtime sprite generation range extends to **251**.
+  Existing 1..151 geometry is unchanged.
+- Safari stays **off** on Gold. Bug-Catching Contest / special engine
+  catch sessions disable overworld throws.
+
+### Gold overworld catching
+
+- Gold uses the **shared** Wilds catching UX (HUD, selected ball, power
+  meter, projectile, targeting, hit detection, success/failure, input).
+- Engine-specific inventory, Mon construction, party/box, Pokédex, and
+  catch-rate/ball rules go through `GameCompat` → `Gen1` / `Gen2`.
+- Gen1 Red / Blue / Yellow catching is a behavior-preserving wrap of the
+  previous `Bag` / `Pokemon.new` / `Party.add` / `Boxes.deposit` path.
+- Gold consume uses the native bag (`save.inventory` + `Bag.remove`).
+  A successful catch builds a real Gold mon via `src.battle.gen2.Mon.new`,
+  adds it to `save.party` or the current Gold PC box, and stamps
+  `pokedex.caught` / `pokedex.seen` with the entity species id (never a
+  Wilds asset id).
+- Shared `CatchMath` throw-quality / facing / level modifiers stay.
+  Ball multipliers and Master Ball remain inside each generation's
+  native `Catching.attempt`. Gen1 probabilities are unchanged.
+- Catching no longer assumes Gen1 `mod.world:overworld()` / `ow.player` /
+  `ow.textbox:active()` / stack-top-is-overworld. Gold resolves
+  `GameCompat.catchWorld` → `game.world` and `GameCompat.catchPlayer` →
+  the native Gold Player. Control uses `World:busy` / `textbox` latch /
+  empty-stack free roam. Thrown balls attach to Gold `npcs` so
+  `World:drawPeople` can see them. A failed `Mon.new` now returns nil
+  (no fake party table). Gen1 catching guards are unchanged.
+- Gold B+A / C meter no longer runs Gen1 RangePreview world lookup
+  (`mod.world:overworld()`) or the `OverworldState.drawWorld` monkey-patch.
+  Green ground cells are disabled on Gold (no worldCanvas pass). HUD meter,
+  throw, and catch stay on. Gen1 ground preview is unchanged.
+
+### Experimental Pokémon Gold foundation
+
+- Production `manifest.json` now targets **Gen 1 + Gen 2** via
+  `"games": ["gen1", "gen2"]` (Mod Manager label **Gen 1+2**). Legacy
+  `gen2compat` is not used. `game_version` stays `>=0.0.0-0 <2.0.0`.
+- `lib/game_compat/gen2.lua` is a real Gold adapter (`supported = true`)
+  for species, party, surf, map id, water cell, encounters, and town Pokémon.
+- Red / Blue / Yellow gameplay is unchanged (full Gen1 capabilities).
+
+### Internal multi-generation preparation
+
+- Added a small `lib/game_compat.lua` facade so shared Wilds code can ask
+  which generation is running and resolve species / party / surf / map id
+  through that layer. Follower species lookup uses `GameCompat.speciesId`.
+- Generation detection uses Gen1Recomp `GameVersion.get()` +
+  `GameVersion.generation(id)` when the engine module is present.
+- Gen1 True Size / diagnostic dex cap (`151`) is owned by `Gen1.MAX_SPECIES`.
+
+## 2.1.7
+
+### Release ZIP packaging (Defender Wacatac investigation)
+
+- v2.1.6's published `Wilds.of.Kanto.v2.1.6.zip` was a GitHub source archive
+  (`overworld-spawn-mod-main/`), not `scripts/build-mod.py` output. It included
+  `scripts/`, `tools/` (PowerShell + Python), `tests/`, and `.github/`.
+- Official packer still excludes those paths. Hygiene verification now rejects
+  authoring/host scripts and source-archive wrappers so a source ZIP cannot
+  be published as the user-facing release asset.
+- Manager metadata (`manifest.description`, `mod.card`, `options.lua` labels
+  / descriptions) uses ASCII `Pokemon` / `Pokedex` / `Poke Ball` so the
+  release workflow can pack. The previous `é` / `×` / `→` failed
+  `validate-manager-ascii` and blocked the official ZIP. Runtime keys and
+  gameplay are unchanged.
+- Option label **Ball Switch Key** shortened to **Ball Switch** (14-char Mod
+  Manager limit). Internal key `catch_cycle_key` is unchanged.
+- See `docs/release-av-diagnosis-v2.1.6.md`.
+
+### Stadium2 Voxel — HGSS True Size billboards
+
+- HGSS True Size no longer falls back to Classic 16×16 when
+  **STADIUM2_OVERWORLD_MODELS** (Gen 2 voxel renderer) is the **active**
+  Voxel renderer. Wilds installs
+  `lib/compat/stadium2_variable_geometry.lua` through the existing
+  SpriteBillboards factory (same wrap as Potato / Dramaless): `mesh` /
+  `shadowQuad` consume `frameWidth` / `frameHeight` / `anchorX` /
+  `anchorY`. Vanilla 16×16 characters stay on the original mesh.
+- Native Stadium2 variable-geometry support (export flags or
+  `SpriteBillboards` using `frameWidth` / `getFrameGeometry`) is detected
+  and is **not** double-wrapped.
+- Missing / broken Stadium2 lib stays Classic with an honest fallback
+  reason. Wilds does not copy Stadium2 source or patch its files on disk.
+- This is **renderer** compatibility (Wilds SpriteDef → Stadium2
+  billboards) for wilds, followers, ambient, and water sprites. It does
+  not claim complete Gen 2 gameplay compatibility.
+- If a Stadium2 build embeds its own Wilds runtime, coexistence must be
+  fixed in that repository. Wilds only probes public exports; it does
+  not disable Stadium2 event handlers.
+
+### Catch HUD Size 0 = hidden
+
+- **Catch HUD Size** now allows **0–10**. **0** hides the Catch HUD only;
+  Overworld Catching, meter, range tiles, ball switching, and throws stay
+  active. Default remains **5**.
+
+### Configurable Overworld Catch controls
+
+- New Wilds settings: **Catch Key**, **Ball Switch**, **Catch Combo**,
+  **Switch Combo**. Defaults stay **C** / **Q** / **B+A** / **B+Left/Right**.
+- Bindings live in `lib/catching/bindings.lua`. Catch timing, meter, HUD,
+  projectile, and TouchControls are unchanged.
+- Desktop keys and logical Game Boy combos remain parallel. Controller/touch
+  presets use logical `a` / `b` / `select` / `left` / `right`.
+- Changing a Catch binding live-cancels an in-progress meter (no Ball consumed).
+- If Catch Key equals Ball Switch, throw wins and cycle falls back to Q
+  (or E when Catch Key is Q).
+
+## 2.1.6
+
+### Species → canonical Wilds asset identity
+
+- Overworld / follower / water / True Size sprite lookup now maps
+  `mon.species` → `SpeciesAssets.idFor` → canonical Wilds asset ID.
+- Runtime Pokédex order (`mon.dex` / `GameCompat.speciesId`) is no longer
+  used as a Wilds sheet index. Reordered Dex mods keep the correct art
+  (MEWTWO → 150, TYRANITAR → 248). Unknown Fakemon use the missing-sprite
+  fallback instead of another Pokémon's sheet.
+
+### Measure-driven performance
+
+- AI / occupancy / cave decision work runs at a fixed ~30 Hz. Movement
+  interpolation, spawn FX, animation sync, and battle-return reattach
+  stay per rendered frame so 60/120/144 Hz remains smooth and v2.1.5
+  battle-return is not delayed.
+- Occupancy rebuilds only when dirty or the player/trailer fingerprint
+  changes. Unchanged presentation skips sprite re-resolve.
+
+### Gold catch HUD
+
+- Gold catch HUD is pinned to the 160×144 playfield corner.
+- Catch meter ticks on the shared input step; Flat range preview uses
+  World camera × zoom. Voxel Gold still skips ground tiles. Gen1 layout
+  is unchanged.
+
+## 2.1.5
+
+### Compatibility fixes
+
+- Updated compatibility with the newest Gen1Recomp sandbox.
+- Fixed Wilds/followers/town Pokémon disappearing after battles.
+- Fixed follower reattachment after returning to the overworld.
+
+## 2.0.2
+
+### Voxel True Size — provider-scoped adapters
+
+- HGSS True Size in Voxel is gated on the **active** Voxel renderer, not on
+  “some Voxel mod is installed”. Battle Art, Potato Voxel (`potato_voxel`),
+  Dramaless (`DRAMALESS_SHAPE`), and original Dramatic Shape are distinguished.
+  If more than one Voxel mod is installed and Wilds cannot tell which
+  `VoxelState` is active, HGSS stays Classic 16×16 rather than guessing.
+- **Battle Art Voxel** (`BATTLE_ART_VOXEL_FORK`): existing in-memory
+  `SpriteBillboards` adapter is unchanged.
+- **Potato Voxel** (`potato_voxel` 1.4.0): current main exposes
+  `exports.lib.require`. Wilds installs
+  `lib/compat/potato_voxel_variable_geometry.lua` (wrap `mesh` / re-point
+  `shadowQuad`). Potato’s dedicated `shadowBlob()` contact shadow is left
+  unchanged. If that public accessor is missing, HGSS uses Classic.
+- **DRAMALESS_SHAPE** (1.6.4): current main also exposes `exports.lib.require`.
+  Wilds installs `lib/compat/dramaless_variable_geometry.lua` the same way
+  (body, occlusion silhouette, and sprite-mesh shadows). If the public
+  accessor is missing, HGSS uses Classic.
+- **Original Dramatic Shape**: Classic 16×16 unless the mod already exports
+  native variable-geometry support. Wilds does not wrap it.
+- No Voxel renderer source is copied into Wilds. No installed Voxel files are
+  patched on disk.
+
+## 2.0.1
+
+### Battle Art Voxel — True Size billboards
+
+- HGSS True Size no longer falls back to Classic 16×16 when **Battle Art Voxel
+  Fork** (`BATTLE_ART_VOXEL_FORK`) is the active Voxel renderer. Wilds installs
+  a small in-memory adapter (`lib/compat/battle_art_variable_geometry.lua`) that
+  wraps public `SpriteBillboards.mesh` / `shadowQuad` so billboards, shadows,
+  and occlusion silhouettes use `frameWidth` / `frameHeight` / `anchorX` /
+  `anchorY`. Vanilla 16×16 characters are unchanged. Dramaless / unsupported
+  Dramatic Shape still use Classic. No Battle Art source files are copied or
+  patched on disk.
+- `VariableSize.canUseTrueSizeInVoxel()` reports live capability (adapter or
+  upstream export), not a version number.
+
+### Follower convoy fixes (True Size / HGSS sprites)
+
+- **Tight 1-cell trail:** follower spacing is now a strict one-cell snake
+  regardless of species size. The old whole-cell size gaps (Onix 3, XL 2…)
+  spread big sprites far behind the player and made the pack look detached;
+  now every follower sits exactly one cell behind the one in front, so giants
+  stay close to the player.
+- **Reversal chain-break deadlock fixed:** doubling back over walked ground
+  scrambled the pack (lag goals on the folded trail pointed at each other's
+  cells and the strict cell reservations deadlocked it — the chain froze
+  inverted). Followers can now swap adjacent cells to un-jam, and a jam
+  recovery re-forms the pack along the player's actual walked trail if it
+  ever stalls. Scrambled packs recover quickly (8 stalled frames for an
+  inverted pack, ~0.13s; 16 for other stalls); the entry drain is never
+  treated as a jam. Long reversals, zigzags, and mid-drain reversals converge
+  back to ordered 1/2/3 spacing. The inverted fast path is deliberately not
+  instant: a tightly packed train momentarily reads as inverted mid-fold on
+  an ordinary reversal, and an instant teleport there read as a "slingshot"
+  pop on tall True Size sprites — the swap allowance resolves those folds by
+  walking instead.
+- **Reversal fold no longer dashes (the True Size "slingshot"):** on a
+  doubled-back trail the lag-indexed goals jump 2+ cells, which the
+  catch-up pass treated as "falling behind" and answered with double
+  cadence — every member then shot through the fold at 2× speed, the most
+  visible slingshot on the tall HGSS sheets.  Double cadence is now
+  reserved for genuine stragglers (head-distance more than one cell beyond
+  the trailer's convoy slot); the fold resolves by walking at normal
+  cadence with the swap allowance, reading as a smooth turnaround.
+
+### Luminance shading for True Size sheets
+
+- HGSS True Size land, water (swimming/levitate), and Pokédex sheets are now
+  luminance-shaded exactly like the Classic/GSC art: every COLORS mode except
+  ADVANCED serves a 3-shade luminance ramp (derived from the coloured sheet
+  at load, cached in the save dir) with `trueColor = false` so the engine's
+  zone pass colours them; ADVANCED keeps the coloured sheet raw. Previously
+  the big sheets drew raw colour in classic modes.
+- Voxel True Size is enabled for Battle Art Voxel Fork when the in-memory
+  SpriteBillboards adapter installs; Dramaless / unsupported Dramatic Shape
+  still fall back to Classic geometry automatically.
+
+### Wild Encounter Silhouettes now black out under True Size (HGSS)
+
+- The Global Encounter Silhouettes toggle (blacked-out wilds in grass/cave
+  and water) now works with True Size HGSS sprites. The bind-time
+  `VariableSize.applyToDef` rebind used to swap the derived silhouette sheet
+  back to the coloured true_size image (and luminance ramp), so silhouettes
+  only applied to Classic/GSC art. Wilds' bind now passes `keepImage` (with
+  `skipLuminance`) for silhouette results: the pre-shaded sheet survives and
+  only the pack geometry is re-asserted, so tall sheets stay blacked out
+  without ever baking 16×16 quads.
+- The `wildSilhouette` flag now survives the SpriteResolver cache, so a
+  cached resolve (re-entry, palette flip, surface/style change) cannot
+  silently un-black a wild mon on rebind.
+
+### Reversal folds resolve by walking — the slingshot is really gone
+
+- The fold swap was reading the STALE `_wildsGoalX/Y` (the last goal a
+  follower STARTED toward, which equals its own cell once it lands) instead
+  of the live goal from the trail table, so adjacent followers crossing at a
+  reversal never registered as an exchange. The pack deadlocked, and the
+  jam-recovery then TELEPORTED it to re-seeded cells — the visible pop on
+  tall True Size sprites (an ordinary reversal re-seeded all three
+  followers). The swap now reads the live goal first.
+- The swap is also feasibility-checked: an exchange is only granted when the
+  occupant can actually reach the stepper's cell this frame (its goal is not
+  the head or the player's current cell). Without this, the stale-goal fix
+  made followers step INTO a packmate whose goal was unreachable — overlap.
+- A trailer mid-step into a cell the player is about to re-enter (zigzag /
+  doubled-back) now aborts that step instead of landing on the player.
+- Net result: straight walks, reversals, long reversals, zigzags, mid-drain
+  reversals, corners, and their horizontal (left/right) mirrors all resolve
+  by walking at normal cadence with zero jam-recovery teleports and zero
+  overlaps.
+
+### Jam-recovery re-seeds faster and lands the pack spread out
+
+- The scrambled-pack fast path is quicker: an inverted (genuinely scrambled)
+  pack now re-seeds after ~4 stalled frames instead of 8, and the cooldown
+  between re-forms dropped from 60 to 40 frames. Since the fold fixes above,
+  momentary folds resolve by walking and never accumulate on the jam
+  counter, so the fast path only ever fires on true deadlocks — firing it
+  sooner snaps the pack back before the player has walked far, so the
+  re-seed no longer reads as a big teleport.
+- Re-seed goals are now DEDUPED: on a doubled-back trail the same physical
+  cell can appear at several lags, and the old re-seed copied those aliases
+  verbatim — two followers landed on one cell, instantly re-jammed, and a
+  second reform fired ~40 frames later (the persistent "lost placement" on
+  True Size sprites). The re-seed now claims each cell once and walks
+  stragglers to distinct cells behind the player, so a single reform lands
+  the whole pack in order.
+
+### Overlapping followers no longer flicker (draw-order tiebreak)
+
+- The engine y-sorts overworld entities by `py` and only tie-breaks
+  `pikachuFollower` (which trailers must never set — stock findFollower
+  would remove them), so two followers sharing a cell — entry parking
+  stacks the whole pack under the player, reversals fold adjacent
+  followers across each other, re-seeds land on the same cells — sorted
+  with an arbitrary, frame-varying order. On tall True Size sprites that
+  is a visible shimmer/flicker between the two overlapped Pokémon, worst
+  while running, when the pack is perpetually mid-step and overlapping.
+- Every trailer now carries a deterministic sub-pixel `py` bias
+  (`-slot * 0.001`, re-applied on every py write: spawn, step
+  interpolation, landing, placement): the leader draws on top of the
+  pack, and the whole pack draws just under the player's exact py. The
+  bias is invisible (below a pixel) and only makes the engine's sort
+  stable — the same order every frame, regardless of input order, so
+  overlapped sprites hold still instead of swapping back and forth.
+
+### Running again works with left/right steering (B-modifier catch)
+
+- The mobile/controller B-modifier catching combo (B+left/right to cycle
+  balls) was eating left/right for the whole B hold — and B is also the run
+  button in common running-shoes setups, so players could not steer while
+  running. The combo now only engages when it is clearly catching intent:
+  the player must be standing still (past a one-step re-arm window) AND have
+  a ball to cycle. With no balls, or mid-step, B+left/right passes straight
+  through to movement. B+A charging and the desktop C/Q throw are unchanged.
+
+### Surf sprites stay True Size (no more GSC classic fallback)
+
+- In True Size mode the water registry silently served the classic 16×96
+  water_runtime sheet whenever the true_size swimming/levitate asset for a
+  species was missing — Nidoran♀/♂ (dex 29/32) are listed in the swimming
+  mapping as form entries but have no generated true_size art, so surfing
+  with them dropped straight back to the GSC classic sprite while every
+  other mon stayed giant. A failed True Size swap (missing asset / no pack
+  geometry) is now treated as a miss: the registry falls through to the next
+  water kind, and finally to the land fallback — which IS True Size — so a
+  True Size session never shows the classic 16×96 sheets. Classic-effective
+  sessions (Voxel fallback / engine API missing) are unchanged and still
+  serve the classic sheets.
+- The follower pack's own water rebind (ControlEngine trailer refresh) was
+  still forcing the GSC poke_followers submerged art onto water trailers in
+  **every** sprite style — in HGSS / True Size sessions it clobbered the
+  giant swimming/levitate sheet the resolver had just served, so surfers
+  still saw the small GSC sprite. The submerged art is now only derived for
+  the GSC / Poke Followers style; HGSS (True Size) and Pokédex trailers fall
+  through to the style's own water sheets (true_size swimming/levitate /
+  registry) exactly like the wild water path.
+
+## 2.0.0
+
+Major overworld presentation release: HGSS True Size, overworld catching, and
+water/follower polish — with two final scale fixes below.
+
+### HGSS True Size / native variable-size overworld sprites
+
+- HGSS / PokeMMO Sprite Style uses native HGSS land artwork as the visual size
+  authority (True Size). GSC / Pokédex stay Classic 16×16.
+- Pokémon Size is no longer a separate option — size follows Sprite Style.
+- Wilds, followers, and Town Pokémon share generated geometry under
+  `assets/wilds_generated/true_size/`.
+- Voxel + incompatible Dramatic Shape still falls back to Classic geometry
+  without rewriting saved options.
+
+### Overworld catching
+
+- Optional OW Catch throws at visible wilds (desktop C/Q plus mobile B-modifier).
+- Compact ~6px world Poké Ball projectiles (unchanged by HUD size).
+- Catch HUD Size now visibly scales the top-screen Ball inventory HUD as one
+  component (icons, selection border, quantity, meter spacing). HUD uses
+  full Ball art (not the tiny world `*_sm` sprites). Thrown Ball / projectile
+  size stays fixed at ~6px.
+
+### Water / levitate True Size scale consistency
+
+- Swimming and levitate True Size presentations treat the species' **HGSS land
+  opaque footprint** as absolute size authority (nearest-neighbor, uniform
+  scale). Height is primary; width/area caps stop wide poses from looking
+  larger than land. A final **0.95** presentation bias keeps water/levitate
+  equal or slightly smaller than land — never larger.
+- Regenerated for every species with HGSS land + swimming/levitate source art
+  (not a 3-species prototype). Classic / GSC water runtime and Voxel unchanged.
+
+### Followers & world presentation
+
+- Improved follower/world presentation and land→water switches without sudden
+  species-size jumps on True Size HGSS.
+- GSC / Poke Followers swimming luminance is derived from coloured land sheets
+  at load (no shipped `*_submerged.png` duplicates).
+
+## 1.14.0
+
+### True Size for all Gen1 species (Classic fallback sacred)
+
+- Generalizes the Charizard prototype into a data-driven True Size system for
+  all 151 land species plus swimming / levitate presentations where assets exist.
+- **requestedMode** vs **effectiveMode**: Voxel with incompatible Dramatic Shape
+  uses Classic geometry automatically; the saved `pokemon_size` preference is
+  never rewritten, and Flat restores True Size on live rebind.
+- New runtime assets under `assets/wilds_generated/true_size/` (HGSS from original
+  followsprites, Followers/GSC, Pokédex 1-frame stand-ins, swimming, levitate).
+- Wilds, followers, and Town Pokémon share `lib/species_geometry.lua`.
+- Classic 16×16 pipelines and Voxel stability remain unchanged.
+
+## 1.13.0
+
+### Variable-size / True Size prototype (experimental)
+
+- Inspected Gen1Recomp #1016 / PR #1020: SpriteDef now supports
+  `frameWidth` / `frameHeight` / `anchorX` / `anchorY` with
+  `SpriteRenderer:getPoseGeometry` (bottom-center default).
+- Inspected Dramatic Shape **1.7.9**: `SpriteBillboards.buildCard` is still
+  fixed 16×16 and does **not** call the geometry API — no DS monkey-patch.
+- New **Pokémon Size** option: **Classic** (default) | **True Size**.
+- Charizard-only HGSS Flat prototype (32×32 frames from original
+  `followsprites`, not degraded 16×16 runtime). Voxel + True Size falls back
+  to Classic with a DEV log until DS supports variable billboards.
+- Full 151 migration intentionally **not** started.
+
+## Unreleased
+
+### Optional overworld Poké Ball catching
+
+- New **OW CATCH** setting (`overworld_catching`, default **ON**) in
+  START → OPTIONS → WILDS OF KANTO and Mod Settings.
+- Hold **C** to charge a 1–6 tile power meter, release to throw; **Q** cycles
+  Poké / Great / Ultra / Master Ball from the real bag inventory (skips empty;
+  **E** is not used).
+- Additional mobile/controller path (logical Gen1Recomp A/B/D-Pad, including
+  TouchControls): hold **B** + **LEFT/RIGHT** to cycle Balls; hold **B** + **A**
+  to charge, release **A** to throw. Short **B** taps stay vanilla; desktop
+  **C**/**Q** are unchanged. No Gen1Recomp core patch.
+- While charging, translucent green ground tiles preview the selected throw
+  distance along facing (synced with the meter). Flat uses camera-native
+  canvas space; Voxel uses Dramatic Shape `project()` from drawFx so zoom
+  no longer drifts the markers.
+-   Compact ~6px Ball projectiles; top-screen Ball HUD icons scale with
+  **Catch HUD Size** (`catch_hud_size`, 1–10); success click + fail break
+  presentation before cleanup.
+- Catch sequence uses native Gen1Recomp SFX via `Sound.play`: `Ball_Toss`,
+  `Ball_Poof`, `Tink`, `Caught_Mon` (no bundled audio files).
+- Easter eggs: Ball hit on a human NPC → `"Ouch, yo, WTF"`; Town/Ambient
+  Pokémon → `"Grrrr..."` (no catch/battle; Ball cleaned).
+- Failed catches use `!` → AGGRESSIVE/chase (no forced instant battle); the
+  same aggressive wild stays catchable until a real battle starts.
+- Small top-right Ball HUD; directional targeting only (no side auto-aim).
+- Catch math uses native `Catching.attempt` (species catch rate + Ball type)
+  with mild level / throw-quality / facing (back/side) modifiers.
+- Success removes the wild via Wilds despawn + Party/Box deposit; failure
+  restores the mon, shows `!`, forces aggressive behaviour, and uses the
+  existing Wilds battle pipeline. Safari sessions disable throws.
+- Inspired by Gen1PC-OverworldEncounters catching concepts (reimplemented for
+  Wilds entity / occupancy / battle architecture — not a verbatim port).
+
+## 1.12.2
+
+### Yellow door-exit follow — re-seeds walk the trail, never the building
+
+- Re-seeds (the collapse-heuristic re-form, map-entry rebuilds and the
+  mid-follow step fallback) now re-form the pack ALONG the player's actual
+  walked trail cells instead of behind the anchor's geometric facing.  At a
+  door the facing points INTO the building, and the behind cells can be an
+  enclosed walkable pocket the pack can never path out of (e.g. the cells
+  north of the Pewter Poke Center) — the "exit and turn right → pack stuck
+  behind the building" bug.  Trail cells are walkable and connected by
+  construction; a trailer with no trail cell parks on the anchor and walks
+  out as the trail re-opens.  Surf entry (no trail yet) keeps the geometric
+  water behind-seed.
+- Fixed a latent nil-call (`_behindSeedCells` → `_seedTrailBehind`) that
+  silently aborted the trailer update on the non-spawnAtPlayer re-seed
+  paths, freezing the pack.
+- Land entries with no real trail yet (the spawnAtPlayer parking raced or
+  skipped, or a mid-play rebuild) now park the pack on the PLAYER's cell
+  instead of spreading it behind the anchor's facing — the "loads in as the
+  full-sized trail behind the building" symptom.  Water (surf) entry keeps
+  its geometric behind-seed onto water cells.
+- The WILDS HUD follower block now reports which re-seed branch placed the
+  pack last (`Seed=parked_at_player | trail_reform | behind_water | kept`
+  plus counters), so a live Yellow door-exit is diagnosable at a glance.
+- New regression test `follower_pewter_exit_unit_test.lua` runs the real
+  Pewter City walkability grid: door exit → walk down + turn right,
+  stop-and-go, a mid-play collapse re-form, and a pre-existing pack
+  surviving the engine's entity rebuild — the pack must trail east along
+  the street and never land north of the Poke Center.
+
+### Global Encounter Silhouettes (wild_silhouettes)
+
+- New **ENC SILHOUETTE** toggle (Wilds of Kanto submenu + Mod Settings)
+  that blacks out every overworld wild mon in an actual encounter zone
+  (grass / cave land, plus water sprites) — the water-only silhouette look
+  extended to all encounters.
+- No extra sprite files: `LuminanceSheet.silhouetteFor` derives a solid
+  black sheet from the single coloured art at load (every opaque pixel →
+  the darkest shade, alpha carries the shape), cached in the save dir
+  (`silo_v1_*`, separate namespace from the luma ramps).  Served with
+  `trueColor = false` so the engine's own bake renders it as the darkest
+  zone color; headless / derivation-unavailable keeps the coloured art.
+- Gated per-entity: land mons only silhouette on GRASS/CAVE surfaces
+  (previews, followers and non-encounter surfaces stay coloured); water
+  black-out skips hidden circle markers and native voxel silhouette
+  sheets.  Cache keys include the toggle so a live switch re-resolves
+  without a reload.
+
+### Yellow spawn-at-player — closing the stock-Pikachu respawn path
+
+- The engine's `PikachuFollower.update` calls `onMapEntered(game, ow)`
+  (no `viaMapLoad`) whenever it finds no follower mid-frame, which spawns
+  the stock Pikachu BEHIND the player's facing.  If the engine's entry
+  spawn was skipped or raced by a transitional frame, that re-spawn
+  undid the spawn-at-player parking.  `wrappedOnMapEntered` now treats a
+  no-`viaMapLoad` re-spawn as a fresh entry while the entry parking is
+  still pending, so the stock Pikachu parks under the player instead of
+  materializing behind him (Red/Blue was unaffected — no stock NPC).
+- `_parkStockPikachuAtPlayer` now spawns the stock Pikachu on demand
+  (via the engine's own spawn path, parked at the player) when it is
+  missing at entry on Yellow, instead of silently no-op'ing.
+
+### Yellow followers frozen at the entry cell ("stuck up top")
+
+- Root cause: the pack parks on the player's cell at entry, and on the
+  FIRST committed walk step the entry-parking marker cleared while the
+  pack was still stacked on the stock Pikachu's cell.  The Yellow
+  collapse heuristic (re-form the train when it stacks on the stock)
+  then fired 1–2 steps after every door exit, re-seeding the pack
+  BEHIND the anchor.  When those behind-cells were the building/wall
+  just exited, `_walkableBehind` fell back to the anchor's own cell, so
+  the re-seed stacked the pack on the anchor again — an infinite
+  re-seed loop that froze the followers at the entry cell.  Red/Blue
+  never runs the heuristic (no stock Pikachu), which is why only Yellow
+  broke.
+- The entry-parking marker now clears only once the pack has genuinely
+  separated from the anchor (first trailer off its cell or mid-step
+  away), and the heuristic only re-seeds when the cell behind the
+  anchor is actually follower-walkable — a wall-pocket pack is left in
+  place instead of being re-seeded into a re-seed loop.
+- New regression test `follower_yellow_follow_unit_test.lua` interleaves
+  the vanilla stock-Pikachu movement with the mod's update across a
+  door-exit walk and asserts the parked pack walks out and trails the
+  player (stock one cell behind, trailers in order, no gaps).
+
+### Luminance shading: hue-aware shades fix washed-out blue mons
+
+- The derived shade value now darkens blue-dominant pixels (Rec. 601 luma
+  minus a blue-chroma penalty).  Luminance alone cannot separate colors of
+  DIFFERENT hue at the same brightness, so Blastoise's light-blue shell
+  (~0.63) and cream belly (~0.66) both collapsed into the light zone and
+  the mon rendered as a white blob.  The blue shell now lands in the mid
+  zone while the cream belly keeps the light zone — the GSC look — and the
+  same fix covers Squirtle, Gyarados, Dratini, Lapras and other blue
+  bodies against cream/warm parts.  Swept all 151 follower sheets: only
+  legitimately dark mons (Gastly/Gengar/Heracross) keep no light zone.
+  Cache files are version-tagged (v3) so stale derived ramps regenerate.
+
+### WILDS AI toggle moved out of the engine's main Options
+
+- The engine's Options → Display list showed a "WILDS AI" row for the
+  `owwild_behavior_tick` render pipeline.  With the toggle now in the
+  Wilds of Kanto submenu, the mod filters that row out of
+  `Pipelines.rows` (the pipeline stays registered — it is the per-frame
+  AI driver — only its options row is hidden).
+
+### Yellow follower spawn-at-player — two real-world failure modes closed
+
+- The Yellow "collapse" heuristic re-forms the train behind the stock
+  Pikachu when the pack stacks on its cell — and it fired on the frame
+  AFTER a fresh map entry, re-seeding the deliberately parked pack
+  BEHIND the player.  Entry parking is now marked (`_wildsEntryParked`)
+  and the heuristic is skipped until the head commits its first step.
+- If the first update after a map entry runs on a not-yet-ready world
+  (transitional frame), `syncTrailers` now reports `"no_context"` and
+  `update` KEEPS the pending map-entry flags so the next frame still
+  parks the pack at the player instead of seeding it behind his facing.
+
+### WILDS AI menu toggle + reliable overworld contact battles
+
+- Added a **WILDS AI** ON/OFF toggle to the Wilds of Kanto submenu (before
+  IDLE MONS). It gates the `owwild_behavior_tick` render pipeline that runs
+  wander / chase / contact logic every frame; OFF keeps spawns visible but
+  frozen. New `wilds_ai` option, synced through `behavior_tick.lua`
+  (`available`, `syncPipelineLevel`, `step`) and `spawn_logic.lua`.
+- Fixed the AI pipeline silently switching itself OFF: the engine's
+  `Pipelines.applyOptions` restores levels from the save right after mods
+  load, wiping the level `register()` set — so the mod now re-asserts it on
+  `game.ready` (and map enter / option changes already did).
+- Walking into an overworld mon now reliably triggers a battle even when
+  the AI loop hasn't ticked that frame: `SpawnFx` ages the spawn pop-in by
+  wall-clock time as a fail-safe, so a freshly spawned mon becomes
+  battleable (and the collision / stepped battle paths no longer stall on
+  a never-finished spawn animation).
+
+### Sprite color modes — luminance-based shading, derived at load, no duplicate sheets
+
+- Luminance derivation is now per-sheet ADAPTIVE: the OBP0 bake collapses
+  every shade above r = 0.5 into one zone, so a fixed light bucket turned
+  light mons into flat white blobs (Snorlax's cream ~0.79 and body ~0.52
+  both hit c0). The sheet's lightest high-coverage color keeps the light
+  zone and a second, clearly darker light color is pulled to the mid zone,
+  restoring tonal separation (Snorlax body → c1, Dragonite orange → c1 vs
+  cream belly → c0). Cache files are version-tagged so stale derived ramps
+  regenerate automatically.
+
+Followers / surf / wild / ambient sprites now conform to whichever COLORS
+mode is active via luminance-based shading:
+
+- In every mode EXCEPT ADVANCED (RED++), the mod derives a 3-shade
+  luminance ramp from the colored sheet at load (new `luminance_sheet.lua`:
+  `love.image.newImageData` + `mapPixel` → `ImageData:encode` into the save
+  dir, cached per source) and serves it with `trueColor = false`, so the
+  ENGINE's native non-trueColor path handles it exactly like a vanilla DMG
+  sprite: SpriteRenderer bakes rOBP0 = $D0 and the whole-canvas zone shader
+  colors the result out of the mode's own palette. Brightness decides the
+  shade, the engine decides the colors — SGB tints with the map palette,
+  OG RED/BLUE with the boot-ROM object palette (green/pink), OG YELLOW
+  with its CGBBasePalettes zones, CLASSIC / OG / OG INV with their
+  green/gray ramps, SGB INV with the permuted palette.
+- ADVANCED is the one true-color mode: there the original colored sheets
+  are served with `trueColor = true` (draw raw + markTrueColor re-blit).
+- **The 502 duplicate `-grayscale` / `-grayscale_submerged` asset files are
+  deleted** — the luminance ramp is derived from the single colored source.
+  The derived ramp clamps its lightest shade to r = 0.8 (< the 0.83 the
+  engine's OBP0 bake keys transparent), so no interior pixel ever punches
+  through; the pre-made sheets were pure white at that shade in 334 files.
+  Headless environments (no LÖVE image APIs) fall back to the colored
+  sheet with `trueColor = true`.
+- `Config.spriteTrueColor()` is now the ADVANCED gate; the
+  `paletteFxMonochrome` gate is kept for diagnostics / the water registry.
+- `trueColor` travels with the art: consumers copy the flag from the
+  resolved def instead of recomputing it, so colored art (external PokePC
+  packs, water runtime sheets) always renders raw while luminance sheets
+  flow through the zone pass.
+- Fixed the surf/follow paths that hard-forced `trueColor = true` while
+  serving luminance sheets (submerged poke_followers sheets, trailer
+  water sprites, follower water resolver, water compat defs,
+  `SPRITE_PIKACHU` registration).
+
+### Yellow party order — selecting a follower no longer reorders the party
+
+- Removed the leftover `ensureYellowLeaderLayout` call from `syncAll`. In
+  Yellow, picking "Follow" on any party mon other than Pikachu physically
+  rewrote the party array to force Pikachu into slot 1; Wilds designates the
+  follower via save data (`pokepcLeader` / `followerPartyIndex`), so the
+  party order is left untouched. The now-unused function was deleted.
+- Yellow: the stock Pikachu NPC renders the SELECTED leader's art (slot 1),
+  and the party Pikachu trails like any other party mon unless it IS the
+  leader — so Pikachu appears when in the party without taking priority
+  over the chosen follower, and never renders twice.
+
+### Followers spawn at the player on map entry
+
+- After a warp / door exit / boot, the pack now parks on the player's cell
+  (like the engine's stock Yellow Pikachu) and walks out from under him as
+  the trail opens, instead of materializing in the cells behind his facing —
+  which could drop them inside walls or behind the building. Seamless
+  outside-to-outside connection crossings keep the existing translated
+  train.
+- Yellow: the `PikachuFollower.onMapEntered` wrapper was dropping the
+  engine's `viaMapLoad` flag (the 4th argument), so the stock Pikachu
+  respawned behind the player on door/warp exits instead of under him —
+  getting stuck behind buildings. The wrapper now passes the trailing args
+  through, trailer seeding anchors to the player's cell (not the trail
+  anchor), and the stock Pikachu is parked on the player's cell explicitly
+  at every fresh map entry (engine-version independent), so the whole pack
+  parks under the player on Yellow too.
+
+## 1.12.1
+- Menu now supports controller.
+- A button will increment/cycle through sub-menu options.
+- Removes the duplicate "FOLLOWER" in party menu.
+- Replaces "FOLLOWER"/"FOLLOWING" with "FOLLOW"/"DISMISS".
+
+## 1.12.0
+
+### Followers EX walk cycle fix — no more dragging trailers
+
+- **Root cause**: Followers EX (priority 160) wraps its hooks on top of Wilds'
+  (priority 80) ControlEngine wrappers after `game.ready`. The restore-then-reinstall
+  path had equality guards (`PF.update == wrappedUpdate`) that failed when EX's
+  wrapper sat on top, making restore a no-op. EX's hook logic double-drove the
+  pack, breaking walk-phase overrides and causing 2nd+ followers to drag along
+  without animating.
+- **Fix**: `ControlEngine:restore()` and `_restoreOverworldUpdateWrap()` now
+  unconditionally restore to the vanilla originals captured at first `install()`.
+  On `game.ready`, the re-wrap strips Followers EX out of the update chain
+  entirely — equivalent to how things worked when EX's init crashed, but deliberate
+  and clean.
+- Added `setOptionsChangedHandler` to the mod interface: Followers EX calls this
+  to hook in; the handler detects the attempt and schedules the restore+reinstall
+  for the first `game.ready` frame after EX finishes its init.
+
+### Submerged / water follower sprites (poke_followers)
+
+- **File naming updated**: All poke_followers sprites now live in a single flat
+  directory: `follower_NNN_normal.png`, `follower_NNN_shiny.png`,
+  `follower_NNN_grayscale.png`, `follower_NNN_submerged.png`,
+  `follower_NNN_normal_submerged.png`, `follower_NNN_shiny_submerged.png`,
+  `follower_NNN_grayscale_submerged.png`.
+- **Direct file loading bypasses `mod:read`**: The `mod:read` existence check
+  silently failed for binary assets in some engine configurations. All submerged
+  resolution paths now use `love.filesystem.getInfo` directly. This applies to
+  follower trailers (`_refreshTrailerWaterSprites`), the follower water resolver
+  (`SpawnLogic:resolveWaterSprite`), wild water encounters
+  (`SpriteResolver:resolveWaterSprite`), and the provider chain
+  (`followers_ex:resolveWater`).
+- **Surface transition tracking**: `ControlEngine:update` now tracks the trail
+  surface each frame. On any land↔water transition, `_refreshTrailerWaterSprites`
+  re-resolves every party-mon trailer sprite — submerged sheets apply immediately
+  on entering water, land sheets restore on exit.
+- **Post-battle / party-change resilience**: After battle or party changes,
+  `syncTrailers` may recreate trailer entities with fresh land sprites while
+  still on water. Detecting entity reference changes while surface is water now
+  triggers a sprite refresh.
+- **Sprite style gating**: Submerged poke_followers sheets only activate when the
+  selected sprite style is `"followers"` (GSC). HGSS/PokeMMO and Pokédex styles
+  continue to use the swimming/levitates water registry.
+- **Wild water encounters** also get submerged poke_followers art (gated on
+  followers style) via `SpriteResolver:resolveWaterSprite`.
+
+### POKE FOLLOW EX & WILDS OF KANTO sub-menus — stepper refactor
+
+- **Every option now cycles with left/right arrow keys** instead of opening a
+  dropdown sub-menu. Each row is self-contained: left decreases, right increases,
+  the label updates instantly, and the value takes effect immediately.
+- **Left arrow detection fix**: The engine's `input:wasPressed` API was unreliable
+  in the menu context. Steppers now poll `love.keyboard.isDown` directly with
+  manual edge detection and hold-to-repeat (16-frame initial delay, 4-frame cadence).
+- **Follower count stepper now applies**: The count change writes to
+  `game.save.pokepcFollowerCount` and `mod.options`, sets a pending-sync flag,
+  and the control engine detects the count mismatch on its next update frame.
+  Follower count wraps 0↔6 at the ends.
+- **Label overlap eliminated**: All labels and values shortened to fit within the
+  16-character Game Boy screen limit. `CONTROL MODE` → `CONTROL`,
+  `TRAINER TRAIL` → `TRAIL`, `SPAWN AMOUNT` → `SPAWN AMT`,
+  `SPRITE STYLE` → `GFX STYLE`, values like `HGSS / PokeMMO` → `HGSS`,
+  `Reachable Only` → `REACH`, etc.
+- **LEADER row removed** from POKE FOLLOW EX sub-menu — follower deselection via
+  the party menu is the cleaner path.
+
+### Party menu follower selection
+
+- Non-active party mons show **FOLLOWER**; the currently-active mon shows
+  **ACTIVE**. Legacy rows (LEADER, FOLLOWING) are actively stripped.
+- Selecting **ACTIVE** deselects the follower: clears the leader, sets follower
+  count to 0, removes trailers, and shows the confirmation message
+  `"<name> is no longer following."` via the engine's TextBox stack.
+- `getActiveFollowerMon` and `getLeaderMon` return `nil` when `followerCount ≤ 0`,
+  preventing the ACTIVE label from persisting after deselection.
+
+### Yellow version Pikachu quirk
+
+- Removed `ensureYellowLeaderLayout` — it was physically reordering the party
+  array to put Pikachu in slot 1 whenever a follower was selected. Wilds'
+  trailer system designates the follower via save data (`pokepcLeader`),
+  not party order.
+
+### TEST SPAWN cleanup
+
+- Removed the duplicate top-level "Test Spawn" row from the OPTIONS menu
+  (was registered separately in `preview_browser.lua`). Now only appears
+  inside the WILDS OF KANTO sub-menu.
+
+### PC Grid UI integration
+
+- Exposed `_G._wildsSpriteService` from `main.lua` so other mods can resolve
+  follower-style overworld icons.
+
+## 1.11.1
+
+### Fix Poke Followers EX OPTIONS menu follower settings path
+
+- Root cause: Gen1Recomp has **no** `mod.options:set` (only `define`/`get`).
+  In-game menus were silently failing option writes via `pcall(options:set)`
+- Menus now write the same `loader.modOptions` / `save.options.modOptions`
+  buckets Mod Manager uses (`Config.setOption`)
+- Shared `handleOptionsChanged` from `main.lua` is injected into SettingsMenus
+  (no duplicated logic/follower/ambient notify path)
+- ListMenu navigation uses close-then-push so parent is not left stale under
+  child (`ListMenu:close` only pops when it is stack top)
+- Control Mode, Trainer Trail, and Followers (0–6) share that path
+- Regression tests simulate the real ListMenu choose → child → apply flow
+  (`tests/settings_menus_listmenu_path_unit_test.lua`)
+
+### Remove Sprite Color mode; fix GSC true-color rendering
+
+- Removed the Sprite Color (Colored / Classic) option and its submenu entry
+- Follower, wild, ambient, and party-menu sprites now always render true-color
+- Fixes the built-in Poke Followers / GSC sheets (8-bit RGBA) being force-baked
+  through the 4-shade DMG gray ramp in Classic mode, which made them look broken
+- Legacy "classic" saves are ignored and migrated to "colored"
+
+## 1.11.0
+
+### OPTIONS menus, Sprite Color / Fade, Town Pokémon
+
+- Moved Wilds and follower settings into START → OPTIONS submenus
+- Restored Wilds Sprite Fade setting (Solid / Faded; Solid = alpha 1.0)
+- Added peaceful Town Pokémon (ambient NPCs; Idle / Wander only)
+- Added ambient Pokémon interactions and text cries
+- Ambient Pokémon use the selected Sprite Style
+- Updated README for the collaborative Wilds of Kanto project
+- Both OPTIONS submenus share the same central `mod.options` keys as Mod Settings
+- No top-level START menu entries for Wilds / Followers
+
+## 1.10.0
+
+### Sprite defaults, built-in GSC pack, menus (PR #38 follow-up)
+
+- Poke Followers / GSC is now the default overworld sprite style
+- Added built-in GSC/Poke Followers sprite set (`assets/enhanced_overworld/poke_followers`)
+- Rebuilt HGSS/PokeMMO runtime sprites with improved detail preservation
+  (nearest-neighbor only, shared pivot, no source mutation)
+- Added **Poke Followers EX** in-game Start Menu submenu (`POKE FOLLOW EX`)
+- Added **Wilds of Kanto** in-game Start Menu submenu
+- Unified menu settings with Mod Settings (same `mod.options` keys)
+- Preserved Voxel-compatible native SpriteRenderer path
+- Existing explicit sprite-style saves are not overwritten; invalid/missing
+  values migrate to Poke Followers / GSC
+
+### Follower water movement (PR #38 follow-up)
+
+- Fixed pack/trailer freeze on Surf: trail goals and steps are surface-aware for
+  Pokémon follower roles only (`primary`, `party_trailer`)
+- **Decoupled trailer ticks from `PikachuFollower.update`:** `ControlEngine:update`
+  runs from an `OverworldController.update` wrap every logic frame (including Surf)
+- Trailer `npc.update` is a no-op; `advanceTrailerStep` runs once per control update
+- `shouldSpawn` may suppress stock Pikachu while surfing without stopping Wilds trailers
+- Surf trail anchor is always the player (Yellow stock Pikachu is not used on water)
+- Trainer trailers are hidden while surfing and restored on land (no swim)
+- `FollowersWaterCompat` updates every Pokémon trailer with a per-entity cache
+  and `entity.pokepcMon` species (no shared active-entity overwrite)
+- Sprite rebind preserves `moving` / `targetX` / `targetY` / `progress`
+- Tests: `tests/follower_water_movement_unit_test.lua`,
+  `tests/follower_control_update_unit_test.lua`
+
+### Unified follower core — standalone (PR 1 follow-up)
+
+- Wilds no longer requires Followers EX or PokéPC Followers to run
+- Registered `SPRITE_PIKACHU` at load from built-in HGSS/PokeMMO walker sheets
+  (fixes standalone crash when companion mods are absent)
+- Ported Followers EX ControlEngine concepts into `lib/follower/control_engine.lua`
+  (control modes, trainer trail, follower count 0–6, pack trailers)
+- Added Wilds Mod Settings: Control Mode, Trainer Trail, Followers
+- Migrates legacy FOLLOWERS_EX / pokepc* / selected_mon settings once
+- PokéPC party selection, fingerprint (now includes species), talk, and
+  persistence remain built-in
+- Legacy companion mods are detected for migration only; Wilds owns runtime
+- Reuses existing Wilds runtime walker sheets (no PokéPC asset copy required)
+- Prepared `resolveFollowerSprite` for the shared resolver (PR 2)
+- Box LEADER UI and town-borrow spawns remain documented follow-ups
+
+### Earlier 1.10.0 draft notes
+
+- Integrated PokéPC follower selection and persistence into Wilds
+- Integrated Followers EX follower lifecycle concepts (single-follower owner)
+- Added Red, Blue and Yellow follower compatibility
+- Documented the safe-location sprite reset root cause
+- Credits: masterwebx / Followers EX, gamecorner-033 / PokéPC Followers
+
+## 1.9.0
+
+### Sprite Style simplification + Voxel water shadows
+
+- Simplified Sprite Style options to HGSS/PokeMMO, Poke Followers and Pokedex
+- Set HGSS/PokeMMO as the default sprite style
+- Fixed Hidden Silhouettes being invisible in Voxel mode
+- Added a generic question-mark-free underwater shadow marker
+- Changed Voxel Silhouettes to render as flat underwater shadows
+- Preserved Flat 2D water presentation
+
+## 1.8.0
+
+### Water Pokémon display modes + cave reachability
+
+- Replaced the Water Mons on/off toggle with five presentation modes:
+  **Swim Sprites** (default), **Hid Silhouette**, **Silhouettes**,
+  **Classic Enc**, **Disabled**
+- **Swim Sprites** preserves the previous swimming / levitates behaviour 100%
+- **Hid Silhouette** keeps water AI / chase / collision, draws only a small
+  dark animated circle on the water surface (no Pokémon sprite)
+- **Silhouettes** Flat 2D: temporary dark blue-teal draw tint + proximity
+  brightness + sink. Voxel: native pre-rendered 16×96 silhouette sheets for
+  correct Dramatic Shape depth / occlusion (no runtime tint, no emergency body)
+- Fixed Water Silhouettes in Voxel mode using native pre-rendered sheets
+- Preserved the existing Flat 2D water presentation
+- Prevented normal Water sprites from leaking into Voxel silhouette modes
+- **Classic Enc** / **Disabled** water RNG overrides unchanged
+- Added **Cave Spawns** choice: **Reachable Only** (default) / **Mixed**
+- Restricted normal cave spawns to player-reachable areas (not mere walkability)
+- Mixed allows ~20% atmospheric scenery in inaccessible cave pockets
+- Prevented unreachable scenery Pokémon from chasing through walls
+- Legacy Water Mons: `true` → `swimming_sprites`, `false` → `classic_encounters`
+
+## 1.7.1
+
+### PokeMMO walk frames + follower swap stability + aggressive search wander
+
+- **Root cause of frozen PokeMMO walk:** runtime sheet generator picked source
+  column 1 (idle bob). After bottom-align fit, idle and walk frames were
+  pixel-identical, so `phase` 0/1 could not change the drawn frame.
+- Generator now picks the first walk column whose silhouette differs from idle
+  (typically column 2). Regenerated all follow-sprite and water runtime sheets.
+- Native walker sheets still use Gen1Recomp's 6-frame stand/walk contract;
+  extra source walk frames remain unused by design.
+- Removed speculative Followers sprite-API probing; only verified
+  `getActiveFollowerMon` is used.
+- Stabilized active-follower selection (sticky entity) and skip
+  `SpriteRenderer.new` when the bound def is unchanged.
+- Kept `usingEnhancedSprite = false` for native sheets and aggressive search
+  wander from the earlier 1.7.1 draft.
+- Safari / SAFARI_FLEE behaviour unchanged.
+
+## 1.7.0
+
+### Safari Zone compatibility + Safari Flee
+
+- Added native Safari encounter routing for visible Pokémon
+- Disabled normal aggressive behaviour inside active Safari sessions
+- Added Safari Flee behaviour for selected Pokémon
+- Added alert and short-distance escape movement
+- Preserved native Safari catch and flee mechanics
+- Disabled step-based encounters during visible Safari gameplay
+- Added safe Vanilla Safari fallback
+
+## 1.6.0
+
+### Settings consolidation + cave / water / overlay / follower style
+
+- Consolidated all gameplay settings into Mod Settings
+- Removed obsolete and duplicate developer options
+- Added behaviour/facing developer overlay
+- Preserved the Pokémon test-spawn selector
+- Restricted cave spawns and movement to reachable cells
+- Reduced visible water Pokémon density and increased spacing
+- Applied selected sprite style to the active follower
+- Added follower Swimming/Levitates sprite transitions
+
+## 1.5.0
+
+### World collision + follower water sprites
+
+- Prevented overlapping wild Pokémon spawns
+- Added atomic movement target reservations
+- Prevented wild Pokémon from walking through entities
+- Added optional follower Swimming/Levitates sprite switching
+- Fixed land-to-water chase entry: reserve free water cell before sprite swap
+- Kept committed land surface until the first water tile commits
+- Prefer alternate free shore water cells when the direct entry is occupied
+- Temporary occupancy blocks no longer abort shore chases
+- Preserved native SpriteRenderer rendering
+
+## 1.4.1
+
+### Water spawn / aggro / sprite-style regressions
+
+- Restored land aggressive chase as a separate state machine from water
+- Added SpawnFx fail-safe so AI/battle cannot stay blocked forever
+- Fixed movement busy invariants and alert chaseReady timeout
+- Water Behaviour empty-pool fallback is `WATER_IDLE` (not land `IDLE_LOOK`)
+- Relaxed water zone/rod filters; raised water spawn targets (`max_water_mons=12`)
+- Diversity soft-fails instead of emptying water pools
+- Added `WaterSpawn.isWaterCapable` (types → swimming/levitates → local encounters)
+- SpriteResolver cache keys include `species:variant:form:surface:style`
+- Explicit PokeMMO rejects Followers EX on land; style wrap re-asserted on spawn
+
+## 1.4.0
+
+### Water spawn variety + chase
+
+- Added Surf and fishing encounter pools to visible water spawns
+- Added shore-distance-based water spawn zones
+- Added deep-water-only Super Rod species
+- Improved visible water Pokémon variety
+- Added aggressive water Pokémon
+- Added land-to-water chase transitions for compatible aggressive Pokémon
+- Added automatic Swimming/Levitates sprite transition during water chase
+- Prevented water Pokémon from chasing onto land
+
+## 1.3.0
+
+### Water Pokémon sprites (Swimming / Levitates)
+
+- Added dedicated Swimming sprites for visible water Pokémon
+- Added Levitates water-sprite fallback
+- Added normal and shiny water variants
+- Added Pokédex-ID-based water sprite mapping
+- Added automatic water sprite fallback independent of selected land style
+- Reused the native SpriteRenderer animation pipeline
+- Added water sprite validation and diagnostics
+
+## 1.2.0
+
+### Removed Hidden Idle; Random Enc + Water Mons
+
+- Removed Hidden Idle grass encounter mode
+- Removed periodic grass rustle and reveal effects
+- Replaced Grass Enc choice with simple **Random Enc** toggle (`random_encounters`,
+  default ON) covering classic grass / cave / water step encounters
+- Preserved visible overworld Pokémon and water spawns
+- Kept visible grass and water spawn animations (lift/splash; no grass rustle)
+- Simplified in-game settings: **SPRITE STYLE**, **SPAWN AMOUNT**, **RANDOM ENC**,
+  **WATER MONS**
+- Added **Water Mons** (`water_spawns`, default ON): visible Pokémon from the
+  map water encounter table on connected water (`WATER_IDLE` / `WATER_WANDER`)
+- Migrates saved `grass_encounters` once:
+  `classic`/`both` → Random Enc ON, `hidden` → OFF
+- Spawn Amount remains Start-Menu only
+
+## 1.1.0
+
+### Grass Enc + Hidden Idle
+
+- Added **Grass Enc** (`grass_encounters`): Classic / Hidden / Both.
+  **Hidden** is the default.
+- **Hidden Idle** lurkers reserve grass tiles, rustle with native tall-grass
+  redraws, reveal on step (rustle → body → short hop → battle once).
+- Classic grass RNG follows the selected mode; in **Both**, Hidden Idle wins
+  on a reserved cell (no double encounter). Caves and water are unchanged.
+- Start Menu quick settings order: **SPRITE STYLE**, **SPAWN AMOUNT**,
+  **GRASS ENC**.
+- **Spawn Amount** removed from Mod Settings (internal `spawn_density` key
+  and density math unchanged); still adjustable from the Start Menu.
+- Developer HUD reports grass-encounter mode, hidden targets, and per-entity
+  Hidden Idle state.
+
+## 1.0.2
+
+### Sprite providers + quick picker
+
+- Added optional **Gold Sprites** provider support
+  (`Gold_Silver_Sprites` battle fronts via read-only `mod:find()` adapter).
+- Quick sprite style selection from the normal in-game Start Menu
+  (**SPRITE STYLE**), writing the same `sprite_style` option as Mod Settings.
+- Switch between **Auto**, **Gold Sprites**, **Followers EX**, **PokeMMO**,
+  and **Pokedex**; Auto prefers Gold → Followers EX → PokeMMO → Pokedex.
+- Improved provider fallbacks when optional mods are missing, plus clearer
+  HUD/status reporting and documentation for the provider matrix.
+
+## 1.0.0
+
+### Stable release
+
+- First stable major release of Wilds of Kanto.
+- Native trainer/NPC-compatible `SpriteRenderer` rendering for wild Pokemon.
+- Improved Dramatic Shape and first-person compatibility (depth, walls, grass,
+  shadows) on the native sheet path.
+- Animated overworld sprites via follow-sprite runtime sheets.
+- Wall and object occlusion through the Dramatic Shape / engine billboard path.
+- Simplified mod settings for version 1.0.
+- All visible setting labels limited to 14 characters (Gen1Recomp truncation).
+- Removed obsolete and non-functional public settings (density fine-tuning,
+  legacy sprite size / opacity menus, old strict billboard debug probes, and
+  legacy option aliases).
+- GitHub update support via manifest `github` field
+  (`YoDrehDenSwagAuf/overworld-spawn-mod`).
+- MIT license for original project source plus third-party notices for
+  non-MIT assets.
+- Automated tag-triggered release workflow producing
+  `wilds-of-kanto-v1.0.0.zip` with `manifest.json` at the ZIP root.
+
+### Settings (public)
+
+| Label | Purpose | Default |
+|---|---|---|
+| Show Wild Mons | Master switch for visible wilds | ON |
+| Hide Grass RNG | Suppress vanilla grass rolls when ready | ON |
+| Sprite Style | Auto / Gold Sprites / Followers EX / PokeMMO / Pokedex | AUTO |
+| Spawn Amount | Density preset | NORMAL |
+| Grass View | Immersed vs above tall grass | IMMERSED |
+| Idle Mons | Allow idle look behaviour | ON |
+| Roam Mons | Allow wandering | ON |
+| Chase Mons | Allow aggressive chase | ON |
+| Hidden Mons | Allow hidden markers | ON |
+| Dev Mode | Diagnostics / preview browser | OFF |
+
+Internal option keys for the remaining settings are unchanged so existing
+saved values keep working.
+
+## 0.7.1
+
+### Fixed
+
+- **Question-mark fallback despite generated sheets**: `RuntimeSheets` now
+  resolves sheets through `mod.assets:path(relative)` (the same load path
+  Gen1Recomp `Assets.image` / `SpriteRenderer` expect) instead of registering
+  bare `assets/wilds_generated/...` relative paths. Existence checks use `mod.read`
+  / resolved load paths — `love.filesystem.getInfo(relative)` alone no longer
+  decides that a packaged mod asset is missing.
+- Registration for valid dex IDs writes `kind=native_runtime_sheet`,
+  `frames=6`, `walker=true`, and the mod-resolved `def.image`.
+- Developer HUD shows relative path, resolved path, registration kind, and
+  fallback reason. Probe logs for dex 1 / 25 / 151 run at content registration.
+
+### Required after update
+
+- Replace the old mod ZIP completely (do not leave two copies installed).
+- Fully restart the game so the content registry reloads.
+- Clear any stale `overworld_wild_spawns-cache/` in the save directory if an
+  older bake still shadows species sprites.
+
+## 0.7.0
+
+### Changed
+
+- **Native SpriteRenderer path for wild Pokemon.** Visible wilds now use the
+  same trainer/NPC contract Dramatic Shape already supports: a stable
+  `SpriteRenderer` with `frames=6`, `walker=true`, and a static 16×96 sheet.
+- Build-time generator writes
+  `assets/wilds_generated/followsprites_runtime/{dex}-{normal|shiny}.png` from the
+  follow-sprite source atlas (nearest-neighbor, bottom-center, shared scale).
+- `pose()` returns NPC-compatible `facing` / `phase` / `flip` (`Movement.walkPhase`
+  + `stepFlip`). Right-facing uses the engine left-frame mirror.
+- Primary renderer label: `NATIVE_SPRITE_RENDERER`. First Person, depth buffer,
+  wall/building occlusion, grass, shadows, and silhouettes come from Dramatic
+  Shape with no Wilds-specific body overlay on the success path.
+- `EnhancedWorldSprite` dynamic 16×16 cards remain in-repo as deprecated
+  compatibility code and are unused for the Pokemon body.
+
+### Frame order (verified against Gen1Recomp `SpriteRenderer.lua`)
+
+```text
+0 idle down / 1 idle up / 2 idle left
+3 walk down / 4 walk up / 5 walk left
+```
+
+### Fallback chain
+
+1. Generated runtime sheet (requested variant)
+2. Generated runtime sheet (normal)
+3. Legacy Pokédex / battle PNG as SpriteRenderer
+4. Black fallback as SpriteRenderer
+
+## 0.6.0
+
+### Changed
+
+- **Follow-sprites replace the Anima atlas** as the active enhanced overworld
+  sprite source. One PNG per species/variant under
+  `assets/enhanced_overworld/followsprites/`, with a shared
+  `followsprites_mapping.json`.
+- Species identity remains Pokédex / species ID only (never localized names).
+- Idle and walk animations in four directions; walk uses a 4-frame cycle per
+  direction (rows = directions, columns = frames — verified against the real
+  PNGs).
+- Normal and shiny files are mapped; **runtime Gen1 wild spawns always use
+  normal** because Gen1Recomp does not expose a reliable pre-battle shiny flag.
+  The developer preview browser can still force Shiny for inspection.
+- Public option kept as enhanced overworld sprites
+  (`use_animated_overworld_sprites`); it now toggles follow-sprites vs legacy
+  Pokédex images. The old Anima atlas is no longer selectable.
+- Commercial `POKEMON 1.png` is gitignored and blocked from release ZIPs.
+  Old per-species Anima mapping JSONs remain in the repo unused.
+
+### Fallback chain
+
+1. Requested follow-sprite variant
+2. Normal follow-sprite (if shiny missing)
+3. Legacy Pokédex / battle PNG
+4. Black fallback
+
+## 0.5.7
+
+### Added
+
+- **Animated overworld Pokémon sprites** for all 151 Gen I species: directional
+  idle and walk animations, language-independent Pokédex/species-ID mapping,
+  and automatic fallback to the previous Pokédex-image presentation when the
+  option is off or a mapping is missing/invalid.
+- Mod option: **Use animated overworld Pokemon sprites**
+  (`use_animated_overworld_sprites`, default on).
+- Sprite credit: animated overworld art is based on Anima’s **GBC Pokémon**
+  pack — https://anima-nel.itch.io/gbc-pokemon
+
+### Diagnosis / Fixed
+
+- **Honest render-path instrumentation**: HUD now shows Requested vs Actual body
+  renderer from real call counters (`poseCalls`, `enhancedResolveImageCalls`,
+  emergency/post-voxel body draws, mesh/Assets probes) instead of wishful status.
+- **`strict_world_billboard_debug`**: disables emergency/post-voxel Pokemon body
+  draws so a broken DS billboard path can no longer hide behind an overlay.
+- Optional **`strict_magenta_billboard_probe`** for a magenta 16×16 DS texture probe.
+- **Entity:draw no longer paints the body** when `WORLD_BILLBOARD_*` owns it
+  (prevents double-draw on top of voxel grass).
+- `worldBillboardReady` is per-entity only; ENHANCED requires card READY +
+  loadable `def.image` + SpriteBillboards mesh probe.
+- Depth/grass HUD flags stay `UNVERIFIED` until counters prove
+  `DRAMATIC_SPRITE_BILLBOARD`.
+
+## 0.5.6
+
+### Fixed / Changed
+
+- **Stable `EnhancedWorldSprite` adapter**: Dramatic Shape receives a dedicated
+  SpriteRenderer-compatible object (`def` + `resolveImage()`), not a mutated
+  legacy SpriteRenderer. Legacy sprites stay untouched for the flat 2D path.
+- `Entity:getWorldSprite()` / `Entity:pose()` deliver the adapter with
+  `phase = 0` and `frames = 1`; frame changes come only from cached 16×16
+  billboard cards returned by `resolveImage()`.
+- UV mesh carrier is the static transparent
+  `assets/runtime/dynamic_billboard_base.png`; live pixels stay on the card
+  Image cache (`species:anim:dir:frame:w:h`).
+- Post-voxel Pokemon **body** draw remains emergency-only
+  (`SPATIAL_OVERLAY_EMERGENCY`). Success path uses native DS depth + grass mesh.
+- `immersed` grass: `Grass renderer: DRAMATIC_SHAPE_NATIVE` (no custom grass
+  color/mask). `above`: small `visualY` lift (`grass_above_lift_px`); object
+  occlusion stays active.
+- `animation.renderRevision` bumps only on visible animation changes.
+- Developer HUD fields for adapter status, card cache, ground/visual Y, lift,
+  and grass renderer.
+
+## 0.5.5
+
+### Fixed
+
+- **Pokemon appearing in front of bushes / world objects with Dramatic Shape**:
+  the post-voxel 2D overlay drew Pokemon after the finished scene, so they had
+  no depth. Wild Pokemon now use Dramatic Shape `SpriteBillboards` again via
+  `pose()` → cached 16×16 trueColor atlas cards (`WORLD_BILLBOARD_ENHANCED`),
+  sharing player/trainer depth and object occlusion.
+- Post-voxel body draw is only an emergency `SPATIAL_OVERLAY_FALLBACK`.
+  Emotes/debug stay on the overlay seam.
+
+### Changed
+
+- `above` grass mode no longer means “screen overlay”; it only skips grass
+  feet cover while world occlusion stays active.
+
+## 0.5.4
+
+### Added
+
+- **Pokemon grass rendering** option (`pokemon_grass_render_mode`):
+  - `immersed` (default) — lower part of the sprite hidden by tall-grass
+    feet-overdraw, like the player and trainers
+  - `above` — fully visible above grass (previous post-voxel look)
+- Uses Gen1Recomp `TileRenderer:drawCellBottom` on the flat path (engine) and
+  the same call after the post-voxel 2D Pokemon draw when Dramatic Shape is on
+- Live toggle; legacy `show_pokemon_in_grass=false` maps to `above`
+- Preview browser: Preview grass Immersed/Above toggle
+- Developer HUD: grass mode / occlusion active / height
+
+## 0.5.3
+
+### Changed
+
+- **Voxel wild Pokemon architecture**: abandoned atlas→16×16 card→Dramatic
+  Shape billboard conversion. Dramatic Shape still renders the voxel world;
+  Wilds of Kanto draws animated Pokemon with the **same** 2D atlas renderer
+  as a post-voxel overlay (`WILDS_2D_POST_VOXEL`), using `Voxel3D.project`
+  for screen placement. Wild entities with enhanced sprites are skipped from
+  Dramatic Shape `posesOf` so Voxel does not also draw a legacy billboard
+  (no double sprite).
+
+### Known
+
+- Post-voxel overlays are drawn after the 3D depth pass, so buildings do not
+  occlude Pokemon bodies on this path (depth integration inactive).
+
+## 0.5.1
+
+### Fixed
+
+- **Voxel Mod invisible / static wild sprites**: Dramatic Shape billboards
+  expected `SpriteRenderer` sheets; animated atlas frames are now baked into
+  cached 16×16 cards for the voxel path while 2D keeps atlas+quad.
+
+## 0.5.0
+
+See prior history in git for earlier releases.

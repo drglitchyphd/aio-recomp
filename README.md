@@ -1,3 +1,13 @@
+# Gen2-AIO for Gen1Recomp
+
+This repository distributes **Gen2-AIO** (`KIM_ARENA`), the Crystal bundle.
+See [the bundle README](README_KIM_ARENA.md) for current features, release notes,
+installation and updates. The Kanto in Motion documentation below describes
+the bundled upstream component.
+
+Custom mod index:
+`https://raw.githubusercontent.com/drglitchyphd/aio-recomp/main/site/data/index.json`
+
 # Kanto in Motion v1.7.6
 
 **Kanto in Motion** is an HD animated Pokémon presentation and battle overhaul for **Gen1Recomp**.

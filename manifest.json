@@ -1,7 +1,8 @@
 {
   "id": "KIM_ARENA",
-  "name": "Gen2 All-in-One",
-  "version": "0.9.48",
+  "name": "Gen2-AIO",
+  "version": "0.9.49",
+  "github": "drglitchyphd/aio-recomp",
   "api": 2,
   "entry": "main.lua",
   "profile": "overhaul",

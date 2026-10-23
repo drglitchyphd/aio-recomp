@@ -69,6 +69,13 @@ end
 function M.solve(player, enemy, groundY, aspect, sceneId, fieldBottom, targets)
   local pre = M.PRESETS[sceneId or ""] or M.DEFAULT
   local pitch, fovY = rad(pre[1]), rad(pre[2])
+  -- At Fold cover-screen aspect the 1.5 depth ratio puts the eye behind
+  -- the clearing, inside foreground trees (reproduced with the real grass
+  -- scene). A 2:1 ratio brings it inside the clearing; the wider vertical
+  -- lens also lets higher-pitch water/town shots keep both foot targets.
+  local narrow = aspect < 1 / 1.9
+  local sizeRatio = narrow and 2 or M.SIZE_RATIO
+  local fovMax = narrow and rad(85) or M.FOV_MAX
   fieldBottom = fieldBottom or 1
   local tp = { M.TARGET.player[1], M.TARGET.player[2] * fieldBottom }
   local te = { M.TARGET.enemy[1], M.TARGET.enemy[2] * fieldBottom }
@@ -90,14 +97,14 @@ function M.solve(player, enemy, groundY, aspect, sceneId, fieldBottom, targets)
     return dot(sub(p, eye), f)
   end
   local function residual(q)
-    if q[5] < M.FOV_MIN * 0.5 or q[5] > M.FOV_MAX * 1.5 then return nil end
+    if q[5] < M.FOV_MIN * 0.5 or q[5] > fovMax * 1.5 then return nil end
     local eye, focus = camera(q, groundY, pitch, q[5], lookY)
     local ax, ay = project(eye, focus, q[5], aspect, P)
     local bx, by = project(eye, focus, q[5], aspect, E)
     if not (ax and bx) then return nil end
     local dp, de = depth(eye, focus, P), depth(eye, focus, E)
     if dp <= 0 or de <= 0 then return nil end
-    return { ax - tp[1], ay - tp[2], bx - te[1], by - te[2], (de / dp - M.SIZE_RATIO) * 0.2 }
+    return { ax - tp[1], ay - tp[2], bx - te[1], by - te[2], (de / dp - sizeRatio) * 0.2 }
   end
   for _ = 1, 40 do
     local r = residual(x)
@@ -139,7 +146,7 @@ function M.solve(player, enemy, groundY, aspect, sceneId, fieldBottom, targets)
     end
     for i = 1, N do x[i] = x[i] + d[i] * 0.7 end
     if x[4] < span * 0.3 then x[4] = span * 0.3 end
-    x[5] = math.max(M.FOV_MIN, math.min(M.FOV_MAX, x[5]))
+    x[5] = math.max(M.FOV_MIN, math.min(fovMax, x[5]))
   end
   local r = residual(x)
   if not r then return nil end

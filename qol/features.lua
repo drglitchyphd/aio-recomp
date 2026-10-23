@@ -1,0 +1,638 @@
+-- What is in Gen1WildQOL, and how each piece is switched.
+--
+-- This is the whole of the bundle's configuration.  Adding a mod to the QOL
+-- half is an entry here plus a submodule; nothing in runtime/ changes.
+--
+-- Fields:
+--   id           the option prefix and the menu screen suffix.  Never change
+--                one after release: it is what the player's stored settings
+--                are keyed on.
+--   dir          the folder under modules/, written by tools/build.py
+--   entry        the upstream mod's own entry chunk, from its manifest
+--   label        the row in the menu
+--   description  shown on A when the feature has no settings of its own
+--   group        which folder card in `spec.groups` this feature's row sits
+--                on.  A feature naming no card, or one that is not declared,
+--                gets a plain row on the top level instead of being hidden.
+--   enabledKey   the upstream option row that already acts as a master
+--                switch.  Present means the switch is live -- the feature's
+--                own code reads it every time it acts, so OFF is the
+--                untouched game with no relaunch.  Absent means the bundle
+--                synthesizes a switch and gates installation with it, which
+--                takes a relaunch to change.
+--   default      what that switch ships as
+--   defaults     bundle-level overrides for any upstream row's default
+--   aliases      every name a sibling might call this feature by, for
+--                mod.find
+--   priority     the upstream manifest's own load priority.  Features install
+--                in ascending priority, ties in declaration order -- which is
+--                the order these mods were built and tested against.  It is
+--                deliberately independent of the order they are written here,
+--                which is the order the menu reads them in.
+--   shared       this feature is carried by both bundles.  Exactly one may
+--                install it, so the first to load claims it and the other
+--                stands down; `storage` is the id its settings live under, so
+--                they do not move when the winner does.  See runtime/claims.lua.
+--   raw_option_keys  rows this feature writes by calling the engine's mod
+--                manager, which does not know about prefixes
+--   maintained   true when this repository looks after the source itself,
+--                under maintained/<dir>/ rather than as a submodule.  Nothing
+--                syncs it; edits go straight in.  It is still somebody else's
+--                work by origin, and the credits say so.
+--   adapter      a file under adapters/, run after the feature installs
+--   suppress_hooks  engine hooks the feature must not register, because the
+--                bundle surfaces that setting itself
+--   gen3         whether, and how, the feature runs on FireRed, LeafGreen and
+--                Emerald.  Absent is NO: Gen 3 is opt in, because a feature
+--                written against Red's screens has no GBA screen to draw on.
+--                `true` runs the feature's own entry; a table names a Gen 3
+--                entry of its own (`dir`, `entry`) and replaces any other
+--                field it gives for that boot, `false` dropping it.  The Gen 3
+--                arms are maintained here, in maintained/Gen3QOL, and
+--                tools/build.py copies them into modules/Gen3QOL like any
+--                other source.  See runtime/bundle.lua.
+
+local __kimSpec = {
+  spec = {
+    id = "gen1_wild_qol",
+    menu_label = "GEN1WILD QOL",
+    screen_id = "Gen1WildQOL",
+    -- Where mod.find looks when a feature asks for one of the mods that
+    -- landed in the other half of the split.  Gen151 wants Gen1Dex; Gen1Dex
+    -- is in the UI bundle.
+    paired_bundle = "gen1_wild_ui",
+
+    -- Mods the cart pins that get a door of their own at the top of the
+    -- menu, rather than sitting under OTHER MODS with the mods a player
+    -- installed themselves.
+    --
+    -- Wild Green's player recolour is the whole reason the cart is called
+    -- what it is, and reaching it read WILD GREEN > OTHER MODS > MAKE IT
+    -- GREEN > the row -- three doors deep, behind the repository's name
+    -- rather than the setting's.  `label` is what the settings ARE.
+    --
+    -- Both halves declare the same list, for the same reason both declare
+    -- the same cards below: either can end up hosting the merged menu.  An
+    -- id that is not loaded simply has no row.
+    adopted = {
+      { mod = "wild_green_nightly", label = "PLAYER",
+        description = "WHAT YOUR CHARACTER WEARS, THE NAMES THE GAME OFFERS, "
+          .. "AND THE TITLE SCREEN." },
+      { mod = "wild_green", label = "PLAYER",
+        description = "WHAT YOUR CHARACTER WEARS, THE NAMES THE GAME OFFERS, "
+          .. "AND THE TITLE SCREEN." },
+    },
+
+    -- The folder cards the menu nests its rows under, in the order they are
+    -- drawn.  Both halves of the suite declare the same six, because either
+    -- half can end up hosting the merged menu and it should read the same way
+    -- round whichever one the player opened.  A card with nothing in it is not
+    -- drawn, so a half that has no features for a card simply does not show it.
+    groups = {
+      { id = "general",   label = "GENERAL",
+        description = "MOVING AROUND, AND THE THINGS THE GAME DOES ON ITS OWN." },
+      { id = "pokemon",   label = "POKEMON",
+        description = "THE POKEMON THEMSELVES AND THE SCREENS ABOUT THEM." },
+      { id = "battle",    label = "BATTLE",
+        description = "WHAT A BATTLE LOOKS LIKE AND HOW IT PLAYS." },
+      { id = "items",     label = "ITEMS",
+        description = "THE BAG, THE MART, AND WHAT EVERY ITEM IS FOR." },
+      { id = "save",      label = "SAVE",
+        description = "SAVING, AND PICKING UP WHERE YOU LEFT OFF." },
+      { id = "interface", label = "INTERFACE",
+        description = "THE MENUS AND SCREENS EVERYTHING ELSE IS REACHED THROUGH." },
+    },
+  },
+
+  features = {
+    -- ---- getting around
+    --
+    -- The first thing anybody does in this game is walk, so the rows about
+    -- walking come first.  A player opening this screen for the first time is
+    -- usually looking for the run button, and it is now the first row rather
+    -- than one of thirteen.
+    {
+      id = "sprint",
+      group = "general",
+      install_seq = 1,
+      priority = 100,
+      dir = "Gen1Sprint",
+      entry = "main.lua",
+      label = "SPRINT",
+      description = "HOLD A BUTTON TO RUN AT FIRERED'S RUNNING-SHOES SPEED, AND A BICYCLE WORTH RIDING.",
+      enabledKey = "enabled",
+      default = true,
+      aliases = { "Gen1Sprint", "gen1_sprint" },
+      -- FireRed already runs on B.  What is left is where it still says no:
+      -- before the Running Shoes, and indoors on Emerald.
+      gen3 = { dir = "Gen3QOL", entry = "sprint.lua" },
+    },
+    {
+      id = "interact",
+      group = "general",
+      install_seq = 13,
+      maintained = true,
+      priority = 100,
+      dir = "QualityOfLife",
+      entry = "bundle_easy_interactions.lua",
+      label = "EASY HM USE",
+      description = "PRESS A AT BUSHES, BOULDERS AND WATER TO USE CUT, STRENGTH, SURF OR A ROD WITHOUT THE MENU.",
+      -- The master is the feature's own row, not a switch of the bundle's.
+      -- It used to be the latter, and that was a bug: the synthesized switch
+      -- only decided whether to INSTALL, while this row decides whether the
+      -- feature does anything -- so turning the feature on installed
+      -- something still set to OFF, and the row that actually mattered was
+      -- buried one screen down saying the opposite. Donating the row makes
+      -- the two one switch, and a live one: the feature reads it every time
+      -- it acts, so there is nothing to relaunch.
+      -- Its sub-rows are unchanged: WATER INTERACTION ships FISH FIRST,
+      -- REPEL PROMPT ships on, CUT GRASS inherits this row until set.
+      enabledKey = "qol_easy_interactions",
+      default = true,
+      -- FieldMenu is the name the SELECT menu's row registry answers to.
+      -- Purpose-named rather than dir-named: three features share the
+      -- QualityOfLife directory and only this one publishes that surface, so
+      -- a sibling asking for it should not have to know which folder it lives
+      -- in or guess between the three.
+      aliases = { "qol_easy_interactions", "FieldMenu" },
+    },
+    {
+      id = "npcwalk",
+      group = "general",
+      install_seq = 14,
+      maintained = true,
+      priority = 100,
+      dir = "QualityOfLife",
+      entry = "bundle_npc_walk.lua",
+      label = "NPC WALK",
+      description = "NPCS TAKE ONE STEP PER TILE INSTEAD OF TWO, SO AN ESCORT WALKS INSTEAD OF HOPPING.",
+      -- The feature's own row is the master, and it is live: the patched
+      -- methods read it every time they draw, so OFF is the engine's own
+      -- cadence back with no relaunch.
+      enabledKey = "qol_npc_walk",
+      default = true,
+      aliases = { "qol_npc_walk", "NpcWalk" },
+      -- Gen 1 only, because Gold does not have the problem.
+      --
+      -- The whole feature is one number.  Red's NPC takes THIRTY-TWO frames
+      -- to cross a cell against the player's sixteen (src/world/NPC.lua:11
+      -- against src/world/Player.lua:14), so its sixteen-frame walk cycle
+      -- fits twice in one tile and an escort hops.  Gold's is sixteen
+      -- (src/world/gen2/Npc.lua:14) -- the same as its player's -- so one
+      -- cycle is one tile and an escort already walks.
+      --
+      -- Installing it there would not be a no-op, which is why this is a gate
+      -- and not a shrug.  `src.world.NPC` is an ALIAS to Gold's own Npc class
+      -- on a Gen 2 boot rather than a facade over it (the adapter table in
+      -- docs/mod-api-gen2-compat.md), so the replacement really does land on
+      -- the class Gold runs, and it would replace a correct `walkPhase` with
+      -- one re-derived for a cell twice the length.  Worse, `textBoxUp` reads
+      -- `top.isOverworld` off the stack -- and Gold's world is not a stack
+      -- state at all, so on the plain overworld that answers "a box is up"
+      -- and every NPC on the map would stop animating.
+      gen1_only = true,
+    },
+    {
+      id = "banners",
+      group = "general",
+      install_seq = 12,
+      maintained = true,
+      priority = 100,
+      dir = "QualityOfLife",
+      entry = "bundle_location_banners.lua",
+      label = "AREA BANNER",
+      description = "NAMES THE AREA YOU HAVE JUST WALKED INTO, ON A SIGN SIZED TO THE NAME.",
+      -- The master here is the duration row rather than a synthesized toggle:
+      -- OFF is already one of its values, so the switch is live and the menu
+      -- row can say how long the sign stays up instead of merely ON.
+      enabledKey = "qol_location_banners",
+      -- The master here is the duration, so its default is a number of
+      -- seconds rather than a boolean.
+      default = 3,
+      aliases = { "qol_location_banners" },
+      -- Gen 1 only, because Gold already ships this sign.
+      --
+      -- The whole feature is a transcription of one Gen 2 idea into a game
+      -- that never had it.  Every line of the design note at the top of
+      -- bundle_location_banners.lua names Gold as the thing being copied: a
+      -- plaque sized to the name rather than a dialogue box, anchored
+      -- top-left, slid on and off.  Gold does not need the copy -- the sign
+      -- IS the cart's (src/world/gen2/MapNameSign.lua, a transcription of
+      -- engine/events/map_name_sign.asm), it is drawn on every map entry that
+      -- earns one, and it already knows the six landmarks that get no sign
+      -- and the park gates that get one late.
+      --
+      -- So the Gen 2 arm was not a port, it was a second sign.  It rode a
+      -- monkey-patch on `World.draw` and drew its own plaque out of
+      -- `map.entered` -- in the same corner, over the same frames, saying the
+      -- same name as the one underneath it.  Two signs for one door is worse
+      -- than either alone, and the one this bundle would be adding is the
+      -- imitation.
+      --
+      -- The arm is gone rather than switched off: it was the only caller of
+      -- `World.draw`'s wrap, and a patch on the engine's own draw that exists
+      -- to be skipped is a patch that will one day not be.
+      gen1_only = true,
+    },
+
+    -- ---- your POKeMON
+    --
+    -- The two rows about the POKeMON themselves rather than about the game
+    -- around them: the one walking behind you, and the moves the one in front
+    -- of you can be taught.
+    {
+      id = "follower",
+      group = "pokemon",
+      install_seq = 5,
+      priority = 100,
+      dir = "Gen1Follower",
+      entry = "main_sandbox.lua",
+      label = "FOLLOWERS",
+      description = "ALL 251 OVERWORLD FOLLOWERS, AND THE POKEMON STANDING ON THE MAPS, SIZED BY POKEDEX HEIGHT.",
+      default = true,
+      aliases = { "Gen1Follower", "PokePCFollowers", "followers" },
+    },
+    {
+      id = "remember",
+      group = "pokemon",
+      install_seq = 7,
+      priority = 1200,
+      dir = "Gen1Remember",
+      entry = "main.lua",
+      label = "REMEMBER MOVES",
+      description = "TEACH A POKEMON A MOVE IT HAS FORGOTTEN, FROM THE POPUP YOU ALREADY OPEN ON IT.",
+      -- No master row of its own to donate: PARTY REMEMBER and BOX REMEMBER
+      -- are two surfaces, not a switch for the mod. So the bundle
+      -- synthesizes one, gates installation with it, and the menu marks the
+      -- row as needing a relaunch.
+      default = true,
+      -- It asks for Gen1BillsBox to hang its row in the box popup too, and
+      -- Gen1BillsBox lives in the other half. That lookup crosses the split
+      -- through runtime/registry.lua, which is also why the handle it gets
+      -- back has to be shaped like the engine's -- the mod reads
+      -- `box.exports.actions`.
+      aliases = { "Gen1Remember" },
+    },
+
+    -- ---- battles
+    --
+    -- EXP SHARE was the tenth row, below the mod manager, which is a strange
+    -- place for the setting that decides how the whole party levels.  It is
+    -- the one row here most likely to be changed before a new save is started,
+    -- so it sits with the other battle rows near the top.
+    {
+      id = "expshare",
+      group = "battle",
+      install_seq = 10,
+      priority = 100,
+      dir = "ExpShare",
+      entry = "main.lua",
+      label = "EXP SHARE",
+      description = "PARTY-WIDE EXPERIENCE: GEN 1, GEN 5+, BALANCED, AVERAGE OR A CUSTOM PERCENTAGE.",
+      default = true,
+      aliases = { "exp_share", "ExpShare" },
+      maintained = true,
+      adapter = "expshare",
+      suppress_hooks = { ["ui.options.rows"] = true },
+      -- A GBA cart has the held Exp. Share and no Exp. All, and its battle has
+      -- its own seams: a Gen 3 arm, with its mode in the schema rather than in
+      -- the save (FireRed's OPTION screen has no row for it to live on).  Its
+      -- switch is live: the GBA mod manager has no relaunch cue to show for a
+      -- switch that only takes effect at the next boot.
+      gen3 = { dir = "Gen3QOL", entry = "expshare.lua", adapter = false,
+               suppress_hooks = false, enabledKey = "enabled" },
+    },
+    {
+      id = "rematch",
+      group = "battle",
+      install_seq = 15,
+      maintained = true,
+      priority = 100,
+      dir = "Gen1Rematch",
+      entry = "main.lua",
+      label = "TRAINER REMATCH",
+      description = "TALK TO A TRAINER YOU HAVE BEATEN, READ THEM OUT WITH A, AND FIGHT THEM AGAIN.",
+      -- The feature's own row is the master and it is live: the world.talk
+      -- wrap reads it on every A press, so OFF is the vanilla interaction
+      -- back with nothing to relaunch.
+      enabledKey = "enabled",
+      default = true,
+      aliases = { "Gen1Rematch", "gen1_rematch", "rematch" },
+      -- Runs on Gold, Silver and Crystal too, through modules/Gen1Rematch/
+      -- gen2.lua.  It was gated on two claims, and both turned out to be
+      -- wrong when they were checked rather than reasoned about.
+      --
+      -- The first was that Gold has this already, through the POKéGEAR: a
+      -- trainer takes your number and calls when they want to go again.  The
+      -- cartridge does.  This engine does not -- not yet.  The rematch flag
+      -- is set by `engine/phone/scripts/trainers.asm`'s .WantsBattle branch,
+      -- that bank is unextracted, `WantsBattle` appears in the port only in a
+      -- comment, and nothing outside Phone.lua ever calls
+      -- Phone.setRematchReady.  So there is no second rematch system to
+      -- compete with; there is no rematch on Gold at all.
+      --
+      -- The second was that neither seam exists there.  `world.talk` really
+      -- is Gen 1's -- but World:interactBody is a method, and this suite
+      -- patches engine methods everywhere.  And `BattleState.newTrainer` has
+      -- no Gen 2 backing because Gold has something better:
+      -- World:startScriptedBattle is the battle, the transition, the music
+      -- and the prize with NONE of the trainer's own script, which is exactly
+      -- the line a rematch has to draw -- on Red that separation had to be
+      -- built by hand.
+      --
+      -- See modules/Gen1Rematch/gen2.lua for the seam-by-seam mapping.
+    },
+    {
+      id = "caught",
+      group = "battle",
+      install_seq = 11,
+      maintained = true,
+      priority = 100,
+      dir = "QualityOfLife",
+      entry = "bundle_caught_indicator.lua",
+      label = "CAUGHT MARKER",
+      description = "SHOWS WHETHER YOU HAVE ALREADY CAUGHT THE POKEMON YOU ARE FIGHTING.",
+      -- The master is the feature's own row, not a switch of the bundle's.
+      -- It used to be the latter, and that was a bug: the synthesized switch
+      -- only decided whether to INSTALL, while this row decides whether the
+      -- feature does anything -- so turning the feature on installed
+      -- something still set to OFF, and the row that actually mattered was
+      -- buried one screen down saying the opposite. Donating the row makes
+      -- the two one switch, and a live one: the feature reads it every time
+      -- it acts, so there is nothing to relaunch.
+      -- Its OFF is a choice value rather than false, and RED and GREY
+      -- are the Gen 1 looks beside GEN2.
+      enabledKey = "qol_caught_indicator",
+      default = "gen2",
+      aliases = { "qol_caught_indicator" },
+    },
+
+    -- ---- catching everything
+    --
+    -- Not a visual change and not strictly a convenience either, but it is the
+    -- one mod in the index that is neither, and it belongs with the half a
+    -- player turns on to make a single save complete.  Its own switch is live,
+    -- so OFF here really is vanilla encounters.
+    {
+      id = "gen151",
+      group = "pokemon",
+      install_seq = 6,
+      priority = 900,
+      dir = "Gen151",
+      entry = "main.lua",
+      label = "ALL 151",
+      description = "EVERY ONE OF THE 151 OBTAINABLE IN ONE SAVE, ON ONE VERSION, WITHOUT TRADING.",
+      enabledKey = "enabled",
+      default = true,
+      aliases = { "Gen151", "gen151" },
+      -- Gen 1 only, because the feature IS a Gen 1 fact.
+      --
+      -- ALL 151 is not "make the dex completable" in the abstract; it is a
+      -- researched placement table -- species, Kanto map, method, level,
+      -- rarity and a justification per row (placements.lua) -- for the
+      -- hundred and fifty-one, against the version-exclusive and
+      -- trade-evolution gaps Red and Blue actually have.  None of those three
+      -- inputs survives the move: Gold's dex is two hundred and fifty-one,
+      -- its maps are Johto, and the gaps it has are different gaps closed by
+      -- different means (breeding, time of day, the day-care, the phone).
+      --
+      -- The honest Gen 2 answer is a placement table written for Johto, which
+      -- is a different piece of research and belongs to whoever does it.  A
+      -- cart that wants the Gen 2 shape of this pins CRYSTAL_251, which the
+      -- nightly already lists as an optional dependency.
+      gen1_only = true,
+    },
+
+    -- ---- catching everything, on the other three cartridges
+    --
+    -- The Gen 2 half of ALL 151, and a separate row rather than that one's
+    -- Gen 2 arm because it is a separate piece of research: a different
+    -- table, against different gaps, on different maps.  The two can never
+    -- install together -- each is gated to its own generation -- so a save
+    -- only ever sees the one that means anything.
+    {
+      id = "gen251",
+      group = "pokemon",
+      install_seq = 19,
+      priority = 900,
+      -- Gen151's repository, not one of its own.  ALL 251 ships beside ALL 151
+      -- because the research behind them is one body of work, and its files
+      -- live under `gen2/` there: build.lua, placements.lua and roll.lua exist
+      -- on both sides with the same names and different contents, so the
+      -- folder is what keeps a Johto lookup off a Kanto table.
+      dir = "Gen151",
+      entry = "gen2/main.lua",
+      label = "ALL 251",
+      description = "EVERY ONE OF THE 251 OBTAINABLE IN ONE SAVE, ON ONE "
+        .. "CARTRIDGE, WITHOUT TRADING.",
+      enabledKey = "enabled",
+      default = true,
+      aliases = { "Gen251", "gen251" },
+      gen2_only = true,
+    },
+
+    -- ---- the GS BALL
+    --
+    -- Sits beside ALL 151 rather than under GENERAL because it answers the
+    -- same question that one does -- "can this save actually hold them all?"
+    -- -- for the one Pokemon no cartridge sold outside Japan will ever give
+    -- up.  Its own switch is live: OFF is a Crystal that never heard of the
+    -- Mobile Adapter, which is the Crystal everybody played.
+    {
+      id = "celebi",
+      group = "pokemon",
+      install_seq = 18,
+      priority = 900,
+      dir = "Gen151",
+      entry = "gen2/celebi.lua",
+      label = "GS BALL",
+      description = "UNLOCKS CRYSTAL'S OWN CELEBI EVENT, WHICH SHIPPED "
+        .. "FINISHED AND UNREACHABLE.",
+      enabledKey = "enabled",
+      default = true,
+      aliases = { "Gen2Celebi", "celebi", "gs_ball" },
+      -- Gen 2 only, because the event is: there is no GS BALL, no shrine
+      -- script and no CELEBI event anywhere in Red, Blue or Yellow, and
+      -- nothing for this to unlock there.
+      gen2_only = true,
+    },
+
+    -- ---- the machines
+    --
+    -- Two rules about TMs and HMs, and they are deliberately two rows on two
+    -- different cards rather than one MACHINES submenu.  What they change has
+    -- nothing in common past the word: one is about what the bag keeps, the
+    -- other about what a POKeMON is allowed to forget, and a player looking
+    -- for either will look under the thing it changes.
+    {
+      id = "forgethm",
+      group = "pokemon",
+      install_seq = 16,
+      maintained = true,
+      priority = 100,
+      dir = "QualityOfLife",
+      entry = "bundle_forget_hm.lua",
+      label = "FORGET HM MOVES",
+      description = "AN HM MOVE CAN BE REPLACED WHEN A POKEMON LEARNS A FIFTH ONE. THE HM ITSELF IS NEVER USED UP, SO IT CAN ALWAYS BE TAUGHT BACK.",
+      -- The feature's own row is the master and it is live: the wrapper reads
+      -- it on the frame it would act, so OFF is the engine's refusal back with
+      -- nothing to relaunch.
+      enabledKey = "qol_forget_hm",
+      default = true,
+      aliases = { "qol_forget_hm", "ForgetHM" },
+    },
+    {
+      id = "reusabletms",
+      group = "items",
+      install_seq = 17,
+      maintained = true,
+      priority = 100,
+      dir = "QualityOfLife",
+      entry = "bundle_reusable_tms.lua",
+      label = "REUSABLE TMS",
+      description = "A TM IS KEPT WHEN IT IS USED, THE WAY AN HM ALWAYS HAS BEEN.",
+      -- Live for the same reason: the verdict is retuned on the use itself,
+      -- so OFF spends the TM again from the next teach onward.
+      enabledKey = "qol_reusable_tms",
+      default = true,
+      aliases = { "qol_reusable_tms", "ReusableTMs" },
+      -- Same row key, so the switch means the same thing on every cart.
+      gen3 = { dir = "Gen3QOL", entry = "reusable_tms.lua" },
+    },
+
+    -- ---- saving
+    {
+      id = "autosave",
+      group = "save",
+      install_seq = 2,
+      priority = 50,
+      dir = "Gen1AutoSave",
+      entry = "main.lua",
+      label = "AUTO SAVE",
+      description = "SAVES ON A TIMER AND AFTER BATTLES, CATCHES AND NEW AREAS, WITH OPTIONAL ROLLBACK BACKUPS.",
+      enabledKey = "enabled",
+      default = true,
+      aliases = { "Gen1AutoSave", "gen1autosave" },
+      -- The cart's own "could you save right now" and its own saveGame; none
+      -- of Red's sync, quit or backup machinery is on a GBA boot.
+      gen3 = { dir = "Gen3QOL", entry = "autosave.lua" },
+    },
+    {
+      id = "autocontinue",
+      group = "save",
+      install_seq = 3,
+      priority = 100,
+      dir = "Gen1AutoContinue",
+      entry = "main.lua",
+      label = "AUTO CONTINUE",
+      description = "BOOT TO TITLE, ONE PRESS, PLAYING. SKIPS THE INTRO AND THE CONTINUE MENU.",
+      enabledKey = "enabled",
+      default = true,
+      aliases = { "Gen1AutoContinue", "gen1_auto_continue" },
+    },
+
+    -- ---- sound
+    {
+      id = "sound",
+      group = "general",
+      install_seq = 4,
+      priority = 100,
+      dir = "Gen1SoundQOL",
+      entry = "main.lua",
+      label = "SOUND",
+      description = "THE LOW-HP SIREN BEEPS ONCE INSTEAD OF LOOPING, AND MOBILE MUTES WHEN ANOTHER APP TAKES THE AUDIO.",
+      -- Gen1SoundQOL has no master row of its own: its rows are ALARM MODE,
+      -- ALARM CYCLES and ALARM RETRIGGER, none of which is an off switch for
+      -- the whole mod.  So the bundle synthesizes one.
+      default = true,
+      aliases = { "Gen1SoundQOL", "gen1_sound_qol" },
+      -- FireRed's battle asks the same hook with the same ctx, once a frame.
+      gen3 = true,
+    },
+
+    -- ---- the furniture
+    --
+    -- Last, and last in Gen1WildUI too, so the two halves read the same way
+    -- round.  These two are in both bundles deliberately: they are not really
+    -- conveniences or visual overhauls, they are how every other feature is
+    -- reached.  A player who installs only this half should not lose the mod
+    -- manager redraw, and one who installs only the other half should not lose
+    -- it either -- so both carry them, and runtime/claims.lua makes sure only
+    -- one of them ever installs one.
+    --
+    -- Their settings are stored under `gen1_wild_shared` rather than under
+    -- either bundle, so which one won is invisible to the player: install the
+    -- other half later, and the row order and manager layout are still what
+    -- they were.
+    {
+      id = "menus",
+      group = "interface",
+      install_seq = 8,
+      priority = 900,
+      dir = "Gen1MenuManager",
+      entry = "main.lua",
+      label = "MENU LAYOUT",
+      description = "REORDER THE START AND PC MENUS, HIDE ROWS YOU NEVER TOUCH, AND PIN FIELD MOVES TO ROWS OF THEIR OWN.",
+      default = true,
+      aliases = { "Gen1MenuManager" },
+      shared = {
+        claim = "gen1wild_menu_manager",
+        storage = "gen1_wild_shared",
+        -- The fork renamed the bundles; this names one of them, so it is
+        -- renamed too.  Same class of stale id as the paired_bundle this
+        -- fork carried for eleven releases, and the same consequence in
+        -- miniature: the fallback only runs when no engine module can hold
+        -- the claim table, and with a name neither nightly bundle answers to
+        -- BOTH stand down and the feature goes missing rather than being
+        -- installed twice.  tools/check.py fails on a name no bundle here
+        -- carries.
+        owner = "gen1_wild_ui",
+      },
+    },
+    {
+      id = "modmenu",
+      group = "interface",
+      install_seq = 9,
+      priority = 500,
+      dir = "Gen1ModMenu",
+      entry = "main.lua",
+      label = "MOD MANAGER",
+      description = "THE MOD MANAGER REDRAWN IN THE GAME'S OWN OPTION-SCREEN IDIOM, WITH SORTING AND FILTERS.",
+      default = true,
+      aliases = { "Gen1ModMenu", "gen1_mod_menu" },
+      -- Set from this mod's own in-game quick menu, which goes through the
+      -- engine manager's setOption and writes them unprefixed.
+      raw_option_keys = { "sort", "hide_disabled", "only_options" },
+      shared = {
+        claim = "gen1wild_mod_menu",
+        storage = "gen1_wild_shared",
+        -- The fork renamed the bundles; this names one of them, so it is
+        -- renamed too.  Same class of stale id as the paired_bundle this
+        -- fork carried for eleven releases, and the same consequence in
+        -- miniature: the fallback only runs when no engine module can hold
+        -- the claim table, and with a name neither nightly bundle answers to
+        -- BOTH stand down and the feature goes missing rather than being
+        -- installed twice.  tools/check.py fails on a name no bundle here
+        -- carries.
+        owner = "gen1_wild_ui",
+      },
+    },
+  },
+}
+
+-- KIM_ARENA (Gen2 All-in-One): the bundle already carries these, so QOL's
+-- copies are left out entirely -- Wilds of Kanto's followers, the host's ALL
+-- 251 CATCHABLE (which places Celebi too), and Gen151 (Red/Blue/Yellow only).
+-- CAUGHT MARKER ships off: the modern HP cards show the caught ball already.
+do
+  local DROP = { follower = true, gen151 = true, gen251 = true, celebi = true }
+  local kept = {}
+  for _, f in ipairs(__kimSpec.features or {}) do
+    if not DROP[f.id] then
+      if f.id == "caught" then f.default = false end
+      kept[#kept + 1] = f
+    end
+  end
+  __kimSpec.features = kept
+end
+return __kimSpec

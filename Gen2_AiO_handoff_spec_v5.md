@@ -1,10 +1,48 @@
-# Gen2 All-in-One — Handoff Spec v5 (build 0.9.48)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.49)
 
 Mod id `KIM_ARENA` (unchanged so settings and KIM's downloaded HD assets carry over).
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Previous spec: `Gen2_AiO_handoff_spec_v2.md` (0.9.7). This file covers 0.9.8 → 0.9.24
 (0.9.24 section below; everything else as of 0.9.23).
+
+## 0.9.49 — overworld HUD and Kenney Fold cover-screen rendering
+
+- Distribution: manifest.github = drglitchyphd/aio-recomp. Custom index at
+  `site/data/index.json`; paste its raw GitHub URL into launcher index sources.
+  Seed targets the real Initial/0.9.48 ZIP until the first canonical release.
+  `.github/workflows/release.yml` packages published vX.Y.Z releases (exact
+  manifest match), attaches canonical KIM_ARENA-X.Y.Z.zip plus overlay patch
+  and SHA256SUMS, then calls mod-index.yml to update the listing on main.
+  `tools/build_release.py` uses a runtime allowlist to exclude repo/config/test
+  files; `tools/build_mod_index.py` selects canonical full ZIPs, stable first.
+  Display name and settings hub renamed to Gen2-AIO; internal mod ID stays KIM_ARENA.
+
+- `lib/kim_arena/overworld_hud.lua`, loaded after quick_menu: themed, vector-drawn
+  QUICK / GEAR / AREA / BIKE / ITEMS shortcuts at the top right, game clock and
+  party HP dots. `overworldHud` defaults on; Display & UI hub rule matches HUD.
+- `quick_menu.hudActions(game)` supplies available actions using existing native
+  Pokegear, Area Dex, registered item and wheel paths. Bike registers BICYCLE.
+- Pointer hook priority 200 captures complete HUD gestures before KIM Touch;
+  release activates, dragging off/cancellation/menu opening/resize cancels.
+  Mouse input also selects/dismisses the key-item wheel. HUD uses Quick.ready
+  plus explicit textbox and wheel exclusion, so no menus or battles underneath.
+- Headless interaction/render harness: `tests/overworld_hud` (LÖVE under Xvfb).
+  Device rendering and full engine integration still need in-game verification.
+- No gmarc changes; no disk-cache rebuild.
+- Removed backdrop.mode's forced KIM HD substitution at height > 1.9 * width.
+  Real grass scene reproduction at 1080x2520: the locked camera's eye lands
+  inside foreground foliage. kenney_camera.solve now uses depth ratio 2 rather
+  than 1.5, and allows vertical FOV up to 85 degrees, only at that narrow aspect.
+  This brings the eye inside the clearing; higher-pitch town/water cameras
+  still converge. Inner-screen/desktop solver settings stay the same.
+- backdrop scene rendering saves/restores graphics state, resets scissor and
+  transform, and catches thrown renderer errors so existing KIM HD fallback
+  works. Diagnostics adds `kenney surface` with scene name and surface sizes.
+- `tests/kenney_portrait`: actual renderer/assets for all 15 scene types,
+  projected foot targets, caller graphics state, Fold cover 1080x2520 at DPI 3,
+  inner 2184x1968 at DPI 2, desktop 1280x720, and injected failure fallback.
+  Headless preview shows clear scenes; full in-game Fold validation pending.
 
 ## 0.9.48 — free scroll, popup taps (0.9.47 was never installed; patch is 0.9.46 → 0.9.48)
 
@@ -453,8 +491,8 @@ Removed in 0.9.8: `qol/modules/Gen1Follower`, `qol/modules/Gen151`, 19 unreachab
 | DIAGNOSTICS (in `main.lua`) | `diagnostics` toggle; `mod._kimArenaDiag(key, text)` / `voxel._kimArenaDiag`; overlay at render.hud priority 5. Lines: `wilds`, `voxel edge`, `battle bg plan`, `battle bg`, `battle 3d`, `disk cache`. **Use it to debug on the phone** — the user can't read logs. |
 
 Other host changes: `backdrop.lua` warns to diagnostics; KENNEY HD falls back to KIM HD when
-no scene matches or after 120 empty frames; **on tall narrow screens (h > 1.9w) KENNEY HD is
-replaced by KIM HD** (real cause on the outer screen not found). Nuzlocke level-cap message is
+no scene matches or after 120 empty frames. **0.9.49 removes the tall-screen substitution
+and uses a closer narrow-screen locked camera** (see reproduction above). Nuzlocke level-cap message is
 queued and shown once after the battle (`battle.ended`). Wilds `sprite_style` pin removed (HGSS
 works). KIM Touch: per-screen-shape layouts (`touch_layouts.lua` in mod.cache, keys touchHand /
 ButtonHeight / Size / Opacity / Deadzone; settings rows synced on fold), MOUSE TEST MODE removed.
@@ -520,8 +558,8 @@ render, VoidFloor relief (`/tmp/vr`). All passed at 0.9.23; full compile check p
    TRACKER and RULES screens, Wilds' own settings menu (ListMenu), Pokédex list taps.
 3. **Shadow gap under short trees** — gmarc tree hull likely open at the bottom (shadow-map
    only); fix in gmarc tree/hull code.
-4. **KENNEY HD on the outer (narrow) screen** — real cause unknown; currently swapped to KIM HD.
-   Use the `battle 3d` / `battle bg` diagnostics.
+4. **KENNEY HD on the outer (narrow) screen** — portrait-camera fix in 0.9.49;
+   verify on the Fold. Use `battle 3d`, `battle bg`, and `kenney surface` diagnostics.
 5. VOXEL EDGE: gmarc tree copies only when `Structures` is in memory (not after a disk-cache
    restore); could persist the template in MeshStore. Possibly lower-poly version of the
    real tree.

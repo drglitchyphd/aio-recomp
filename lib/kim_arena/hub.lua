@@ -1,14 +1,14 @@
--- KIM_ARENA: the ALL-IN-ONE hub.
+-- KIM_ARENA: the GEN2-AIO hub.
 --
 -- Every component (the bundle itself, KIM, Wilds, QOL, Touch, Nuzlocke...)
 -- adds its settings to Crystal's OPTION screen through ui.options.rows. This
 -- hook runs OUTERMOST: it lets them all add their rows, then takes every row
 -- that is not Crystal's own out of the root and files it into topic pages
--- of the hub. Crystal's OPTION keeps its own rows plus one ALL-IN-ONE row.
+-- of the hub. Crystal's OPTION keeps its own rows plus one GEN2-AIO row.
 --
 -- The hub's pages are Crystal's own OPTION screen class (KIM-themed and
 -- tappable like it), opened from:
---   START -> ALL-IN-1, OPTION -> ALL-IN-ONE, and the MOD MANAGER screen
+--   START -> GEN2-AIO, OPTION -> GEN2-AIO, and the MOD MANAGER screen
 --   (which QOL had replaced with a QOL-only list).
 -- New rows a component adds later land in a section by their name, or in
 -- MORE, without any change here.
@@ -33,7 +33,7 @@ return function(host)
   -- first match wins; tested against "<id> <label>" in lower case
   local RULES = {
     -- QOL first: Gen1Wild QOL is a quality-of-life pack, not a wild one
-    -- 0.9.43: DIAGNOSTICS sits on the ALL-IN-ONE root page itself
+    -- 0.9.43: DIAGNOSTICS sits on the GEN2-AIO root page itself
     { "diagnostics", "root" },
     { "qt_", "qt" },
     { "qoltoggles", "qt" },
@@ -184,11 +184,11 @@ return function(host)
           if okN and st then g.stack:push(st) end
         end
       end }
-    return pushPage(game, root, "ALL-IN-ONE")
+    return pushPage(game, root, "GEN2-AIO")
   end
   mod._kimArenaHub = Hub
 
-  -- OPTION: Crystal's rows + ALL-IN-ONE; everything else goes to the hub
+  -- OPTION: Crystal's rows + GEN2-AIO; everything else goes to the hub
   mod.hooks:wrap("ui.options.rows", function(nextFn, game, rows)
     local base = {}
     for _, r in ipairs(type(rows) == "table" and rows or {}) do base[r] = true end
@@ -200,12 +200,12 @@ return function(host)
       if base[r] then kept[#kept + 1] = r else extras[#extras + 1] = r end
     end
     captured = extras
-    kept[#kept + 1] = { id = "kimArena.hub", label = "ALL-IN-ONE", group = true,
+    kept[#kept + 1] = { id = "kimArena.hub", label = "GEN2-AIO", group = true,
       activate = function(g) Hub.open(g) end }
     return kept
   end, 1e9)
 
-  -- START -> ALL-IN-1 (8 characters keeps Crystal's START menu width)
+  -- START -> GEN2-AIO (8 characters keeps Crystal's START menu width)
   mod.hooks:wrap("ui.start_menu.items", function(nextFn, game, items)
     local result = nextFn(game, items)
     if type(result) ~= "table" then result = items end
@@ -226,7 +226,7 @@ return function(host)
       for i, it in ipairs(result) do if it and it.label == "OPTION" then at = i; break end end
       table.insert(result, at, pcEntry)
     end
-    local entry = { label = "ALL-IN-1", onSelect = function() Hub.open(game) end }
+    local entry = { label = "GEN2-AIO", onSelect = function() Hub.open(game) end }
     local inserted = false
     if mod.ui and mod.ui.insertBefore then
       inserted = pcall(mod.ui.insertBefore, result, "OPTION", entry)
@@ -264,6 +264,6 @@ return function(host)
     end
   end)
 
-  if log then log("info", "KIM Arena: ALL-IN-ONE hub installed") end
+  if log then log("info", "KIM Arena: GEN2-AIO hub installed") end
   return Hub
 end

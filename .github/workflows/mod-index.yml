@@ -1,0 +1,38 @@
+name: Refresh mod index
+on:
+  workflow_call:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 7 * * *'
+permissions:
+  contents: write
+concurrency:
+  group: mod-index
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      - name: Read published releases
+        run: |
+          gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" --slurp > /tmp/release-pages.json
+          python3 - <<'PY'
+          import json
+          pages = json.load(open('/tmp/release-pages.json'))
+          json.dump([r for page in pages for r in page], open('/tmp/releases.json', 'w'))
+          PY
+      - name: Refresh index metadata
+        run: python3 tools/build_mod_index.py --releases /tmp/releases.json
+      - name: Commit changed index
+        run: |
+          if git diff --quiet -- site/data/index.json; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add site/data/index.json
+          git commit -m 'Update mod index from published releases'
+          git push

@@ -1,0 +1,18 @@
+-- Written by tools/build.py. The version of the mod in each
+-- modules/<dir>, for the handles runtime/registry.lua hands to
+-- mod.find. Do not edit; rebuild.
+return {
+  ["ExpShare"] = "maintained",
+  ["Gen151"] = "1.8.0",
+  ["Gen1AutoContinue"] = "1.3.0",
+  ["Gen1AutoSave"] = "1.20.2",
+  ["Gen1Follower"] = "1.8.0",
+  ["Gen1MenuManager"] = "0.5.0",
+  ["Gen1ModMenu"] = "0.9.0",
+  ["Gen1Rematch"] = "maintained",
+  ["Gen1Remember"] = "1.0.2",
+  ["Gen1SoundQOL"] = "0.3.0",
+  ["Gen1Sprint"] = "0.3.1",
+  ["Gen3QOL"] = "maintained",
+  ["QualityOfLife"] = "maintained",
+}

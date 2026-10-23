@@ -50,12 +50,6 @@ return function(host)
     if opt("battleSprites", true) == false then return "white" end
     local mode = opt("arenaBackground", "kim_hd")
     if mode == "stadium" then mode = "kenney" end   -- STADIUM 2 was removed (0.9.1)
-    -- KENNEY HD does not render on a tall narrow screen (Fold outer screen):
-    -- the KIM HD painting stands in there; the inner screen keeps KENNEY HD
-    if mode == "kenney" and love and love.graphics then
-      local w, h = love.graphics.getDimensions()
-      if w > 0 and h > 1.9 * w then mode = "kim_hd" end
-    end
     return MODES[mode] and mode or "kim_hd"
   end
 
@@ -245,7 +239,21 @@ return function(host)
       local ratio = pixelRatio()
       local w = math.max(1, math.floor((v.width or 1) / ratio + 0.5))
       local h = math.max(1, math.floor((v.height or 1) / ratio + 0.5))
-      if not scene:render(w, h) then
+      -- Scene.render uses global graphics state. A portrait HUD scissor or
+      -- transform must not clip its offscreen surface, and its depth/blend
+      -- changes must not leak back into gmarc's card capture.
+      local g = love.graphics
+      g.push("all")
+      g.origin(); g.setScissor(); g.setShader()
+      g.setColor(1, 1, 1, 1)
+      local okRender, rendered = pcall(scene.render, scene, w, h)
+      g.pop()
+      if not okRender then
+        p.broken = true
+        warn("%s backdrop failed: %s", label, tostring(rendered))
+        return nil
+      end
+      if not rendered then
         if scene.defect then
           p.broken = true
           warn("%s backdrop failed: %s", label, tostring(scene.defect))
@@ -254,6 +262,12 @@ return function(host)
         return miss("scene not ready")
       end
       misses = 0
+      local d = rawget(mod, "_kimArenaDiag")
+      if type(d) == "function" then
+        local canvas = scene.presentCanvas or scene.canvas
+        local cw, ch = canvas:getDimensions()
+        pcall(d, "kenney surface", ("%s %dx%d -> %dx%d"):format(label, w, h, cw, ch))
+      end
       return scene.presentCanvas or scene.canvas
     end
     function p.release()

@@ -687,6 +687,9 @@ return function(mod)
     { key = "quickMenu", label = "QUICK MENU", type = "toggle", default = true,
       help = "Hold START on the overworld (touch) for POKEGEAR, FLY, AREA DEX, DAY-CARE, TODAY's "
         .. "events and KEY ITEMS. A quick tap of START still opens the START menu." },
+    { key = "overworldHud", label = "OVERWORLD HUD", type = "toggle", default = true,
+      help = "Show tappable QUICK, POKEGEAR, AREA DEX, BIKE and KEY ITEMS icons, the game clock "
+        .. "and party health on the overworld. Hidden during dialogue, menus and battles." },
     { key = "quickInStart", label = "QUICK IN START MENU", type = "toggle", default = true,
       help = "Also list QUICK in the START menu, so the QUICK MENU works with any controller." },
     { key = "keyWheel", label = "KEY ITEM WHEEL", type = "toggle", default = true,
@@ -1015,6 +1018,13 @@ return function(mod)
     if not okQ then log("warn", "KIM Arena: quick menu: %s", tostring(err)) end
   end
 
+  -- Window-resolution overworld shortcuts and status.
+  local overworldHudFactory = loadOwn("lib/kim_arena/overworld_hud.lua")
+  if type(overworldHudFactory) == "function" then
+    local okH, err = pcall(overworldHudFactory, { mod = mod, diag = diagSet })
+    if not okH then log("warn", "KIM Arena: overworld HUD: %s", tostring(err)) end
+  end
+
   -- TIME OF DAY: one clock for palettes, sky, encounters and Wilds.
   local todFactory = loadOwn("lib/kim_arena/time_of_day.lua")
   if type(todFactory) == "function" then
@@ -1159,7 +1169,7 @@ return function(mod)
     return nextFn(game, viewport)
   end, 3)
 
-  log("info", "Gen2 All-in-One ready (voxel=%s:%s, wilds=%s, nuzlocke=%s, touch=%s, qol=%s, qoltoggles=%s, background=%s)",
+  log("info", "Gen2-AIO ready (voxel=%s:%s, wilds=%s, nuzlocke=%s, touch=%s, qol=%s, qoltoggles=%s, background=%s)",
     engine, tostring(voxelOk), tostring(wildsOk), tostring(nuzlockeOk), tostring(touchOk),
     tostring(qolOk), tostring(qtOk), tostring(mode()))
 end

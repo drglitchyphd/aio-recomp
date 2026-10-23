@@ -1,0 +1,1259 @@
+-- Tunables and option helpers for wilds_of_kanto_gen3.
+local V = ...
+
+local Config = {}
+
+-- KIM_ARENA: bundled Wilds keeps every setting under its key prefix
+-- (mod._kimKeyPrefix). kimKey names a key; kimView is a bucket[mod.id]
+-- stand-in that prefixes on read and write, for the direct bucket accesses.
+local function kimKey(mod, key)
+  local prefix = type(mod) == "table" and rawget(mod, "_kimKeyPrefix") or nil
+  if type(prefix) == "string" and type(key) == "string" and key:sub(1, #prefix) ~= prefix then
+    return prefix .. key
+  end
+  return key
+end
+-- KIM_ARENA: settings the host pins (mod._kimForce), e.g. sprite_style =
+-- "followers" so Wilds' Pokemon match Crystal's own overworld characters.
+local function kimForced(mod, key)
+  local force = type(mod) == "table" and rawget(mod, "_kimForce") or nil
+  if type(force) == "table" and type(key) == "string" then return force[key] end
+  return nil
+end
+local function kimView(bucket, mod)
+  local real = bucket[mod.id]
+  if type(real) ~= "table" then real = {}; bucket[mod.id] = real end
+  return setmetatable({}, {
+    __index = function(_, k)
+      local forced = kimForced(mod, k)
+      if forced ~= nil then return forced end
+      return real[kimKey(mod, k)]
+    end,
+    __newindex = function(_, k, v) real[kimKey(mod, k)] = v end,
+  })
+end
+
+-- Vanilla Gen 1 encounter slot buckets (out of 256).
+Config.ENCOUNTER_BUCKETS = { 51, 102, 141, 166, 191, 216, 229, 242, 253, 256 }
+
+-- Spawn-system defaults (tile distances are walk-grid cells).
+-- min/max distances are soft constraints: pickers expand the search when a
+-- small map would otherwise reject every tile.
+Config.DEFAULTS = {
+  enabled = true,
+  spawn_density = "normal",
+  max_spawns = 12, -- legacy key retained; prefer max_visible_pokemon
+  max_visible_pokemon = 12,
+  min_visible_pokemon = 1,
+  tiles_per_additional_pokemon = 24,
+  spawn_every_steps = 8,
+  spawn_refill_interval = 8, -- alias of spawn_every_steps for docs
+  initial_spawns = 1,
+  min_player_distance = 3,
+  max_player_distance = 16,
+  despawn_distance = 22,
+  min_spawn_separation = 3,
+  wander_every_steps = 0, -- legacy; behaviours own movement now
+  suppress_random_grass = true,
+  sprite_opacity = 1.0, -- legacy numeric; prefer sprite_fade
+  sprite_fade = "solid", -- solid | faded (public Sprite Fade)
+  sprite_fade_alpha = 0.72, -- Faded look (pre-1.0.0 "Faint")
+  -- sprite_color removed: sheets always render true-color (24-bit PNG packs
+  -- must never be force-baked to the 4-shade DMG ramp).
+  sprite_style = "followers",
+  -- Cosmetic costume for the Yellow starter Pikachu companion only (see
+  -- ControlEngine:forceYellowStockPikachuArt). "default" = normal art.
+  pika_follower = "default",
+  -- Peaceful ambient NPCs in towns / safe interiors (not wild battles).
+  town_pokemon = true,
+  -- Chance a Gen 1 wild Pokemon is shiny (lib/shiny.lua): off | gen2 (1/8192) | modern (1/4096) |
+  -- common (1/1024) | frequent (1/512) | often (1/100) | high (1/10) | always.
+  shiny_rate = "modern",
+  -- One-time sparkle + chime when a shiny appears in battle (lib/shiny_sparkle.lua, Gen 1 only).
+  shiny_sparkle = true,
+  -- Voxel-only per-species display-size scale (lib/species_display_scale.lua).
+  -- ON = custom-tuned sizing per species; OFF = native True Size for every
+  -- HGSS/PokeMMO species (SpeciesGeometry.displayScale always returns 1).
+  dyn_scale = true,
+  -- Pokémon size is tied to Sprite Style (no separate option):
+  --   GSC sprites (followers) → Classic (one-tile 16×16 presentation)
+  --   HGSS sprites (pokemmo)  → True Size (variable-size SpriteDef geometry
+  --                             when the engine API is present and, if Voxel
+  --                             is on, the ACTIVE renderer consumes variable
+  --                             geometry natively or via a public-module adapter)
+  --   Pokédex sprites         → Classic
+  -- pokemon_size is kept only as a migration fallback default; the option was
+  -- removed and saved values are ignored.
+  pokemon_size = "classic", -- legacy fallback (option removed)
+  -- Follower control (built-in; replaces FOLLOWERS_EX options).
+  follow_control = "trainer", -- trainer | pokemon
+  trainer_trail = false,
+  follower_count = 1, -- 0–6 extra party trailers
+  -- Ambient NPCs inside buildings (Poké Centers, houses, labs, etc.).
+  indoor_pokemon = true,
+  -- Legacy key kept for save migration only (Mon Sprites toggle).
+  use_animated_overworld_sprites = true,
+  pokemon_grass_render_mode = "immersed",
+  grass_tuck_px = 0, -- engine drawCellBottom provides grass feet overdraw
+  show_pokemon_in_grass = true, -- legacy alias → immersed/above
+  enable_grass_movement_effects = true,
+  min_sprite_size = 16,
+  min_sprite_visible_height = 14,
+  target_sprite_visible_height = 16,
+  max_sprite_visible_height = 16, -- hard one-tile cap (Gen1Recomp CELL)
+  grass_occlusion_px = 6,
+  -- Dramatic Shape tall-grass south-row clearance for pokemon_grass_render_mode=above.
+  -- Applied as pose visualY lift only (lift = e.py - visualY); does not change e.py.
+  grass_above_lift_px = 8,
+  -- Master AI switch: gates the per-frame behavior tick pipeline (wander,
+  -- chase, contact battles).  OFF keeps spawns visible but frozen.
+  wilds_ai = true,
+  -- Encounter silhouette mode: off | undiscovered | all.
+  -- Legacy bool false→off, true→all. Default off (never silently enable
+  -- Undiscovered for existing users).
+  wild_silhouettes = "off",
+  enable_idle = true,
+  enable_wander = true,
+  enable_aggressive = false,
+  enable_hidden = false,
+  -- Classic step-based random encounters (grass / cave / water).
+  -- Public label "Classic Enc" (Classic Encounters); independent of visible overworld spawns.
+  random_encounters = true,
+  aggressive_frequency = 1.0,
+  aggressive_sight_range = 4,
+  aggressive_reaction_delay = 0.55,
+  aggressive_step_seconds = 0.18,
+  wild_step_seconds = 0.28,
+  idle_look_min_s = 5,
+  idle_look_max_s = 10,
+  enable_water_spawns = true, -- legacy internal alias (spawn-enabled modes)
+  -- Public "Water Mons" choice: swimming_sprites | hidden_silhouettes |
+  -- silhouettes | classic_encounters | disabled. Legacy bool true/false migrates.
+  water_spawns = "swimming_sprites",
+  -- Water spawn zones (tile distance from walkable land). Internal only.
+  water_near_shore_max = 2,
+  water_mid_water_max = 5,
+  water_deep_min = 6,
+  -- Share of visible water spawns that may be WATER_AGGRESSIVE (0–1).
+  water_aggressive_chance = 0.15,
+  -- Land→water chase: land mon must be ≤ this many tiles from water;
+  -- player must be ≤ this many tiles from shore while surfing.
+  land_water_chase_shore_max = 1,
+  land_water_chase_player_max = 5,
+  water_aggressive_sight_range = 5,
+  enable_cave_spawns = true, -- internal master; cave_spawns itself is locked (reachable)
+  -- Cave Spawns: locked to reachable (Config.LOCKED); mixed (~20% scenery) is dormant.
+  cave_spawns = "reachable",
+  -- Public developer overlay (behaviour + facing labels).
+  dev_overlay = false,
+  -- Internal-only (no longer public options). Kept as defaults for code paths.
+  debug_logging = false,
+  force_test_spawn = false,
+  -- Legacy keys retained for one-shot migration into dev_overlay.
+  dev_mode = false,
+  debug_hud_always_visible = false,
+  allow_debug_spawn_outside_encounter_areas = false,
+  show_spawn_tile_overlay = false,
+  show_behavior_overlays = false,
+  preview_filter = "all",
+  preview_search = "",
+  preview_map_filter = "",
+  preview_encounter_kind = "any",
+  strict_world_billboard_debug = false,
+  strict_magenta_billboard_probe = false,
+  -- Water spacing (Manhattan tiles). Scaled by Spawn Amount.
+  water_min_spacing_low = 5,
+  water_min_spacing_normal = 4,
+  water_min_spacing_high = 3,
+  water_min_spacing_very_high = 3,
+  -- Water density scale vs Normal.
+  water_density_low = 0.60,
+  water_density_normal = 1.0,
+  water_density_high = 1.40,
+  water_density_very_high = 1.60,
+  max_water_mons = 6, -- soft global cap for visible water mons
+}
+
+-- Behaviour that is no longer configurable. Config.get and the dedicated getters return these
+-- regardless of any saved value, so an old save cannot re-enable a removed option.
+Config.LOCKED = {
+  enable_idle = true,
+  enable_wander = true,
+  enable_aggressive = false, -- no Chase Mons
+  enable_hidden = false, -- no Hidden Mons
+  follow_control = "trainer",
+  trainer_trail = false,
+  dyn_scale = true,
+  sprite_fade = "solid",
+  spawn_density = "normal",
+  shiny_sparkle = true,
+  water_spawns = "swimming_sprites",
+  cave_spawns = "reachable", -- Reachable Only; Mixed scenery is no longer selectable
+}
+
+-- Entity lifecycle states for encounter safety.
+Config.STATE = {
+  AVAILABLE = "available",
+  ENCOUNTER_STARTING = "encounter_starting",
+  IN_BATTLE = "in_battle",
+  REMOVED = "removed",
+}
+
+-- Spawn-system / renderer status strings for the debug HUD.
+Config.STATUS = {
+  DISABLED = "DISABLED",
+  INITIALIZING = "INITIALIZING",
+  NO_ENCOUNTER_DATA = "NO_ENCOUNTER_DATA",
+  NO_ELIGIBLE_TILES = "NO_ELIGIBLE_TILES",
+  ASSETS_LOADING = "ASSETS_LOADING",
+  ASSET_ERROR = "ASSET_ERROR",
+  NO_RENDERER = "NO_RENDERER",
+  READY = "READY",
+  SPAWNING = "SPAWNING",
+  FALLBACK_TO_VANILLA = "FALLBACK_TO_VANILLA",
+  ERROR = "ERROR",
+  NOT_AVAILABLE = "NOT AVAILABLE",
+}
+
+Config.HUD_SHOW_SECONDS = 8
+
+function Config.schema()
+  local source = V.mod:read("options.lua")
+  if not source then
+    error("wilds_of_kanto_gen3: options.lua is missing", 0)
+  end
+  local loadcode = loadstring or load
+  local chunk, err = loadcode(source, "@" .. V.path .. "/options.lua")
+  if not chunk then
+    error(("wilds_of_kanto_gen3: options.lua did not compile: %s"):format(tostring(err)), 0)
+  end
+  return chunk()
+end
+
+function Config.defineOptions(mod)
+  mod.options:define(Config.schema())
+end
+
+function Config.get(mod, key)
+  local locked = Config.LOCKED[key]
+  if locked ~= nil then return locked end
+  local v = mod.options:get(key)
+  if v == nil then return Config.DEFAULTS[key] end
+  return v
+end
+
+function Config.isEnabled(mod)
+  return Config.get(mod, "enabled") == true
+end
+
+-- Developer tools (Dev Overlay world labels, detail HUD, Test Spawn row) are not a player
+-- option. They turn on only when a `wilds_dev.flag` file sits at the mod root -- a repo checkout
+-- can create one; the release ZIP never contains it (.gitignore, .modkitignore, build-mod.py).
+-- Saved dev_overlay / debug / dev_mode values are ignored, so a player who had the old public
+-- toggle on is switched off. Cached per mod: this is read on hot draw paths.
+Config.DEV_FLAG_FILE = "wilds_dev.flag"
+local devFlagCache = setmetatable({}, { __mode = "k" })
+
+function Config.devOverlay(mod)
+  if type(mod) ~= "table" then return false end
+  local cached = devFlagCache[mod]
+  if cached ~= nil then return cached end
+  local on = false
+  if type(mod.read) == "function" then
+    local ok, data = pcall(mod.read, mod, Config.DEV_FLAG_FILE)
+    on = ok and data ~= nil and data ~= false
+  end
+  devFlagCache[mod] = on
+  return on
+end
+
+--- Test hook: forget the cached developer-flag answer.
+function Config.resetDevFlagCache()
+  devFlagCache = setmetatable({}, { __mode = "k" })
+end
+
+--- Test hook: act as if wilds_dev.flag is present (true) or absent (false) for `mod`; nil
+-- forgets the override so the file is checked again. Never called by the mod itself.
+function Config.setDevFlagForTest(mod, on)
+  if type(mod) ~= "table" then return end
+  if on == nil then devFlagCache[mod] = nil else devFlagCache[mod] = on == true end
+end
+
+-- Back-compat alias: older call sites treated "dev mode" as developer tools.
+-- Now maps onto Dev Overlay (no separate public Dev Mode option).
+function Config.devMode(mod)
+  return Config.devOverlay(mod)
+end
+
+function Config.debug(mod)
+  -- Dev Overlay forces structured diagnostics logging.
+  if Config.devOverlay(mod) then return true end
+  return Config.get(mod, "debug_logging") == true
+end
+
+function Config.hudAlwaysVisible(mod)
+  -- Detail HUD may show while Dev Overlay is on (no separate public toggle).
+  return Config.devOverlay(mod)
+end
+
+function Config.allowOutsideEncounter(mod)
+  -- Outside-encounter test spawn no longer has a public toggle.
+  return false
+end
+
+function Config.showSpawnTileOverlay(mod)
+  return false
+end
+
+function Config.showBehaviorOverlays(mod)
+  -- Replaced by Dev Overlay world labels.
+  return Config.devOverlay(mod)
+end
+
+function Config.migrateDevOverlayOption(mod)
+  local on = Config.devOverlay(mod)
+  local function write(bucket)
+    if type(bucket) ~= "table" then return end
+    bucket[mod.id] = bucket[mod.id] or {}
+    -- Dev Overlay is no longer a saved option (developer flag file only).
+    kimView(bucket, mod).dev_overlay = nil
+    -- Drop obsolete public developer keys (ignore on load; no crash).
+    kimView(bucket, mod).dev_mode = nil
+    kimView(bucket, mod).debug_hud_always_visible = nil
+    kimView(bucket, mod).show_spawn_tile_overlay = nil
+    kimView(bucket, mod).show_behavior_overlays = nil
+    kimView(bucket, mod).allow_debug_spawn_outside_encounter_areas = nil
+    kimView(bucket, mod).debug_logging = nil
+    kimView(bucket, mod).force_test_spawn = nil
+    kimView(bucket, mod).preview_filter = nil
+    kimView(bucket, mod).preview_search = nil
+    kimView(bucket, mod).preview_map_filter = nil
+    kimView(bucket, mod).preview_encounter_kind = nil
+    kimView(bucket, mod).debug = nil
+  end
+  local world = mod.world
+  local game = world and world.game
+  if game and game.save and game.save.options then
+    game.save.options.modOptions = game.save.options.modOptions or {}
+    write(game.save.options.modOptions)
+  end
+  if game and game.mods then
+    if game.mods.modOptions then write(game.mods.modOptions) end
+    if game.mods.loader and game.mods.loader.modOptions then
+      write(game.mods.loader.modOptions)
+    end
+  end
+  return on
+end
+
+-- Manhattan spacing between visible water Pokémon (tiles).
+function Config.waterMinSpacing(mod)
+  local amount = Config.spawnAmount(mod)
+  if amount == "low" then
+    return tonumber(Config.DEFAULTS.water_min_spacing_low) or 5
+  elseif amount == "high" then
+    return tonumber(Config.DEFAULTS.water_min_spacing_high) or 3
+  elseif amount == "very_high" then
+    return tonumber(Config.DEFAULTS.water_min_spacing_very_high) or 3
+  end
+  return tonumber(Config.DEFAULTS.water_min_spacing_normal) or 4
+end
+
+-- Moderate Spawn Amount scale for water targets.
+function Config.waterDensityFactor(mod)
+  local amount = Config.spawnAmount(mod)
+  if amount == "low" then
+    return tonumber(Config.DEFAULTS.water_density_low) or 0.60
+  elseif amount == "high" then
+    return tonumber(Config.DEFAULTS.water_density_high) or 1.40
+  elseif amount == "very_high" then
+    return tonumber(Config.DEFAULTS.water_density_very_high) or 1.60
+  end
+  return tonumber(Config.DEFAULTS.water_density_normal) or 1.0
+end
+
+-- Public Sprite Style choices (Mod Settings). Internal providers may differ
+-- (e.g. visible "followers" → provider "followers_ex").
+local VALID_SPRITE_STYLES = {
+  pokemmo = true,
+  followers = true,
+  pokedex = true,
+}
+
+local SPRITE_STYLE_CONFIRM = {
+  followers = "POKE FOLLOWERS / GSC",
+  pokemmo = "HGSS / POKEMMO",
+  pokedex = "POKEDEX",
+}
+
+local VALID_POKEMON_SIZES = {
+  classic = true,
+  true_size = true,
+}
+
+-- Migrate legacy / unknown save values onto the public three-choice set.
+-- Internal provider ids (followers_ex / poke_followers) map to public "followers".
+function Config.normalizeSpriteStyle(value)
+  if value == true or value == "true" or value == "on" or value == "ON" then
+    return "pokemmo"
+  end
+  if value == false or value == "false" or value == "off" or value == "OFF" then
+    return "pokedex"
+  end
+  if type(value) ~= "string" then
+    return "followers"
+  end
+  local v = value
+  if v == "followers_ex" or v == "poke_followers" then
+    return "followers"
+  end
+  if v == "auto" or v == "gold" or v == "crystal" then
+    return "pokemmo"
+  end
+  if VALID_SPRITE_STYLES[v] then
+    return v
+  end
+  return "followers"
+end
+
+function Config.peekSavedOption(mod, key)
+  if not mod then return nil, false end
+  local buckets = {}
+  local world = mod.world
+  local game = world and world.game
+  if game and game.save and game.save.options and game.save.options.modOptions then
+    buckets[#buckets + 1] = game.save.options.modOptions[mod.id]
+  end
+  if game and game.mods then
+    if game.mods.modOptions then
+      buckets[#buckets + 1] = game.mods.modOptions[mod.id]
+    end
+    if game.mods.loader and game.mods.loader.modOptions then
+      buckets[#buckets + 1] = game.mods.loader.modOptions[mod.id]
+    end
+  end
+  -- Unit-test / harness path: options table may expose raw values via get only.
+  for i = 1, #buckets do
+    local b = buckets[i]
+    local forced = kimForced(mod, key)
+    if forced ~= nil then return forced, true end
+    local k = kimKey(mod, key)
+    if type(b) == "table" and b[k] ~= nil then
+      return b[k], true
+    end
+  end
+  return nil, false
+end
+
+-- Preferred public style selector. Migrates legacy Mon Sprites boolean:
+--   true  -> pokemmo (was auto)
+--   false -> pokedex
+-- Legacy sprite_style strings (auto/gold/crystal/followers_ex) normalize onto
+-- the public three-choice set.
+function Config.normalizePokemonSize(value)
+  if value == true or value == "true" or value == "on" or value == "ON"
+     or value == "true_size" or value == "truesize" or value == "scaled"
+     or value == "True Size" or value == "TRUE SIZE" then
+    return "true_size"
+  end
+  if value == false or value == "false" or value == "off" or value == "OFF"
+     or value == "classic" or value == "Classic" or value == "CLASSIC"
+     or value == "original" then
+    return "classic"
+  end
+  if type(value) == "string" and VALID_POKEMON_SIZES[value] then
+    return value
+  end
+  return "classic"
+end
+
+-- Pokémon size is tied to Sprite Style (the separate Pokémon Size option was
+-- removed): GSC sprites → Classic, HGSS sprites → True Size, Pokédex → Classic.
+-- Saved pokemon_size values are ignored (migration / legacy only).
+function Config.pokemonSizeMode(mod)
+  local style = Config.spriteStyle(mod)
+  if style == "pokemmo" then
+    return "true_size"
+  end
+  return "classic"
+end
+
+Config.VALID_POKEMON_SIZES = VALID_POKEMON_SIZES
+
+function Config.dynScaleEnabled(_mod)
+  return Config.LOCKED.dyn_scale
+end
+
+
+local VALID_SHINY_RATES = {
+  off = true, gen2 = true, modern = true, common = true, frequent = true, often = true, high = true,
+  always = true,
+}
+
+--- SHINY RATE key: "off" | "gen2" | "modern" | "common" | "frequent" | "often" | "high" | "always".
+-- Live save bucket first (what the in-game menu writes), then the schema value; anything unusable
+-- means the default ("modern", 1/4096). A legacy boolean true means "always".
+function Config.shinyRate(mod)
+  local function coerce(value)
+    if value == true then return "always" end
+    if type(value) == "string" then
+      local v = value:lower()
+      if VALID_SHINY_RATES[v] then return v end
+    end
+    return nil
+  end
+  local raw, present = Config.peekSavedOption(mod, "shiny_rate")
+  if present then
+    local key = coerce(raw)
+    if key then return key end
+  end
+  if mod and mod.options and type(mod.options.get) == "function" then
+    local key = coerce(mod.options:get("shiny_rate"))
+    if key then return key end
+  end
+  return coerce(Config.DEFAULTS.shiny_rate) or "modern"
+end
+
+function Config.shinySparkleEnabled(_mod)
+  return Config.LOCKED.shiny_sparkle
+end
+
+local VALID_PIKA_FOLLOWER = {
+  ["default"] = true, alola = true, belle = true, hoenn = true, kalos = true,
+  libre = true, ["og-cap"] = true, partner = true, phd = true, popstar = true,
+  rockstar = true, sinnoh = true, unova = true,
+}
+
+--- Cosmetic costume choice for the Yellow starter Pikachu companion (see
+-- ControlEngine:forceYellowStockPikachuArt). Prefers the live save-data
+-- bucket the in-game Settings menu writes to (Config.setOption /
+-- writeOptionBucket) over the Mod Manager schema value, same pattern as
+-- Config.wildSilhouetteMode -- otherwise a selection made via
+-- the in-game PIKA FOLLOWER row would never be seen here. Returns "default"
+-- for any unrecognized/stale saved value rather than erroring.
+function Config.pikaFollower(mod)
+  local raw, present = Config.peekSavedOption(mod, "pika_follower")
+  if present and type(raw) == "string" and VALID_PIKA_FOLLOWER[raw] then
+    return raw
+  end
+  local v = Config.get(mod, "pika_follower")
+  if type(v) == "string" and VALID_PIKA_FOLLOWER[v] then return v end
+  return "default"
+end
+
+function Config.spriteStyle(mod)
+  local rawStyle, stylePresent = Config.peekSavedOption(mod, "sprite_style")
+  if stylePresent and type(rawStyle) == "string" then
+    return Config.normalizeSpriteStyle(rawStyle)
+  end
+
+  local v = nil
+  if mod and mod.options and type(mod.options.get) == "function" then
+    v = mod.options:get("sprite_style")
+  end
+  if type(v) == "string" then
+    local normalized = Config.normalizeSpriteStyle(v)
+    -- Schema default is "followers". If the save never stored sprite_style but
+    -- still has legacy Mon Sprites = off, prefer pokedex once.
+    if (v == "pokemmo" or v == "auto" or v == "followers") and not stylePresent then
+      local legacyRaw, legacyPresent = Config.peekSavedOption(mod, "use_animated_overworld_sprites")
+      if legacyPresent and legacyRaw == false then
+        return "pokedex"
+      end
+      if not legacyPresent then
+        local legacy = mod.options:get("use_animated_overworld_sprites")
+        -- Only treat an explicit false from options storage; schema default true
+        -- must not force pokedex.
+        if legacy == false then
+          return "pokedex"
+        end
+      end
+    end
+    return normalized
+  end
+
+  local legacyRaw, legacyPresent = Config.peekSavedOption(mod, "use_animated_overworld_sprites")
+  if legacyPresent and legacyRaw == false then
+    return "pokedex"
+  end
+  if mod and mod.options and type(mod.options.get) == "function" then
+    if mod.options:get("use_animated_overworld_sprites") == false then
+      return "pokedex"
+    end
+  end
+  return "followers"
+end
+
+function Config.migrateSpriteStyleOption(mod)
+  local style = Config.spriteStyle(mod)
+  local function write(bucket)
+    if type(bucket) ~= "table" then return end
+    bucket[mod.id] = bucket[mod.id] or {}
+    local current = kimView(bucket, mod).sprite_style
+    -- Persist the normalized public value whenever missing or legacy.
+    if current == nil or Config.normalizeSpriteStyle(current) ~= current then
+      kimView(bucket, mod).sprite_style = style
+    end
+  end
+  local world = mod.world
+  local game = world and world.game
+  if game and game.save and game.save.options then
+    game.save.options.modOptions = game.save.options.modOptions or {}
+    write(game.save.options.modOptions)
+  end
+  if game and game.mods then
+    if game.mods.modOptions then write(game.mods.modOptions) end
+    if game.mods.loader and game.mods.loader.modOptions then
+      write(game.mods.loader.modOptions)
+    end
+  end
+  return style
+end
+
+-- Compatibility: true when style is not the static Pokedex path.
+function Config.useAnimatedOverworldSprites(mod)
+  return Config.spriteStyle(mod) ~= "pokedex"
+end
+
+-- Gen1Recomp exposes mod.options:define / :get only — there is NO
+-- mod.options:set on the public mod API (see Loader._api). Mod Manager
+-- writes through ManagerState:setOption → loader.modOptions + emit
+-- mod.options_changed. In-game menus must mirror that bucket write.
+local function writeOptionBucket(mod, game, key, value)
+  if not (mod and mod.id) then return false end
+  -- KIM_ARENA: bundled Wilds keeps its settings under its own prefix, so a
+  -- key like "enabled" cannot overwrite another component's setting.
+  key = kimKey(mod, key)
+  local function write(bucket)
+    if type(bucket) ~= "table" then return false end
+    bucket[mod.id] = bucket[mod.id] or {}
+    bucket[mod.id][key] = value
+    return true
+  end
+  local wrote = false
+  if game and game.save then
+    game.save.options = game.save.options or {}
+    game.save.options.modOptions = game.save.options.modOptions or {}
+    if write(game.save.options.modOptions) then wrote = true end
+  end
+  if game and game.mods then
+    -- loader.modOptions is what mod.options:get reads.
+    game.mods.modOptions = game.mods.modOptions or {}
+    if write(game.mods.modOptions) then wrote = true end
+    if game.mods.loader then
+      game.mods.loader.modOptions = game.mods.loader.modOptions or {}
+      if write(game.mods.loader.modOptions) then wrote = true end
+    end
+  end
+  if game and type(game.writeOptions) == "function" then
+    pcall(game.writeOptions, game)
+  end
+  -- Optional: some forks may expose options:set. Prefer bucket write above.
+  if mod and mod.options and type(mod.options.set) == "function" then
+    local ok = pcall(function() mod.options:set(key, value) end)
+    if ok then wrote = true end
+  end
+  return wrote
+end
+
+local function resolveGame(mod, opts)
+  opts = opts or {}
+  if opts.game then return opts.game end
+  if mod and mod.world then return mod.world.game end
+  return nil
+end
+
+--- Canonical programmatic option writer for non-Mod-Manager UIs.
+-- Writes the same loader/save buckets Mod Manager uses, then optionally
+-- invokes a shared onChanged callback (main.lua handleOptionsChanged).
+-- Does NOT emit engine event `mod.options_changed` (mods cannot forge it).
+-- opts: { game=, onChanged=, source= }
+function Config.setOption(mod, key, value, source, opts)
+  opts = opts or {}
+  if not (mod and type(key) == "string" and key ~= "") then
+    return false, "invalid setOption args"
+  end
+  local game = resolveGame(mod, opts)
+  local wrote = writeOptionBucket(mod, game, key, value)
+  local payload = {
+    mod = mod.id,
+    key = key,
+    value = value,
+    source = source or opts.source or "config_set_option",
+    game = game,
+  }
+  if type(opts.onChanged) == "function" then
+    pcall(opts.onChanged, payload)
+  end
+  return wrote, payload
+end
+
+-- Test / internal access to the bucket writer.
+Config._writeOptionBucket = writeOptionBucket
+
+local function confirmText(game, mod, message)
+  if not message or not game or not mod then return end
+  if mod.ui and mod.ui.TextBox and game.stack then
+    pcall(function()
+      game.stack:push(mod.ui.TextBox.new(game, message))
+    end)
+  end
+end
+
+-- Central setter used by Start Menu and any non-Mod-Manager UI path.
+-- Mod Settings already persist sprite_style via the engine; both share this key.
+-- opts: { game=, logic=, render=, confirm=, message= }
+function Config.setSpriteStyle(mod, value, source, opts)
+  opts = opts or {}
+  value = Config.normalizeSpriteStyle(value)
+  if not VALID_SPRITE_STYLES[value] then
+    return false, "invalid sprite_style: " .. tostring(value)
+  end
+
+  local game = resolveGame(mod, opts)
+  writeOptionBucket(mod, game, "sprite_style", value)
+
+  local render = opts.render
+  local logic = opts.logic
+  if (not render or not logic) and mod and mod.exports then
+    render = render or mod.exports.render
+    logic = logic or mod.exports.logic
+  end
+  local refreshed = 0
+  if render and logic and type(render.refreshAllEntitySprites) == "function" then
+    if type(render.invalidateAssetCache) == "function" then
+      pcall(render.invalidateAssetCache, render)
+    end
+    local ok, n = pcall(render.refreshAllEntitySprites, render, logic, game)
+    if ok and type(n) == "number" then refreshed = n end
+  end
+
+  local confirmMsg = opts.message
+  if not confirmMsg and opts.confirm ~= false then
+    confirmMsg = "SPRITES: " .. (SPRITE_STYLE_CONFIRM[value] or value:upper())
+  end
+  confirmText(game, mod, confirmMsg)
+
+  if source and mod and mod.log and type(mod.log.info) == "function" then
+    pcall(mod.log.info, mod.log,
+      "sprite_style set to %s via %s (refreshed=%d)",
+      value, tostring(source), refreshed)
+  end
+
+  return true, value, refreshed
+end
+
+Config.VALID_SPRITE_STYLES = VALID_SPRITE_STYLES
+Config.SPRITE_STYLE_CONFIRM = SPRITE_STYLE_CONFIRM
+
+
+function Config.spawnAmount(_mod)
+  return Config.LOCKED.spawn_density
+end
+
+-- Classic step-based random encounters (grass / cave / water / indoor).
+-- Independent of visible overworld Pokémon and Water Mons.
+function Config.randomEncountersEnabled(mod)
+  local raw, present = Config.peekSavedOption(mod, "random_encounters")
+  if present then
+    return raw == true
+  end
+  -- One-shot migration from grass_encounters choice.
+  local legacy, legPresent = Config.peekSavedOption(mod, "grass_encounters")
+  if legPresent and type(legacy) == "string" then
+    if legacy == "hidden" then return false end
+    if legacy == "classic" or legacy == "both" then return true end
+  end
+  if mod and mod.options and type(mod.options.get) == "function" then
+    local v = mod.options:get("random_encounters")
+    if v ~= nil then return v == true end
+    local g = mod.options:get("grass_encounters")
+    if type(g) == "string" then
+      if g == "hidden" then return false end
+      if g == "classic" or g == "both" then return true end
+    end
+  end
+  if Config.DEFAULTS.random_encounters == false then return false end
+  return true
+end
+
+function Config.migrateRandomEncountersOption(mod)
+  local on = Config.randomEncountersEnabled(mod)
+  local function write(bucket)
+    if type(bucket) ~= "table" then return end
+    bucket[mod.id] = bucket[mod.id] or {}
+    if kimView(bucket, mod).random_encounters == nil then
+      kimView(bucket, mod).random_encounters = on
+    end
+    -- Drop obsolete choice key once migrated.
+    kimView(bucket, mod).grass_encounters = nil
+  end
+  local world = mod.world
+  local game = world and world.game
+  if game and game.save and game.save.options then
+    game.save.options.modOptions = game.save.options.modOptions or {}
+    write(game.save.options.modOptions)
+  end
+  if game and game.mods then
+    if game.mods.modOptions then write(game.mods.modOptions) end
+    if game.mods.loader and game.mods.loader.modOptions then
+      write(game.mods.loader.modOptions)
+    end
+  end
+  return on
+end
+
+-- Back-compat alias used during transition.
+Config.migrateGrassEncountersOption = Config.migrateRandomEncountersOption
+
+function Config.waterDisplayMode(_mod)
+  return Config.LOCKED.water_spawns
+end
+
+-- True when visible water overworld entities may spawn
+-- (Swim Sprites / Hidden Silhouettes / Silhouettes).
+function Config.waterMons(mod)
+  local mode = Config.waterDisplayMode(mod)
+  return mode == "swimming_sprites"
+    or mode == "hidden_silhouettes"
+    or mode == "silhouettes"
+end
+
+-- Encounter silhouette mode: "off" | "undiscovered" | "all".
+-- Migrates legacy bool saves: false→off, true→all. Default remains off.
+Config.WILD_SILHOUETTE_MODES = {
+  off = true,
+  undiscovered = true,
+  all = true,
+}
+
+function Config.normalizeWildSilhouetteMode(value)
+  if value == true or value == "true" or value == "on" or value == "ON"
+     or value == "all" or value == "ALL" then
+    return "all"
+  end
+  if value == false or value == "false" or value == "off" or value == "OFF"
+     or value == nil then
+    return "off"
+  end
+  local s = tostring(value or ""):lower()
+  if s == "undiscovered" or s == "unseen" or s == "new" then
+    return "undiscovered"
+  end
+  if Config.WILD_SILHOUETTE_MODES[s] then return s end
+  return "off"
+end
+
+function Config.wildSilhouetteMode(mod)
+  local raw, present = Config.peekSavedOption(mod, "wild_silhouettes")
+  if present then
+    return Config.normalizeWildSilhouetteMode(raw)
+  end
+  if mod and mod.options and type(mod.options.get) == "function" then
+    local v = mod.options:get("wild_silhouettes")
+    if v ~= nil then
+      return Config.normalizeWildSilhouetteMode(v)
+    end
+  end
+  return Config.normalizeWildSilhouetteMode(Config.DEFAULTS.wild_silhouettes)
+end
+
+-- Backward-compatible boolean: true only when mode is full "all".
+-- Prefer Config.shouldWildSilhouette for presentation decisions.
+function Config.wildSilhouettes(mod)
+  return Config.wildSilhouetteMode(mod) == "all"
+end
+
+--- Effective encounter-zone silhouette for one species.
+-- off → never; all → always; undiscovered → silhouette only when the
+-- Pokédex has no capture registration for the species (owned/caught).
+-- Encounter-only `seen` does NOT clear Undiscovered silhouettes.
+-- Species may be an internal key ("PIDGEY") or canonical asset id (16);
+-- both resolve through GameCompat.resolveSpeciesKey. Unknown → silhouette.
+function Config.shouldWildSilhouette(mod, game, species)
+  local mode = Config.wildSilhouetteMode(mod)
+  if mode == "off" then return false end
+  if mode == "all" then return true end
+  if mode ~= "undiscovered" then return false end
+  local ok, GameCompat = pcall(function() return V.require("game_compat") end)
+  if not (ok and GameCompat) then
+    return true
+  end
+  local key = species
+  if type(GameCompat.resolveSpeciesKey) == "function" then
+    key = GameCompat.resolveSpeciesKey(species)
+  end
+  if type(key) ~= "string" or key == "" then
+    return true -- conservative: unknown → silhouette
+  end
+  if type(GameCompat.hasCaughtSpecies) == "function" then
+    return GameCompat.hasCaughtSpecies(game, key) ~= true
+  end
+  -- Legacy fallback (should not run on current adapters).
+  if type(GameCompat.hasSeenSpecies) == "function" then
+    return GameCompat.hasSeenSpecies(game, key) ~= true
+  end
+  return true
+end
+
+function Config.maxWaterMons(mod)
+  return tonumber(Config.get(mod, "max_water_mons"))
+      or Config.DEFAULTS.max_water_mons or 12
+end
+
+-- Central setter for Classic Encounters (Start Menu + Mod Settings).
+-- opts: { game=, logic=, confirm=, message= }
+function Config.setRandomEncounters(mod, value, source, opts)
+  opts = opts or {}
+  local on = (value == true or value == "on" or value == "ON" or value == "true")
+  if value == false or value == "off" or value == "OFF" or value == "false" then
+    on = false
+  elseif value ~= true and value ~= "on" and value ~= "ON" and value ~= "true" then
+    if type(value) ~= "boolean" then
+      return false, "invalid random_encounters: " .. tostring(value)
+    end
+  end
+
+  local game = resolveGame(mod, opts)
+  writeOptionBucket(mod, game, "random_encounters", on)
+  -- Clear obsolete choice so readers never prefer it over the toggle.
+  writeOptionBucket(mod, game, "grass_encounters", nil)
+
+  local logic = opts.logic
+  if not logic and mod and mod.exports then
+    logic = mod.exports.logic
+  end
+  if logic and type(logic.applyRandomEncounters) == "function" then
+    pcall(logic.applyRandomEncounters, logic, on, source)
+  elseif logic and type(logic.onOptionsChanged) == "function" then
+    pcall(logic.onOptionsChanged, logic, {
+      mod = mod.id, key = "random_encounters", value = on, source = source,
+    })
+  end
+
+  local confirmMsg = opts.message
+  if not confirmMsg and opts.confirm ~= false then
+    confirmMsg = "CLASSIC ENC: " .. (on and "ON" or "OFF")
+  end
+  confirmText(game, mod, confirmMsg)
+
+  if source and mod and mod.log and type(mod.log.info) == "function" then
+    pcall(mod.log.info, mod.log,
+      "random_encounters set to %s via %s", tostring(on), tostring(source))
+  end
+  return true, on
+end
+
+-- Cave Spawns is locked to Reachable Only (Config.LOCKED); old saved "mixed" values are ignored.
+function Config.caveSpawnMode(mod)
+  return Config.get(mod, "cave_spawns")
+end
+
+function Config.caveSpawnsMixed(mod)
+  return Config.caveSpawnMode(mod) == "mixed"
+end
+
+function Config.caveSpawnsEnabled(mod)
+  if Config.get(mod, "enable_cave_spawns") == false then return false end
+  return true
+end
+
+function Config.pokemonGrassRenderMode(mod)
+  local GrassOcclusion = V.require("grass_occlusion")
+  return GrassOcclusion.mode(mod)
+end
+
+function Config.maxVisible(mod)
+  local v = Config.get(mod, "max_visible_pokemon")
+  if v == nil then v = Config.get(mod, "max_spawns") end
+  return tonumber(v) or Config.DEFAULTS.max_visible_pokemon
+end
+
+function Config.minVisible(mod)
+  return tonumber(Config.get(mod, "min_visible_pokemon"))
+      or Config.DEFAULTS.min_visible_pokemon
+end
+
+function Config.tilesPerAdditional(mod)
+  return tonumber(Config.get(mod, "tiles_per_additional_pokemon"))
+      or Config.DEFAULTS.tiles_per_additional_pokemon
+end
+
+function Config.spawnDensity(mod)
+  return Config.spawnAmount(mod)
+end
+
+function Config.refillSteps(mod)
+  local v = Config.get(mod, "spawn_refill_interval")
+  if v == nil then v = Config.get(mod, "spawn_every_steps") end
+  return tonumber(v) or Config.DEFAULTS.spawn_every_steps
+end
+
+-- ------- Town Pokémon (ambient NPCs)
+
+function Config.townPokemonEnabled(mod)
+  local raw, present = Config.peekSavedOption(mod, "town_pokemon")
+  if present then
+    return raw == true
+  end
+  if mod and mod.options and type(mod.options.get) == "function" then
+    local v = mod.options:get("town_pokemon")
+    if v ~= nil then return v == true end
+  end
+  -- Do not treat Followers EX wilds_town_spawns (battleable borrow) as this.
+  return Config.DEFAULTS.town_pokemon == true
+end
+
+function Config.setTownPokemon(mod, value, source, opts)
+  opts = opts or {}
+  local on = (value == true or value == "on" or value == "ON" or value == "true")
+  if value == false or value == "off" or value == "OFF" or value == "false" then
+    on = false
+  elseif value ~= true and value ~= "on" and value ~= "ON" and value ~= "true" then
+    if type(value) ~= "boolean" then
+      return false, "invalid town_pokemon: " .. tostring(value)
+    end
+  end
+  local game = resolveGame(mod, opts)
+  writeOptionBucket(mod, game, "town_pokemon", on)
+
+  local ambient = opts.ambient
+  if not ambient and mod and mod.exports then
+    ambient = mod.exports.ambient
+  end
+  if ambient and type(ambient.onTownPokemonToggled) == "function" then
+    pcall(ambient.onTownPokemonToggled, ambient, on, game)
+  end
+
+  local confirmMsg = opts.message
+  if not confirmMsg and opts.confirm ~= false then
+    confirmMsg = "TOWN: " .. (on and "ON" or "OFF")
+  end
+  confirmText(game, mod, confirmMsg)
+  return true, on
+end
+
+-- ------- Sprite Fade (Solid / Faded)
+
+Config.SPRITE_FADE_ALPHA = Config.DEFAULTS.sprite_fade_alpha or 0.72
+
+function Config.spriteFade(_mod)
+  return Config.LOCKED.sprite_fade
+end
+
+function Config.spriteOpacity(mod)
+  if Config.spriteFade(mod) == "faded" then
+    return tonumber(Config.DEFAULTS.sprite_fade_alpha) or 0.72
+  end
+  return 1.0
+end
+
+-- ------- Sprite Color (removed)
+--
+-- The Colored/Classic choice was removed: follower, wild, ambient, and
+-- party-icon sheets ALWAYS render as true-color. Legacy "classic" saves are
+-- ignored and rewritten to "colored" on migration, so old 24-bit PNG packs
+-- (e.g. the built-in Poke Followers / GSC sheets, which are 8-bit RGBA) are
+-- never force-baked through the 4-shade DMG gray ramp.
+
+local SPRITE_COLOR_CONFIRM = { colored = "COLORED", classic = "CLASSIC" }
+Config.SPRITE_COLOR_CONFIRM = SPRITE_COLOR_CONFIRM
+
+function Config.spriteColor(_mod)
+  return "colored"
+end
+
+--- trueColor flag for the mod's SpriteRenderer defs, decided per mode.
+---
+--- Luminance-based shading: in every COLORS mode EXCEPT ADVANCED (RED++),
+--- the mod serves the luminance-encoded (-grayscale) sheets with
+--- trueColor = false, so the ENGINE's native non-trueColor path handles them
+--- exactly like a vanilla DMG sprite — SpriteRenderer bakes rOBP0 = $D0
+--- (PaletteFX.dmgObj) and the whole-canvas zone shader colors the result out
+--- of the mode's own palette.  Followers therefore conform to whichever
+--- COLORS mode is active: SGB tints them with the map palette, OG RED/BLUE
+--- with the boot-ROM object palette (green/pink), OG YELLOW with its
+--- CGBBasePalettes zones, CLASSIC / OG / OG INV with their green/gray ramps,
+--- SGB INV with the permuted palette — luminance (brightness) decides the
+--- shade, the engine decides the colors.
+---
+--- The luminance sheets are derived at load from the colored art (see
+--- luminance_sheet.lua) as 3-shade ramps whose lightest shade is clamped to
+--- r = 0.8 (< the 0.83 the OBP bake keys transparent), so no interior pixel
+--- ever punches through — no separate -grayscale asset files are shipped.
+---
+--- ADVANCED (redpp) is the one mode whose world is true-color: there the
+--- mod serves the ORIGINAL colored sheets with trueColor = true (SpriteRenderer
+--- draws raw + markTrueColor re-blits unshaded), exactly like the engine's own
+--- full-color art.  Feeding colored sheets through the non-trueColor path in
+--- any mode would hit the OBP0 bake, which keys every pixel with r > 0.83
+--- transparent — it is only designed for the engine's 4-shade DMG sheets.
+--- Callers that serve art whose trueColor they know explicitly (external
+--- PokePC packs, water runtime sheets) set def.trueColor themselves; this
+--- helper is for the built-in follower/wild sheets, whose art is luma in
+--- every non-ADVANCED mode.
+function Config.spriteTrueColor(_mod)
+  return Config.paletteFxRedpp()
+end
+
+-- Gold (Gen 2) world: GbcPalette + SpriteRenderer trueColor, not Gen1's
+-- PaletteFX zone-shader. Serving luminance sheets with trueColor=false on
+-- Gold bakes PaletteFX.dmgObj() (or a PAL_OW_* OBP) onto HGSS/Followers art
+-- and they render monochrome. Custom overworld art (land and water) therefore
+-- keeps colored RGBA and trueColor=true unless an explicit silhouette /
+-- hidden-silhouette presentation is applied after resolve.
+local function customOverworldArtUsesLuminance(mod)
+  local ok, GameCompat = pcall(function() return V.require("game_compat") end)
+  if ok and GameCompat and type(GameCompat.isGen2) == "function" then
+    if GameCompat.isGen2(mod) then return false end
+  end
+  return not Config.paletteFxRedpp()
+end
+
+function Config.landArtUsesLuminance(mod)
+  return customOverworldArtUsesLuminance(mod)
+end
+
+-- Same generation split as land. Silhouettes / hidden water modes are applied
+-- after resolve and keep trueColor=false on their own sheets.
+function Config.waterArtUsesLuminance(mod)
+  return customOverworldArtUsesLuminance(mod)
+end
+
+-- PaletteFX mode gate: the genuinely monochrome modes (CLASSIC / OG /
+-- OG INV), which colorize through the whole-screen shade/zone pass.  Kept
+-- for diagnostics and the water registry's grayscaleTarget selection; the
+-- follower/wild art gate is paletteFxRedpp (every non-ADVANCED mode serves
+-- the luminance sheets, not just these three).
+function Config.paletteFxMonochrome()
+  local ok, PaletteFX = pcall(require, "src.render.PaletteFX")
+  if ok and type(PaletteFX) == "table" and PaletteFX.mode ~= nil then
+    local mode = PaletteFX.mode
+    return mode == "og" or mode == "og_inv" or mode == "classic"
+  end
+  return false
+end
+
+-- ADVANCED (RED++) mode: the engine bakes real per-tile color onto
+-- overworld sprites and its world pass runs unshaded.  Art selection and
+-- the trueColor flag gate on this: non-ADVANCED modes serve luminance
+-- (-grayscale) sheets through the engine's zone pass, ADVANCED serves the
+-- original colored sheets raw.
+function Config.paletteFxRedpp()
+  local ok, PaletteFX = pcall(require, "src.render.PaletteFX")
+  if ok and type(PaletteFX) == "table" and PaletteFX.mode ~= nil then
+    return PaletteFX.mode == "redpp"
+  end
+  return false
+end
+
+function Config.migrateSpriteColorOption(mod)
+  local function write(bucket)
+    if type(bucket) ~= "table" then return end
+    bucket[mod.id] = bucket[mod.id] or {}
+    if kimView(bucket, mod).sprite_color ~= "colored" then
+      kimView(bucket, mod).sprite_color = "colored"
+    end
+    -- Do not delete legacy keys (color_mode / colored_sprites stay readable).
+  end
+  local world = mod.world
+  local game = world and world.game
+  if game and game.save and game.save.options then
+    game.save.options.modOptions = game.save.options.modOptions or {}
+    write(game.save.options.modOptions)
+  end
+  if game and game.mods then
+    if game.mods.modOptions then write(game.mods.modOptions) end
+    if game.mods.loader and game.mods.loader.modOptions then
+      write(game.mods.loader.modOptions)
+    end
+  end
+  return "colored"
+end
+
+-- Back-compat setter: ignores the requested mode and forces colored. Kept so
+-- external callers / older menus never crash, and a stale "classic" selection
+-- is visually corrected immediately by refreshing entity sprites.
+function Config.setSpriteColor(mod, value, source, opts)
+  opts = opts or {}
+  local game = resolveGame(mod, opts)
+  writeOptionBucket(mod, game, "sprite_color", "colored")
+
+  local render = opts.render
+  local logic = opts.logic
+  if (not render or not logic) and mod and mod.exports then
+    render = render or mod.exports.render
+    logic = logic or mod.exports.logic
+  end
+  local refreshed = 0
+  if render and logic and type(render.refreshAllEntitySprites) == "function" then
+    if type(render.invalidateAssetCache) == "function" then
+      pcall(render.invalidateAssetCache, render)
+    end
+    local ok, n = pcall(render.refreshAllEntitySprites, render, logic, game)
+    if ok and type(n) == "number" then refreshed = n end
+  end
+  if mod and mod.exports and mod.exports.ambient
+     and type(mod.exports.ambient.refreshSprites) == "function" then
+    pcall(mod.exports.ambient.refreshSprites, mod.exports.ambient, game)
+  end
+
+  local confirmMsg = opts.message
+  if not confirmMsg and opts.confirm ~= false then
+    confirmMsg = "COLOR: " .. (SPRITE_COLOR_CONFIRM.colored)
+  end
+  confirmText(game, mod, confirmMsg)
+  return true, "colored", refreshed
+end
+
+function Config.indoorPokemonEnabled(mod)
+  local raw, present = Config.peekSavedOption(mod, "indoor_pokemon")
+  if present then return raw == true end
+  if mod and mod.options and type(mod.options.get) == "function" then
+    local v = mod.options:get("indoor_pokemon")
+    if v ~= nil then return v == true end
+  end
+  return Config.DEFAULTS.indoor_pokemon == true
+end
+
+function Config.setIndoorPokemon(mod, value, source, opts)
+  opts = opts or {}
+  local on = (value == true or value == "on" or value == "ON")
+  if value == false or value == "off" or value == "OFF" then on = false end
+  local game = resolveGame(mod, opts)
+  writeOptionBucket(mod, game, "indoor_pokemon", on)
+  local ambient = opts.ambient
+  if not ambient and mod and mod.exports then
+    ambient = mod.exports.ambient
+  end
+  if ambient and type(ambient.onIndoorPokemonToggled) == "function" then
+    pcall(ambient.onIndoorPokemonToggled, ambient, on, game)
+  end
+  local confirmMsg = opts.message
+  if not confirmMsg and opts.confirm ~= false then
+    confirmMsg = "INDOOR: " .. (on and "ON" or "OFF")
+  end
+  confirmText(game, mod, confirmMsg)
+  return true, on
+end
+
+--- Central battleability helper for wild / ambient entities.
+function Config.isBattleableWild(entity)
+  if not entity then return false end
+  if entity.wildsAmbientPokemon == true then return false end
+  if entity.wildsBattleable == false then return false end
+  if entity.wildsEncounterEnabled == false then return false end
+  if entity.wildsAggressive == false and entity.overworldWildSpawn ~= true then
+    -- Ambient-style NPC without wild spawn marker.
+    if entity.wildsAmbientPokemon then return false end
+  end
+  if entity.overworldWildSpawn == true then
+    if entity.hiddenEncounter == true and entity.visibleSprite == false then
+      return true -- hidden markers are still battleable on contact
+    end
+    return entity.state ~= "REMOVED" and entity.state ~= Config.STATE.REMOVED
+  end
+  return false
+end
+
+return Config

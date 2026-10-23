@@ -1,0 +1,23 @@
+{
+  "commit": "a3acb77f05fb6649df2790031a1285066ffa32f2",
+  "dexMax": 1025,
+  "dexMin": 1,
+  "genericEmotionPool": [
+    "happy",
+    "joyous",
+    "inspired",
+    "determined",
+    "normal"
+  ],
+  "importerVersion": "4",
+  "missingPortraitNormal": [],
+  "portraitsImported": 1025,
+  "repository": "https://github.com/PMDCollab/SpriteCollab",
+  "safePortraitEmotions": [
+    "normal",
+    "happy",
+    "joyous",
+    "inspired",
+    "determined"
+  ]
+}

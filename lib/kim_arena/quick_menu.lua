@@ -715,6 +715,26 @@ return function(host)
     return p ~= nil
   end
 
+  -- Shared by the overworld HUD; retain the game's availability and item paths.
+  function M.hudActions(game)
+    local actions = {}
+    if opt("quickMenu", true) ~= false then
+      actions[#actions + 1] = { id = "quick", label = "QUICK", run = M.openQuick }
+    end
+    if hasPokegear(game) then
+      actions[#actions + 1] = { id = "gear", label = "GEAR", run = openPokegear }
+    end
+    actions[#actions + 1] = { id = "dex", label = "AREA", run = M.openAreaDex }
+    if selectable(game, "BICYCLE") then
+      actions[#actions + 1] = { id = "bike", label = "BIKE",
+        run = function(g) useItem(g, "BICYCLE") end }
+    end
+    if opt("keyWheel", true) ~= false and #M.keyItems(game) > 0 then
+      actions[#actions + 1] = { id = "items", label = "ITEMS", run = M.wheelOpen }
+    end
+    return actions
+  end
+
   -- START -> QUICK (works with any controller)
   mod.hooks:wrap("ui.start_menu.items", function(nextFn, game, items)
     local result = nextFn(game, items)
@@ -722,7 +742,7 @@ return function(host)
     if opt("quickMenu", true) ~= false and opt("quickInStart", true) ~= false then
       local at = #result + 1
       for i, it in ipairs(result) do
-        if it and (it.label == "PC" or it.label == "ALL-IN-1" or it.label == "OPTION") then at = i; break end
+        if it and (it.label == "PC" or it.label == "GEN2-AIO" or it.label == "OPTION") then at = i; break end
       end
       table.insert(result, at, { label = "QUICK", onSelect = function() M.openQuick(game) end })
     end

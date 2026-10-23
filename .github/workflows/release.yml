@@ -1,0 +1,69 @@
+name: Package mod release
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag matching manifest version (e.g. v0.9.49)
+        required: true
+        type: string
+permissions:
+  contents: write
+concurrency:
+  group: mod-release-${{ github.event.release.tag_name || inputs.tag }}
+  cancel-in-progress: false
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag }}
+      - name: Check version and list previous releases
+        run: |
+          python3 - <<'PY'
+          import json, os
+          version = json.load(open('manifest.json'))['version']
+          assert os.environ['RELEASE_TAG'] == 'v' + version, 'Tag must match manifest.json (vX.Y.Z)'
+          PY
+          gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" --slurp > /tmp/release-pages.json
+      - name: Select previous complete build
+        run: |
+          python3 - <<'PY'
+          import json
+          from tools.build_mod_index import select_release
+          version = tuple(map(int, json.load(open('manifest.json'))['version'].split('.')))
+          releases = [r for page in json.load(open('/tmp/release-pages.json')) for r in page]
+          older = []
+          for release in releases:
+              tag = release['tag_name'].removeprefix('v')
+              try:
+                  if tuple(map(int, tag.split('.'))) < version:
+                      older.append(release)
+              except ValueError:
+                  pass
+          selected = select_release(older, 'KIM_ARENA')
+          if not selected:
+              release = next((r for r in releases if r['tag_name'] == 'Initial'), None)
+              asset = next((a for a in (release or {}).get('assets', []) if a['name'] == 'Gen2_AiO_0948.zip'), None)
+              if asset:
+                  selected = {'tag': 'Initial', 'zip': {'name': asset['name']}}
+          assert selected, 'No previous full build found; provide a baseline before releasing'
+          json.dump(selected, open('/tmp/previous-release.json', 'w'))
+          PY
+          previous_tag=$(python3 -c 'import json; print(json.load(open("/tmp/previous-release.json"))["tag"])')
+          previous_name=$(python3 -c 'import json; print(json.load(open("/tmp/previous-release.json"))["zip"]["name"])')
+          gh release download "$previous_tag" --repo "$GITHUB_REPOSITORY" --pattern "$previous_name" --output /tmp/previous.zip
+      - name: Build and verify full build and overlay patch
+        run: python3 tools/build_release.py --tag "$RELEASE_TAG" --previous-zip /tmp/previous.zip
+      - name: Attach installable builds and checksums
+        run: gh release upload "$RELEASE_TAG" dist/* --repo "$GITHUB_REPOSITORY" --clobber
+  index:
+    needs: package
+    uses: ./.github/workflows/mod-index.yml
+    permissions:
+      contents: write
