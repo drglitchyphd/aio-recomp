@@ -12,7 +12,8 @@ function love.load()
  local hud = assert(loadfile(root..'lib/gen2_aio/overworld_hud.lua'))()({mod=mod,diag=function(k,e) error(k..': '..e) end})
  local game = {phase='play', data={items={BICYCLE={pocket='KEY_ITEM',index=1},OLD_ROD={pocket='KEY_ITEM',index=2}}},
  save={inventory={BICYCLE=1,OLD_ROD=1},party={{hp=50,maxHp=50},{hp=15,maxHp=50},{hp=0,maxHp=50}}},
- world={player={},acceptsMenuInput=function() return true end,registerItem=function(_,id) registered=id end,
+ world={player={},busy=function(self) return self.scriptBusy end,
+ acceptsMenuInput=function(self) return not self.player.moving end,registerItem=function(_,id) registered=id end,
  hour=function() return 14 end,minute=function() return 32 end},
  stack={top=function() return top end,push=function(_,v) top=v end},
  pushStartMenuItem=function(_,id) gear=id; top={} end,useSelectItem=function() end}
@@ -23,7 +24,26 @@ function love.load()
  local function send(phase,x,y,id) return ptr(function() forwarded=forwarded+1 end,game,{phase=phase,x=x,y=y,id=id or 1,source='mouse',button=1}) end
  local function cell(id) for _,r in ipairs(hud.layout(game).cells) do if r.action.id==id then return r end end end
  local function tap(id) local r=cell(id); send('pressed',r.x+4,r.y+4); send('released',r.x+4,r.y+4) end
+ local function step() hooks['input.step'][5](function() end,game,1/60) end
  check(#hud.layout(game).cells==5,'five available shortcuts')
+ local original=hud.layout(game)
+ for i=1,12 do
+  game.world.player.moving=i%2==1
+  local l=hud.layout(game)
+  check(l and l.x==original.x and l.y==original.y,'HUD stable across walking frames')
+ end
+ game.world.player.moving=true
+ check(not q.ready(game),'native menu gate closed mid-step')
+ tap('gear');check(gear==nil,'walking tap waits for step completion')
+ step();check(gear==nil,'queued shortcut cannot bypass menu input gate')
+ game.world.player.moving=false;step()
+ check(gear=='pokegear','queued shortcut opens once step completes');top=nil;gear=nil
+ local r=cell('gear');send('pressed',r.x+4,r.y+4)
+ game.world.player.moving=true;send('released',r.x+4,r.y+4)
+ check(gear==nil,'a step starting during a tap defers the action')
+ game.world.player.moving=false;step();check(gear=='pokegear','tap survives movement-state change');top=nil;gear=nil
+ game.world.scriptBusy=true;check(hud.layout(game)==nil,'script activity hides HUD');game.world.scriptBusy=nil
+ game.world.choicebox={};check(hud.layout(game)==nil,'choice box hides HUD');game.world.choicebox=nil
  tap('gear'); check(gear=='pokegear','gear opens native menu'); top=nil
  tap('bike'); check(registered=='BICYCLE','bike uses native register path')
  tap('dex'); check(top.kimAreaDex,'area opens actual area dex'); top=nil

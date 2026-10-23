@@ -8,7 +8,7 @@ return function(host)
   local function enabled(game)
     local opt = rawget(mod, "_kimArenaOpt")
     local q = quick()
-    return (not opt or opt("overworldHud", true) ~= false) and q and q.ready(game)
+    return (not opt or opt("overworldHud", true) ~= false) and q and q.overworld(game)
       and not game.world.textbox and not q.wheelActive()
   end
   local function contains(r, x, y)
@@ -150,7 +150,7 @@ return function(host)
           if r.action.id == p.id and l.W == p.W and l.H == p.H then match = r end
         end
         if not match or not contains(match, ev.x, ev.y) then p.cancelled = true end
-        if ev.phase == "released" and not p.cancelled then match.action.run(game) end
+        if ev.phase == "released" and not p.cancelled then quick().hudActivate(game, p.id) end
       end
       if ev.phase == "released" or ev.phase == "cancelled" then pointers[ev.id] = nil end
       return true

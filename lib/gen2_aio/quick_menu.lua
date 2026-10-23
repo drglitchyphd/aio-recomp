@@ -55,13 +55,24 @@ return function(host)
     return table.concat(out, " / ")
   end
 
-  -- the overworld with nothing open, taking input (Game2's START/SELECT gate)
-  function M.ready(game)
+  -- Visibility excludes modal/script activity, but includes ordinary walking.
+  function M.overworld(game)
     if type(game) ~= "table" or game.phase ~= "play" then return false end
     local w = game.world
     if not (w and w.player and game.stack) then return false end
     if game.stack:top() ~= nil then return false end
-    if w.battleActive then return false end
+    if w.battleActive or w.textbox or w.choicebox then return false end
+    if type(w.busy) == "function" then
+      local ok, busy = pcall(w.busy, w)
+      if not ok or busy then return false end
+    end
+    return true
+  end
+
+  -- Opening a menu still waits for Game2's START/SELECT gate (step boundary).
+  function M.ready(game)
+    if not M.overworld(game) then return false end
+    local w = game.world
     if type(w.acceptsMenuInput) == "function" then
       local ok, v = pcall(w.acceptsMenuInput, w)
       return ok and v == true
@@ -733,6 +744,19 @@ return function(host)
       actions[#actions + 1] = { id = "items", label = "ITEMS", run = M.wheelOpen }
     end
     return actions
+  end
+
+  function M.hudActivate(game, id)
+    if not M.overworld(game) then return false end
+    local function activate(g)
+      if g ~= game or opt("overworldHud", true) == false then return end
+      -- Ownership/unlocks may have changed while the current step finished.
+      for _, action in ipairs(M.hudActions(g)) do
+        if action.id == id then action.run(g); return end
+      end
+    end
+    if M.ready(game) then activate(game) else later(activate) end
+    return true
   end
 
   -- START -> QUICK (works with any controller)

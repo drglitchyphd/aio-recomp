@@ -1,10 +1,21 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.50)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.51)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Previous spec: `Gen2_AiO_handoff_spec_v2.md` (0.9.7). This file covers 0.9.8 → 0.9.24
 (0.9.24 section below; everything else as of 0.9.23).
+
+## 0.9.51 — walking HUD flicker / first same-ID update
+
+- Quick.overworld checks phase/stack/world/player, battle, text/choice and busy
+  script state. HUD visibility uses it rather than Quick.ready, which additionally
+  checks World.acceptsMenuInput (false while player.moving mid-step).
+- Quick.hudActivate reuses the pending-action queue for taps mid-step; executes
+  only when ready and rechecks the shortcut's availability. Same-ID full and
+  patch builds from 0.9.50; normal launcher update. No gmarc/cache change.
+- HUD regression harness alternates moving/standing frames, tests deferred taps
+  and changes of movement state during a gesture, plus script/choice exclusions.
 
 ## 0.9.50 — full gen2-aio identity and readable HUD clock
 
