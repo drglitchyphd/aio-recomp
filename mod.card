@@ -1,5 +1,0 @@
-return {
-  summary = "Kanto in Motion HD Pokemon and UI on Crystal, Battle Art's voxel world, and Kenney / Stadium 2 / KIM HD battle backgrounds.",
-  author = "Fork of Kanto in Motion (HaseoSora), Battle Art Voxel Gen2 (absol89 / DramaticShape contributors) and Stadium 2 Importer (Deftones565)",
-  tags = { "ui", "battle", "graphics", "3d", "voxel" },
-}
