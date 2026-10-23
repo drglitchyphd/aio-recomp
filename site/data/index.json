@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-23T21:39:41.947975Z",
+  "generated_at": "2026-10-23T21:56:04.541321Z",
   "count": 1,
   "categories": [
     "UI",
@@ -10,7 +10,7 @@
   ],
   "mods": [
     {
-      "id": "KIM_ARENA",
+      "id": "gen2-aio",
       "api": 2,
       "games": [
         "gen2"
@@ -59,12 +59,13 @@
         "recomp-autosave",
         "Gen1MenuManager",
         "gen1_mod_menu",
-        "Gen1Remember"
+        "Gen1Remember",
+        "KIM_ARENA"
       ],
-      "folder": "drglitchyphd@KIM_ARENA",
+      "folder": "drglitchyphd@gen2-aio",
       "title": "Gen2-AIO",
       "author": "drglitchyphd",
-      "version": "0.9.49",
+      "version": "0.9.50",
       "github": "drglitchyphd/aio-recomp",
       "repo": "https://github.com/drglitchyphd/aio-recomp",
       "summary": "Crystal all-in-one: HD Pokemon, modern UI, voxel overworld, Kenney scenes, touch controls, followers and optional Nuzlocke rules.",
@@ -82,18 +83,18 @@
         "touch"
       ],
       "automatic_version_check": true,
-      "downloadURL": "https://github.com/drglitchyphd/aio-recomp/releases/download/v0.9.49/KIM_ARENA-0.9.49.zip",
-      "description_url": "https://raw.githubusercontent.com/drglitchyphd/aio-recomp/main/README_KIM_ARENA.md",
+      "downloadURL": "https://github.com/drglitchyphd/aio-recomp/releases/download/v0.9.50/gen2-aio-0.9.50.zip",
+      "description_url": "https://raw.githubusercontent.com/drglitchyphd/aio-recomp/main/README_GEN2_AIO.md",
       "latest": {
-        "version": "0.9.49",
-        "tag": "v0.9.49",
-        "name": "Gen2-AIO 0.9.49",
+        "version": "0.9.50",
+        "tag": "v0.9.50",
+        "name": "Gen2-AIO 0.9.50",
         "prerelease": false,
-        "published_at": "2026-10-23T21:39:00Z",
+        "published_at": "2026-10-23T21:55:29Z",
         "zip": {
-          "name": "KIM_ARENA-0.9.49.zip",
-          "url": "https://github.com/drglitchyphd/aio-recomp/releases/download/v0.9.49/KIM_ARENA-0.9.49.zip",
-          "size": 50227237
+          "name": "gen2-aio-0.9.50.zip",
+          "url": "https://github.com/drglitchyphd/aio-recomp/releases/download/v0.9.50/gen2-aio-0.9.50.zip",
+          "size": 50228817
         }
       },
       "update_check": "ok"
