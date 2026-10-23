@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-23T21:36:04.589933Z",
+  "generated_at": "2026-10-23T21:39:41.947975Z",
   "count": 1,
   "categories": [
     "UI",
@@ -64,7 +64,7 @@
       "folder": "drglitchyphd@KIM_ARENA",
       "title": "Gen2-AIO",
       "author": "drglitchyphd",
-      "version": "0.9.48",
+      "version": "0.9.49",
       "github": "drglitchyphd/aio-recomp",
       "repo": "https://github.com/drglitchyphd/aio-recomp",
       "summary": "Crystal all-in-one: HD Pokemon, modern UI, voxel overworld, Kenney scenes, touch controls, followers and optional Nuzlocke rules.",
@@ -82,18 +82,18 @@
         "touch"
       ],
       "automatic_version_check": true,
-      "downloadURL": "https://github.com/drglitchyphd/aio-recomp/releases/download/Initial/Gen2_AiO_0948.zip",
+      "downloadURL": "https://github.com/drglitchyphd/aio-recomp/releases/download/v0.9.49/KIM_ARENA-0.9.49.zip",
       "description_url": "https://raw.githubusercontent.com/drglitchyphd/aio-recomp/main/README_KIM_ARENA.md",
       "latest": {
-        "version": "0.9.48",
-        "tag": "Initial",
-        "name": "Initial source",
-        "prerelease": true,
-        "published_at": "2026-10-23T20:58:27Z",
+        "version": "0.9.49",
+        "tag": "v0.9.49",
+        "name": "Gen2-AIO 0.9.49",
+        "prerelease": false,
+        "published_at": "2026-10-23T21:39:00Z",
         "zip": {
-          "name": "Gen2_AiO_0948.zip",
-          "url": "https://github.com/drglitchyphd/aio-recomp/releases/download/Initial/Gen2_AiO_0948.zip",
-          "size": 50305022
+          "name": "KIM_ARENA-0.9.49.zip",
+          "url": "https://github.com/drglitchyphd/aio-recomp/releases/download/v0.9.49/KIM_ARENA-0.9.49.zip",
+          "size": 50227237
         }
       },
       "update_check": "ok"
