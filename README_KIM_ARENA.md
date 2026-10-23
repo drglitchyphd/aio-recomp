@@ -1,0 +1,657 @@
+# Gen2 All-in-One 0.9.48 (mod id `KIM_ARENA`)
+
+One mod for Pokemon Crystal on Gen1Recomp. The id stays `KIM_ARENA`, so
+settings and KIM's downloaded HD assets carry over.
+
+| Part | Folder | Notes |
+|---|---|---|
+| Kanto in Motion 1.7.6 | root | HD Pokemon, Modern UI, battle panel |
+| gmarcs Gen 2 Voxel Mod 1.0.7 | `gmarc/` | Voxel overworld and 3D battle (the only voxel engine) |
+| Stadium 2 Importer (Kenney scenes only) | `stadium2/` | Live KENNEY HD battle backgrounds |
+| Wilds of Kanto Revival 2.8.1 | `wilds/` | Visible wild Pokemon, followers (MIT, see `wilds/LICENSE`) |
+| Nuzlocke 1.0.2 | `nuzlocke/` | Ruleset; Crystal routed through its Gold (GSC) paths |
+| KIM Touch 0.3.0 | `touch/` | Floating D-pad, tap A, tap menus |
+| QoL Toggles 1.31.1 | `qoltoggles/` | Quick nurse, auto-repel, multipliers, ... (own hub page) |
+| Gen1Wild QOL 1.35.0 | `qol/` | Sprint, banners, reminders, autosave, ... |
+
+## 0.9.48 changes
+
+- Swipe in menus now scrolls like a web page: drag a list and the page
+  follows your finger without moving the selection; flick it and it keeps
+  gliding, touch to stop it. Tap a row to pick it. Works in the START menu,
+  PACK, Pokedex list, every OPTION / ALL-IN-ONE / QUICK page, mod settings,
+  field menus and the AREA DEX. (The list moves a whole row at a time.)
+- YES / NO over the START menu (QUIT, END CONTEST) can be tapped; it used to
+  hit the menu rows underneath.
+- Tapping beside a popup menu (PACK USE/TOSS, party SWITCH/STATS, YES/NO
+  boxes) now closes it like B. It used to press A and pick whatever option
+  was highlighted.
+
+## 0.9.47 changes
+
+- POKEGEAR: the card strip shows the highlighted card instead of an empty
+  panel. CLOCK card: a 24-hour dial coloured by time of day, the time, the
+  weekday and MORNING / DAY / NIGHT. PHONE card: compact rows (name and
+  trainer class on one line), empty slots dimmed, a contact count, and a card
+  for the highlighted contact (tap it again to call).
+- Naming keyboard: real key caps sized to the screen, an entry field with
+  one slot per letter and a blinking cursor, and a panel only as tall as the
+  keyboard (it used to stretch small letters over the whole screen).
+- ALL 251 CATCHABLE: Omanyte moved to Cianwood City's water (10%); on Route 41
+  it had to take the 30% slot because the rare slot is Mantine's only home.
+  Checked against pokecrystal's own wild tables: all 17 additions land on
+  their map and times, and every species they displace is still catchable.
+
+## 0.9.46 changes
+
+- QUICK MENU: hold START on the overworld (touch), or START -> QUICK with any
+  controller. POKEGEAR, FLY (opens the real Fly map; badge, outdoor and party
+  checks are Crystal's own, QoL easy-HM rules included), AREA DEX, DAY-CARE,
+  TODAY, KEY ITEMS. A quick tap of START still opens the START menu.
+- AREA DEX: every wild Pokemon on the current map -- grass/cave for the time of
+  day (with odds and levels), other times, surfing, and each rod. Unseen ones
+  are solid black silhouettes, seen ones in colour, caught ones get a ball.
+- DAY-CARE readout: both Pokemon, levels gained, price to take them back, how
+  well they get along, whether an egg is waiting, steps left on party eggs.
+- TODAY: Crystal's weekly events for today and tomorrow on the game's own
+  weekday (Bug-Catching Contest, Week Siblings, Lapras, Clefairy dance,
+  haircuts, Buena).
+- KEY ITEM WHEEL: hold SELECT on the overworld (touch). Drag to an item and
+  let go, or let go and tap one. Hold an item in the PACK to pin it to the
+  wheel (pinned first). The item picked becomes your SELECT item too.
+- Long press: an enemy's or your HUD card in battle (types, HP, base stats /
+  stats and moves, caught or not); a Pokemon on the in-battle party screen.
+- Bigger Pokemon icons on the party screen.
+- Pokedex taps: the entry screen's PAGE / AREA / CRY / PRINT tabs, the area
+  map (tap a side to switch region, the title to go back), the option and
+  search lists.
+- Hub and quick-menu pages show their own title instead of OPTIONS.
+- Violet City: houses with striped roofs were built as flat 16px boxes (the
+  repeating roof rows read as a wall pattern). gmarc now builds them full
+  height with sloped roofs. **gmarc/lib changed: every saved voxel map
+  rebuilds once.**
+
+## 0.9.45 changes
+
+- Swipe in menus (KIM Touch): drag across a list to scroll it -- one row per
+  row-height of travel, finger up moves further down the list like a phone;
+  sideways swipes step left / right (pockets, pages). A swipe never presses A.
+- Hold to repeat: in any menu, holding the touch joystick in a direction keeps
+  moving after a short pause (about 11 rows a second) instead of one row per
+  push. Walking is unchanged.
+- MOVE TYPE COLORS: tint only (the side stripe is gone).
+- EFFECTIVENESS HINT now shows when turned on (it was reading the setting
+  from the wrong place).
+- TIME OF DAY: CYCLE is now CYCLE 30, plus a new CYCLE 60 (a full day every
+  hour). TIME FADE and the weekday follow either.
+
+## 0.9.44 changes
+
+- FOLLOWER IS PARTY LEAD now actually runs: Crystal's overworld is not a
+  screen of its own (the menu stack is empty while you walk), and the sync
+  was waiting for one. DIAGNOSTICS shows the `follower` line.
+- 3D battles: Pokemon shake again on hits and stat drops (the vibrate and
+  screen-shake motion is applied to the 3D picture).
+- WILDS NPC POKEMON now also covers the big ones -- Vermilion's sleeping
+  Snorlax and the other 2x2 Pokemon -- centred on their spot. The dolls in
+  your bedroom stay dolls.
+- MOVE TYPE COLORS (new, on; BATTLE page): each move's box is tinted in its
+  type colour with a stripe. EFFECTIVENESS HINT (new, off): SUPER / WEAK /
+  NO EFFECT against the current enemy.
+
+## 0.9.43 changes
+
+- DIAGNOSTICS moved from the BATTLE page to the ALL-IN-ONE page itself
+  (just above MOD LIST).
+
+## 0.9.42 changes
+
+- AREA SIGN (new, MODERN; DISPLAY & UI page): the town / route name is a
+  plaque in your UI THEME in the top-left corner, sliding in and fading out
+  on Crystal's own timing, in 2D and 3D. NATIVE keeps the Game Boy sign.
+- Hold to fast-forward text: with KIM Touch, hold your finger on the screen
+  while a text box is open and the text speeds up as if A were held.
+- DIAGNOSTICS `perf` also names the GPU (for the PowerVR / Pixel 10 work).
+
+## 0.9.41 changes
+
+- Town / route name signs are back in 3D. gmarc's voxel frame skipped
+  everything Crystal draws after the map, so the sign on entering an area
+  (and the Pokemon picture box some scripts open) never showed with VOXEL on.
+- Pokedex taps: tap a species to highlight it, tap it again to open its
+  entry (KIM Touch).
+- No more 2D flash on load: with VOXEL on, a plain LOADING card covers the
+  screen until the first 3D frame is ready (at most 20 seconds).
+- FOLLOWER IS PARTY LEAD reworked: compares Pokemon the way Wilds does and
+  reads the party through Wilds, and DIAGNOSTICS shows a `follower` line
+  (what it is following, or why it can't switch).
+
+## 0.9.40 changes
+
+- LONG PRESS (KIM Touch, on; TOUCH CONTROLS page):
+  - In battle, hold a move for about half a second: a card shows its type,
+    PHYSICAL / SPECIAL / STATUS, power, accuracy, PP and Crystal's own
+    description. Tap anywhere to close it.
+  - On the POKeMON screen (outside battle), hold a Pokemon to pick it up and
+    drag it onto another slot to move it there (Crystal's own SWITCH). Let go
+    on its own row to open its STATS.
+  - A long press never also counts as a tap.
+- FOLLOWER IS PARTY LEAD (new, on; WILD POKEMON page): the follower is
+  always the first healthy Pokemon in your party and changes as soon as you
+  reorder, deposit or faint -- no reload needed. OFF gives the choice back to
+  the FOLLOWER entry in a Pokemon's menu.
+
+## 0.9.39 changes
+
+- Theme lists read ON / OFF: in the UI THEME list (and the CUSTOM BORDER /
+  BACKING / BORDER COLOR lists) the active entry says ON and the rest OFF.
+  Choosing one turns it ON and the previous one OFF; the list stays open so
+  you can try a few, and BACK returns. Picking CUSTOM shows its rows on the
+  page underneath straight away.
+
+## 0.9.38 changes
+
+- UI THEME is now the first row of ALL-IN-ONE -> DISPLAY & UI: it opens the
+  list of every theme (GEN 3 and CUSTOM included); tap one to use it. The
+  CUSTOM rows (BORDER, BACKING, BORDER COLOR) appear under it only while
+  CUSTOM is the chosen theme.
+
+## 0.9.37 changes
+
+- UI THEME: GEN 3 (FRLG) -- light FireRed / LeafGreen-style panels: white
+  boxes, dark text, a teal rounded GEN 3 frame, pale-blue selection, red
+  accents. Every existing theme is kept.
+- UI THEME: CUSTOM -- pick CUSTOM BORDER (GEN 3, FRAME 1-3, SOFT, PLAIN),
+  CUSTOM BACKING (11 colours) and CUSTOM BORDER COLOR (11 colours) at the top
+  of ALL-IN-ONE -> DISPLAY & UI. Each opens a list; tap one to set it. Text
+  and highlight colours adjust so a light or dark backing stays readable.
+- PIXEL FRAME gains GEN 3.
+- TIME FADE (new, on; WEATHER & TIME page): on SYNC and CYCLE the colour
+  switch at 18:00 (day to night) and 04:00 (night to morning) now dims in and
+  back out over about 20 seconds instead of snapping. Not on caves / indoor
+  maps whose colours are fixed.
+
+## 0.9.36 changes
+
+- TRAINER LEVELS gains MATCH -1/-2 (a trainer's strongest Pokemon one or two
+  levels under your strongest) and MATCH -5 TO 0 (anywhere from five under to
+  level). The offset is picked per trainer and stays the same for them.
+  Trainers are still never lowered below Crystal's own levels.
+
+## 0.9.35 changes
+
+- START -> PC: Bill's PC from anywhere (withdraw, deposit, change box, move
+  Pokemon), the same screen as a Pokemon Center PC. PC IN START MENU on the
+  QUALITY OF LIFE page turns it off.
+- Nuzlocke RULES in the Modern UI: START -> RULES (and ALL-IN-ONE -> RULES
+  -> RUN RULES) now open the run's rules as a themed, tappable page --
+  LEVEL CAP SCOPE (NONE / GYMS / E4 / CHAMP / POSTGAME), the clauses, the
+  hardcore rules. LOCK RULES makes the page read-only (and cannot be turned
+  back off mid-run). The title screen's SETUP keeps the original screen.
+
+## 0.9.34 changes
+
+- KIM HD battle sprites are sharp again: PERFORMANCE = BALANCED no longer
+  holds 3D SPRITE DETAIL at 2X (the row still said 4X). That row is yours
+  alone now; BALANCED keeps the 60 fps cap, voxel AA off and FOREST FX LOW.
+
+## 0.9.33 changes
+
+- QOL TOGGLES page fixed: 0.9.32 registered the switches but never handed
+  them to Crystal's OPTION screen, so only the on/off load setting showed.
+  The hub now has a QOL TOGGLES page with every switch, and the load setting
+  sits at the top of that page. DIAGNOSTICS shows `qol toggles: N switches`
+  (or why it failed to start).
+
+## 0.9.32 changes
+
+- QoL Toggles 1.31.1 added (`qoltoggles/`, loaded with the QOL TOGGLES
+  setting). Its switches are on their own page of the ALL-IN-ONE hub, drawn
+  by Crystal's OPTION screen in your Modern UI theme and tappable, instead of
+  its Game Boy card menu. Where it does the same job as something already in
+  the bundle, the bundle's version stays and the QoL Toggles one is off with
+  no row: RUN (HOLD B) -> SPRINT, MAP LOCATION -> AREA BANNER, UNLIMITED TMs
+  -> REUSABLE TMS, FORGETTABLE HMs -> FORGET HM MOVES, LAST ITEM (M) -> QUICK
+  BALL on SELECT, MOUSE CAM LOCK -> BATTLE CAMERA. EXP BAR only shows with
+  BATTLE HUD = NATIVE. FULL HEAL CATCH ships OFF so Nuzlocke runs stay honest
+  (ALWAYS CATCH, HEAL AFTER BATTLE, HEAL ON MAP CHANGE and PERFECT DVS
+  already ship OFF). AUTO CUT and EASY HM USE both stay; they do not clash.
+
+## 0.9.31 changes
+
+- PERFORMANCE (new, BALANCED by default): the frame rate is held at 60 or
+  below. The game runs at 60 steps a second, but on a 120Hz phone screen
+  every frame was being drawn twice. BALANCED also keeps 3D SPRITE DETAIL at
+  2X or less, voxel AA off and FOREST FX FULL at LOW, without changing your
+  stored choices; QUALITY gives them back (and your MAX FPS). DIAGNOSTICS
+  shows a `perf` line with the live frame rate.
+- gmarc voxel engine updated to 1.0.7: sprites of any size (Wilds' True
+  Size Pokemon, followers, the NPC Pokemon) are drawn by gmarc itself
+  instead of through Wilds' adapter.
+- gmarc files changed: saved voxel maps rebuild once.
+
+## 0.9.30 changes
+
+- Hit / stat-down flicker in 3D battles fixed. Effects that shake or
+  ripple the field line by line (the vibrate after a hit or a stat drop,
+  screen shakes, wavy screens) are drawn by Kanto in Motion in two passes:
+  the field without the Pokemon, then the HD Pokemon on top. gmarc's 3D
+  battle takes each Pokemon's picture its own way, and the second pass never
+  happened there, so the Pokemon vanished for the whole effect. The HD
+  Pokemon is now drawn into gmarc's picture after the first pass.
+- DIAGNOSTICS `hits` also counts these repaints ("hd redraws").
+
+## 0.9.29 changes
+
+- DIAGNOSTICS (hit flicker hunt): `hits` now appears as soon as the first
+  battle frame is drawn ("seam reached"), and a new `anim fx` line lists the
+  last three battle animations with the effects each one queued and what
+  they did to the Pokemon (hidden / shade / size / slide / lcdc / bgp).
+
+## 0.9.28 changes
+
+- WILDS NPC POKEMON: species are looked up under Wilds' own spelling
+  (Crystal's FARFETCH_D / MR__MIME are FARFETCHD / MR_MIME in Wilds), so
+  Ilex Forest's Farfetch'd gets its real sprite instead of a grey rock. The
+  DIAGNOSTICS line now shows each swapped Pokemon's Wilds number
+  (FARFETCH_D#83); `#?` means Wilds did not recognise the name.
+- DIAGNOSTICS: new `hits` line for HIT FLICKER = STEADY -- how many hides
+  the battle had, how many were held, and how long the last one lasted and
+  why it was or was not held.
+
+## 0.9.27 changes
+
+- HIT FLICKER = STEADY works again everywhere. The fix used to live only in
+  gmarc's 3D card capture, so battles drawn another way (KIM HD paintings,
+  2D) blinked on every hit again. It now sits where every renderer asks
+  whether the Pokemon is shown: a blank shorter than a quarter second is
+  ignored. Fly, Dig, switching out, send-out and fainting hide as before.
+- WILDS NPC POKEMON: the swapped Pokemon keep their colours. Crystal's
+  4-colour NPC palette was being painted over the Wilds art (Ilex Forest's
+  Farfetch'd showed as a grey and white blob).
+
+## 0.9.26 changes
+
+- HD POKE BALLS: the ball is round. The battle view is stretched unevenly
+  on tall screens, which flattened it, and its pixels landed on fractional
+  steps, which made the outline lumpy. It is now drawn square in whole
+  screen pixels (same size).
+- DIAGNOSTICS: long lines wrap to the screen instead of running off it.
+
+## 0.9.25 changes
+
+- WILDS NPC POKEMON now actually swaps: the species is also read from the
+  sprite's own name (SPRITE_SLOWPOKE -> Slowpoke), because the game data
+  built from older ROM imports does not record it on the Pokemon sprites.
+  0.9.24 found nothing on those saves ("npc mons: 0 swapped").
+- DIAGNOSTICS `npc mons` also lists the other sprite ids on the map
+  ("other: ..."), so a Pokemon that is still native can be reported by name.
+- HD POKE BALLS: the Poke Ball is red again (the icon was orange, almost the
+  same as the Fast Ball), and the thrown ball is drawn at 11px instead of
+  16px so it sits in proportion next to KIM's HD Pokemon.
+- No gmarc files changed: saved voxel maps do NOT rebuild.
+
+## 0.9.24 changes
+
+- WILDS NPC POKEMON (new, ON): Pokemon that stand in the world as
+  characters -- Ilex Forest's Farfetch'd, Azalea's Slowpoke, the Red
+  Gyarados (shiny sheet), Lugia, Ho-Oh, the beasts, Union Cave's Lapras,
+  the day-care Pokemon and the rest -- use Wilds' sprites in your SPRITE
+  STYLE, in 2D and in gmarc's 3D world. Pokemon that hopped in place now
+  step in place. Species come from the ROM's own sprite table, or from the
+  Pokemon's cry in its script for the shared sheets (bird, fairy, dragon,
+  monster). Sudowoodo (a tree in 3D), the big Snorlax / Lapras / Onix dolls
+  and the dolls in your bedroom stay as they were. The setting is in the
+  hub's Wilds page; DIAGNOSTICS shows an `npc mons` line listing what was
+  swapped and any Pokemon sheet whose species could not be found.
+- No gmarc files changed: saved voxel maps do NOT rebuild.
+
+## 0.9.23 changes
+
+- VOXEL EDGE on forest borders: two rows of copies of gmarc's OWN round
+  tree (its hull template and terrain-atlas art) past the ring, so the edge
+  continues with identical trees; the flat fill takes over beyond. Falls back
+  to the low-poly canopies only when the map's structures came from the disk
+  cache and the template is not in memory.
+
+## 0.9.22 changes
+
+- TIME OF DAY now also drives the palettes through the engine's world.tod /
+  map.palette seams (outermost) and gmarc's sky, so the world, battles and
+  the voxel lighting follow the chosen time, not only the clock. Maps whose
+  header pins their colours (Ilex Forest, caves) keep them, as in Crystal.
+- KENNEY HD on a tall narrow screen (Fold outer screen) shows the KIM HD
+  painting instead; the inner screen keeps KENNEY HD.
+- VOXEL EDGE on forest borders: low-poly round trees (one eight-sided canopy
+  per 32px, like the ring's own trees) instead of boxes.
+
+## 0.9.21 changes
+
+- VOXEL EDGE / disk cache key: read TileRenderer through require (gmarc's
+  module environment does not see the engine's package.loaded, so the border
+  block was never found and every border looked flat).
+- DIAGNOSTICS: "battle 3d" says which arena the 3D battle used (map /
+  platform) and what the BATTLE BACKGROUND plate did (drawn / no picture /
+  error / not offered); "voxel edge" says why a border counts as flat.
+
+## 0.9.20 changes
+
+- KENNEY HD that keeps producing no picture (no error, just nothing) is
+  given up on after about two seconds and the KIM HD painting takes over,
+  instead of leaving the bare voxel floor behind the battle. DIAGNOSTICS
+  names the reason ("no battler positions ..." / "scene not ready").
+
+## 0.9.19 changes
+
+- VOXEL EDGE also builds in Ilex Forest (TILESET_FOREST's canopy border),
+  which it had judged flat.
+
+## 0.9.18 changes
+
+- **TIME OF DAY** (hub -> WEATHER & TIME, default SYNC). One clock for
+  everything that asks Crystal what time it is -- day/night palettes, the
+  voxel sky, the morning / day / night encounter tables, Wilds' spawns, NPC
+  schedules, weekday events, the Pokegear clock and the random rain:
+  SYNC (this device's clock), MORNING (07:00), DAY (13:00), EVENING (18:30),
+  NIGHT (23:00), CYCLE (a full day every 30 minutes; weekdays advance too),
+  or CRYSTAL CLOCK (the clock set in your save -- the old behaviour).
+  gmarc's own DAYTIME row is retired; the voxel sky follows this setting.
+
+## 0.9.17 changes
+
+- VOXEL EDGE fixed: its status reporter was defined after the code that
+  used it, so the build stopped on its first line, silently, every time.
+  It also no longer needs ffi (builds from plain Lua arrays when ffi is
+  unavailable). DIAGNOSTICS shows its state.
+
+## 0.9.16 changes
+
+- **HD POKE BALLS** (default ON): Crystal's own ball animations (the throw,
+  bounces, wobbles, click / break-out) now draw the thrown ball as its own
+  item icon -- Poke, Great, Ultra, Master, Level, Lure, Moon, Friend, Love,
+  Heavy, Fast and Park Ball -- instead of the Game Boy ball tiles.
+- **DIAGNOSTICS** (hub -> MORE, default off): short status lines on screen --
+  the battle background plan and any KENNEY HD error, VOXEL EDGE status,
+  disk cache hits / misses / failures, whether Wilds is running.
+- VOXEL EDGE: outdoor maps with the TREES void fill always use the 32px
+  canopy height.
+- KENNEY HD that cannot build a scene now falls back to KIM HD (with the
+  reason under DIAGNOSTICS) instead of silently showing the map.
+- Hub: QOL settings file under QUALITY OF LIFE (Gen1Wild QOL is a QOL pack).
+
+## 0.9.15 changes
+
+- **ALL-IN-ONE hub.** Every component's settings (the bundle, KIM, Wilds,
+  QOL, Touch, Nuzlocke, gmarc) leave Crystal's OPTION screen and are filed
+  into topic pages: DISPLAY & UI, WEATHER, OVERWORLD & VOXEL, WILD POKEMON,
+  BATTLE, RULES, QUALITY OF LIFE, TOUCH CONTROLS and MORE, plus MOD LIST
+  (the engine's own list of installed mods). Open it from START -> ALL-IN-1,
+  OPTION -> ALL-IN-ONE, or MOD MANAGER (QOL's QOL-only list is gone). The
+  pages are Crystal's OPTION screen, so they are KIM-themed and tappable.
+  Settings a component adds later are filed by name automatically.
+- VOXEL EDGE now actually appears: it reads the tree wall gmarc builds the
+  ring from (a route's own border block is grass) and starts right where
+  gmarc's 3D trees stop.
+- KIM Touch: the settings rows show the current screen's button layout.
+- MOUSE TEST MODE removed.
+
+## 0.9.14 changes (hotfix)
+
+- Voxel disk cache can no longer stall the voxel builder: a load that does
+  not answer within 3 s, or a stopped cache thread, falls back to a normal
+  build (and a stopped thread switches the cache off for the session). A
+  stalled load used to leave the map stuck on the flat 2D world and starve
+  every other voxel build, battles included.
+- VOXEL EDGE / WORLD EDGE FILL are fully isolated from the overworld render:
+  if either fails, the world still draws (ffi is optional for them now).
+- MOUSE TEST MODE (a PC testing aid) is no longer listed.
+
+## 0.9.13 changes
+
+- Nuzlocke level cap: one "LEVEL CAP REACHED" message after the battle,
+  naming every Pokemon that hit the cap, instead of a box per EXP award.
+- KIM Touch: the button layout (BUTTON SIDE, BUTTON HEIGHT, CONTROL SIZE,
+  CONTROL OPACITY, DRAG DEAD ZONE) is kept per screen shape -- outer / inner
+  screen, portrait / landscape -- and loads automatically when you fold,
+  unfold or rotate. Change it on one screen and only that screen keeps it.
+- VOXEL EDGE (gmarc, default ON): past the 3D border ring, the border keeps
+  going as low voxel blocks at the border's own height (forest canopy,
+  walls), with slight per-cell variation, for a band around the map before
+  the flat WORLD EDGE FILL takes over. Water borders stay flat. One mesh per
+  map, one draw call.
+
+## 0.9.12 changes
+
+- **VOXEL DISK CACHE** (gmarc, default ON). Every voxel map that finishes
+  building is saved to storage (LZ4-compressed, by a background thread) and
+  restored from there from then on -- this session and every later one. A
+  restore is a file read plus a budgeted GPU upload instead of a full rebuild
+  (structures, geometry, trees, grass, cuttable trees, support heights).
+  Nearby maps and door destinations keep being prepared as you move, as
+  before, and are saved too. The cache key covers the map's live block
+  layout, its neighbours, its tileset and Crystal's VOID FILL, so an edited
+  map (a cut tree, a moved boulder) simply gets its own file. Files are kept
+  across bundle updates unless the voxel builder itself changed.
+  - Storage: up to roughly 0.5-2 GB if you visit everything.
+  - Needs the `compute` permission (a background thread); the engine may ask.
+
+## 0.9.11 changes
+
+- **Weather** (WEATHER: ON / LITE / OFF), drawn over the overworld and battles
+  under the HUD and menus, on every voxel / background setting:
+  - MOVE WEATHER: Rain Dance, Sunny Day and Sandstorm show while active.
+  - PLACE WEATHER: snow outside Mt. Silver, frost in the Ice Path, mist on
+    Lake of Rage, the Whirl Islands, Dragon's Den and Routes 19-21 / 40-41,
+    embers in the Burned Tower, damp in Slowpoke Well and Union Cave, dust in
+    Mt. Mortar and Rock Tunnel. Never in houses, gates or Pokemon Centers.
+  - RANDOM RAIN: outdoor routes and towns, decided by Crystal's clock
+    (weekday + 3-hour block), so it is the same everywhere at a given time.
+    Lake of Rage rains more often.
+  - WEATHER IN BATTLE: battles keep the weather of their place.
+
+## 0.9.10 changes
+
+- Wilds of Kanto's SPRITE STYLE works again: FOLLOWERS/GSC (still the
+  default) or HGSS / POKEMMO, from Wilds' own menu or its settings row. 0.9.6
+  had pinned it to GSC, so every choice was silently ignored. If you picked
+  HGSS before 0.9.6, that choice applies again.
+
+## 0.9.9 changes
+
+- Touch continuity, part 2: tappable POKéGEAR tabs (MAP / RADIO / PHONE /
+  CLOCK) and phone contacts, the BOX PC list and its submenu, the SUMMARY
+  page tabs (STATUS / MOVES / STATS), KIM's own settings pages and the mod
+  settings page (tap a name to select it, its value to change it), and the
+  in-battle YES/NO prompts (nickname, learn a move, shift, next Pokemon).
+- Tap targets drawn for a prompt that has just closed are ignored, so a quick
+  tap after a battle YES/NO can't land on a stale row.
+
+## 0.9.8 changes
+
+- Touch continuity: rows are now tappable on the YES/NO box, script menus
+  (vending machines, prize counters), the POKé MART (BUY / SELL / QUIT, item
+  lists, YES/NO; tap the left or right half of the quantity box for -1 / +1),
+  the title menu, SAVE, OPTIONS (tap a name to select it, tap its value to
+  change it), the Pokemon Center PC and BILL'S PC (menu and BOX list), the
+  small field-action menus, BOY / GIRL, the name list and the naming keyboard
+  (on the keyboard a tap that misses a key does nothing, so it never types by
+  accident).
+- Smaller download: the QOL follower and ALL 151 modules (never loaded in this
+  bundle) and the unused Stadium 2 arena / model / battle files are gone. KENNEY
+  HD is unchanged.
+
+## 0.9.7 changes
+
+- HIT FLICKER (STEADY): Crystal clears a Pokemon's picture for a frame or two
+  inside some move animations, which blanked the 3D card. Clears shorter than a
+  quarter second now keep the last card; real hides (Fly, Dig, faint, return)
+  still hide. FLICKER restores the original.
+
+## 0.9.6 changes
+
+- KENNEY HD (locked): the lens is solved per battle so your Pokemon reads 1.5x
+  the foe's size, standing 20% across (it filled half the screen in caves).
+- Overworld Pokemon (Wilds) use the GSC follower sprites, matching Crystal's own
+  characters; the style is pinned (an HGSS choice saved earlier is ignored).
+- QUALITY OF LIFE (Gen1Wild QOL 1.35.0, in `qol/`): sprint, easy interactions,
+  NPC walking, area banners, move reminder, EXP share, rematches, forget HMs,
+  reusable TMs, autosave, auto continue, sound, menu layout, mod menu. Its
+  follower, Gen151, Gen251 and Celebi are left out (the bundle has its own);
+  its caught marker ships off (the HP cards show one).
+
+## 0.9.5 changes
+
+- Touch: a tap that misses every button is A everywhere (battle, popups); the
+  KIM START menu rows are tappable; the learn-move "forget which move?" screen
+  is a KIM list (tappable), with Crystal's native window hidden.
+- KENNEY HD (locked): your Pokemon sits further left; the shot is aimed once per
+  battle, so opening menus no longer shifts the sprites.
+- Types read as players expect: PSYCHIC not PSYCHIC_TYPE, ??? for CURSE_TYPE, and
+  single-type Pokemon show one type (FIRE, not FIRE / FIRE).
+- VOXEL PRECACHE (on): the areas behind the current area's doors are pre-built
+  in the background through gmarc's own build queue.
+- TRAINER LEVELS (MATCH): trainers' teams are raised to match your strongest
+  Pokemon (never lowered; hand-picked movesets kept). MATCH +2 and ORIGINAL too.
+- Ledge hops (0.9.4) and HUD-aware Kenney framing (0.9.4) included.
+
+## 0.9.2 changes
+
+- ALL 251 CATCHABLE (on by default): Crystal's 33 missing species become
+  obtainable. 17 base forms take rare wild slots (HGSS locations first, then
+  Crystal 251's choices, then habitat); legendaries and mythicals (Articuno,
+  Zapdos, Moltres, Mewtwo, Mew, Celebi) appear only after the Elite Four.
+  Verified against pokecrystal's tables: 251/251 reachable, no species removed
+  from any table. Trade evolutions evolve by level-up (Lv 37, or while holding
+  the trade item); real trades work as before.
+- KENNEY HD with BATTLE CAMERA LOCKED: a solved camera per battle that frames
+  your Pokemon and the foe where KIM HD's paintings put them, with an angle per
+  scene type (low in caves, higher over water and towns). Still live and
+  camera-matched.
+- UI THEME: HEARTGOLD, SOULSILVER and JOHTO NIGHT.
+
+## 0.9.1 changes
+
+- gmarc is the only voxel engine: Battle Art and the VOXEL ENGINE setting are removed.
+- Stadium 2 removed: the STADIUM 2 background, the 3D model sprites, the arena
+  picker and the ROM import. KENNEY HD stays (it uses only the Kenney renderer
+  from `stadium2/`). A saved STADIUM 2 background becomes KENNEY HD.
+- No optional dependencies (the resolver no longer lists useful_bag,
+  typed_move_colors, HGSS_SPRITES, ...).
+- Tall screens (Fold cover): automatic zoom showing about the same world area as
+  the inner screen; zoom on either screen only changes that screen.
+- WORLD EDGE FILL always repeats the map's own border past the meshed ring,
+  even when Crystal's VOID FILL is BLACK.
+- PIXEL ART FONT only shows when UI FONT is KIM ORIGINAL.
+- KIM HD sprites verified: all 251 Pokemon, front and back, normal and shiny.
+
+## 0.9.0-beta.2
+
+- **BATTLE SPRITES: KIM HD / STADIUM 2** (gmarc engine). STADIUM 2 stages
+  Pokemon Stadium 2's real 3D models in gmarc's battles. The models are built
+  once per save from the Stadium 2 ROM in this mod's Imported Files panel; a
+  small `STADIUM 2 MODELS n/251` readout shows in the corner while that runs.
+  Battles keep KIM HD sprites until the models are ready, or if the import
+  fails (the log says why). With a KIM HD background the painting is fitted
+  to where the models stand.
+- **WORLD EDGE FILL** (gmarc, default ON): past the ring of border trees, the
+  map's border block (trees / water / wall) is painted on a floor under the
+  world instead of a black void. It follows Crystal's OPTIONS > VOID FILL
+  (BLACK keeps the void) and the time of day.
+
+## 0.9.0-beta.1
+
+Fixes
+- **Outer screen zoom.** ZOOM is kept per screen shape: a tall screen (height
+  more than 1.9x width, e.g. a Fold's outer screen) has its own level, starting
+  at IN2; the inner screen keeps yours. Folding swaps them, and the ZOOM row,
+  hotkey and wheel change only the screen in use. Stored in the mod cache
+  (per device, outside save slots).
+- **VOXEL ENGINE now switches.** The choice is also written to the mod cache
+  the moment it changes and read first at boot. The log shows
+  `VOXEL ENGINE <x> (option <y>, cache <z>)`.
+- **Battle shadows on tall screens (gmarc + battle background plates).** KIM's
+  contact shadow is painted on the background directly under each Pokemon's
+  on-screen feet instead of inside the upright 3D card. If the battlers cannot
+  be moved onto a KIM HD painting's ground spots, the painting is now fitted to
+  the battlers instead (log: `KIM_ARENA plate: art fitted to the cards`).
+- Removed five unused engine-file copies from the mod root.
+
+New
+- **Quick Poke Ball on SELECT** (wild battles, FIGHT/PACK menu only; SELECT
+  still swaps moves in the move list). Throws the last ball you used (kept in
+  the save); if none are left, the next tier down, then up. Order: ULTRA,
+  GREAT, Apricorn balls, POKE. Never a MASTER BALL: with only that left, a
+  message says so. Goes through the PACK's own item path, so Nuzlocke applies.
+  KIM Touch's SELECT pill reads BALL while it is armed.
+- **MENU DIM** (default ON): menus opened outside battle darken the world
+  behind KIM's UI.
+- **UI FONT**: Pixel Operator (CC0) for KIM's Modern UI, HUD cards and touch
+  labels, sized to the same line height as before. KIM ORIGINAL restores the
+  old font.
+- **UI THEMES**: CRYSTAL, GOLD, SILVER, POKEGEAR, HIGH CONTRAST and TYPE (LEAD
+  POKEMON), which tints the UI by your lead Pokemon's type (in battle, the
+  active one).
+
+Cleanup
+- Optional dependencies trimmed to the add-ons the code actually integrates
+  with: useful_bag, typed_move_colors, HGSS_SPRITES, gen2_clean_ui, dex_radar,
+  quality_of_life.
+- KIM's Gen 2 LEGACY MENU SPRITES row removed (nothing on Gen 2 read it).
+
+Not in this beta yet: physical (DPI) font sizing, the full UI continuity pass,
+shiny marker, type-effectiveness hints, Nuzlocke area status.
+
+## Install
+
+Remove or disable the separate copies first: Kanto in Motion, gmarcs Gen 2
+Voxel Mod, Battle Art Voxel Gen2, Stadium 2 Importer, Stadium 2 UI, Wilds of
+Kanto (either version), Nuzlocke and KIM_TOUCH. All are listed as conflicts.
+
+Optional: pick the Stadium 2 ROM in this mod's Imported Files panel for
+STADIUM 2 backgrounds.
+
+## Main settings
+
+| Setting | |
+|---|---|
+| VOXEL ENGINE | GMARC / BATTLE ART (next launch) |
+| WILDS OF KANTO | load Wilds (next launch); its own options follow |
+| NUZLOCKE | load Nuzlocke (next launch); rules are set from the title screen's SETUP |
+| MENU TRANSITIONS | DARK (short fade in your theme) / WHITE (Crystal's original fade and pause) |
+| BATTLE BACKGROUND | KIM HD (default), DEFAULT (WHITE), KENNEY HD, STADIUM 2, VOXEL WORLD |
+| KIM HD BG ALIGN | Pokemon stand on each painting's ground spots |
+| KIM HD BG FILL | NATURE (darkened scene) / BLACK / WHITE above and below the painting on tall screens |
+| BATTLE HUD | MODERN cards / NATIVE |
+| BATTLE CAMERA | LOCKED / FREE |
+| PLAYER INTRO SPRITE | show / hide your trainer on the 3D stage at battle start |
+| 3D SPRITE DETAIL | GMARC: 1X-4X capture of KIM's HD Pokemon |
+| FLOATING CONTROLS ... | KIM Touch options |
+
+## Tall screens
+
+On screens more than 1.9x taller than wide (a Fold cover screen; the inner
+screen is unaffected), with floating touch controls on: KIM's battle panel sits
+in the bottom third, the HP cards follow it down, and B / START / SELECT sit
+below the panel.
+
+## Integration notes
+
+- Wilds and Nuzlocke keep their settings / save data under `wok_` and `nz_`
+  key prefixes, so generic names never collide with KIM's. Settings from the
+  separate copies of these mods do not carry over.
+- Wilds sees gmarc as a Dramatic Shape-family engine and uses its
+  variable-size voxel adapter; under BATTLE ART it uses its Battle Art adapter.
+- Nuzlocke's Gold-only checks now accept the whole GSC family. Its Gold beta
+  rule set applies to Crystal; maps Crystal adds may need runtime checks.
+- The empty native battle text box (intro, between lines) is hidden when KIM's
+  Modern UI is on; prompts, move learning and the level-up stats box stay.
+- Every change to bundled code is marked `KIM_ARENA` in the source.
+
+## Credits
+
+Kanto in Motion (HaseoSora and artists in THIRD_PARTY_NOTICES.md /
+ASSET_NOTICES.md); gmarcs Gen 2 Voxel Mod (gmarcs, from Dramatic Shape);
+Battle Art Voxel Gen2 (absol89 and Dramatic Shape contributors); Stadium 2
+Importer (Deftones565, pret/pokestadiumgs, michiiik/pokestadiumgs); Wilds of
+Kanto Revival (poooooby, from YoDrehDenSwagAuf's Wilds of Kanto, MIT);
+Nuzlocke (bryanthaboi); Kenney assets (CC0).
