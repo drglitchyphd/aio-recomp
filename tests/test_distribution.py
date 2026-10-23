@@ -101,6 +101,12 @@ class PackageTests(unittest.TestCase):
                 self.assertNotIn('tools/build_release.py', names)
             with self.assertRaises(ValueError):
                 packager.build(root, output, 'v0.9.50')
+            previous = output / 'gen2-aio-0.9.49.zip'
+            manifest['version'] = '0.9.50'
+            (root / 'manifest.json').write_text(json.dumps(manifest))
+            packager.build(root, output, 'v0.9.50', previous)
+            with zipfile.ZipFile(output / 'gen2-aio_patch_0.9.49_to_0.9.50.zip') as z:
+                self.assertEqual(z.namelist(), ['manifest.json'])
 
 
 if __name__ == '__main__':

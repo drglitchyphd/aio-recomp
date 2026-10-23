@@ -71,7 +71,8 @@ def build(root, output, tag=None, previous=None):
         with zipfile.ZipFile(path) as z:
             assert z.testzip() is None
             assert json.loads(z.read('manifest.json'))['version'] == version
-            assert 'main.lua' in z.namelist()
+            if name == f"{manifest['id']}-{version}.zip":
+                assert 'main.lua' in z.namelist()
         sums.append(hashlib.sha256(path.read_bytes()).hexdigest() + '  ' + name)
         print(f'{path}: {len(contents)} files')
     (output / 'SHA256SUMS').write_text('\n'.join(sums) + '\n')
