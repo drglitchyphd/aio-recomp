@@ -1,4 +1,4 @@
--- KIM_ARENA 0.9.35: Nuzlocke's run rules on a Modern UI page.
+-- gen2-aio 0.9.35: Nuzlocke's run rules on a Modern UI page.
 --
 -- START -> RULES (and ALL-IN-ONE -> RULES -> RUN RULES) open the rules of the
 -- current run as rows of Crystal's own OPTION screen, so they take the KIM

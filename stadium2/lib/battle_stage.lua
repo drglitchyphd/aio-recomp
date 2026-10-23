@@ -1,5 +1,5 @@
-local Mat = require("mods.KIM_ARENA.stadium2.lib.renderer")
-local Camera = require("mods.KIM_ARENA.stadium2.lib.battle_camera")
+local Mat = require("mods.gen2-aio.stadium2.lib.renderer")
+local Camera = require("mods.gen2-aio.stadium2.lib.battle_camera")
 
 local Stage = { positions=Camera.positions, MIN_RADIUS=18, MAX_RADIUS=34,
   PADDING=1.8, sink=.06 }

@@ -31,7 +31,7 @@ end
 function B.lastShot(s)return entries[s] and entries[s].shot end
 function B.lastHud(s)return entries[s] and entries[s].hud end
 function B.lastPic(s,side)return entries[s] and entries[s][side] end
--- KIM_ARENA: host hooks (all optional; absent = gmarc's own behaviour).
+-- gen2-aio: host hooks (all optional; absent = gmarc's own behaviour).
 local function host(name,...)
  local fn=V.mod and rawget(V.mod,name)
  if type(fn)~='function' then return nil end
@@ -88,7 +88,7 @@ local function sideTexture(s,e,side)
   end
  end
  if s.animView then s.animView.fillBackground=function()end end
- -- KIM_ARENA 0.9: with a BATTLE BACKGROUND plate, KIM's contact shadow is not
+ -- gen2-aio 0.9: with a BATTLE BACKGROUND plate, KIM's contact shadow is not
  -- baked into this upright card; its metrics come back and the scene paints
  -- it on the plate under the card's feet (BattleScene / Voxel3D.backdrop).
  local plateShadow=host('_kimArenaShadowCapture',true,side)==true
@@ -141,9 +141,9 @@ function B.render(s,winW,winH)
  local models=e.models and e.models:frame(s,e.arena,Scene.groundY(e.arena.map or world.map,e.arena)) or {}
  local textures={models=models,anchors={player={40,96},enemy={124,56}}}
  for _,side in ipairs({'player','enemy'})do
-  -- KIM_ARENA PLAYER INTRO SPRITE OFF: no trainer card for the player
+  -- gen2-aio PLAYER INTRO SPRITE OFF: no trainer card for the player
   local hideIntro=side=='player' and s.showPlayerTrainer and host('_kimArenaHidePlayerIntro')==true
-  -- KIM_ARENA HIT FLICKER = STEADY: Crystal clears a pic for a frame or two
+  -- gen2-aio HIT FLICKER = STEADY: Crystal clears a pic for a frame or two
   -- inside some move animations, which blanked the 3D card. A clear shorter
   -- than HOLD keeps the last captured card (by not re-capturing); a real
   -- hide (Fly, Dig, faint, return) outlasts it and hides as before.
@@ -231,7 +231,7 @@ function B.install()
   local e=entries[self]
   if e and e.models then e.models:update(dt,self) end
   if B.active()==self then
-   -- KIM_ARENA BATTLE CAMERA LOCKED: no steering, no zoom
+   -- gen2-aio BATTLE CAMERA LOCKED: no steering, no zoom
    if Cam.hostLocked then Cam.steerable=not Cam.hostLocked() end
    V.require('CamControl').tick(dt);Cam.update(dt)
   end

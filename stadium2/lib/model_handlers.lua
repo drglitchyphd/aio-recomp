@@ -1,8 +1,8 @@
-local Registry = require("mods.KIM_ARENA.stadium2.lib.handler_registry")
-local DynamicObject = require("mods.KIM_ARENA.stadium2.lib.effects.dynamic_object")
-local Phase5Geometry = require("mods.KIM_ARENA.stadium2.lib.render_callbacks.phase5_geometry")
-local DualTexture = require("mods.KIM_ARENA.stadium2.lib.render_callbacks.dual_texture_material")
-local Flame = require("mods.KIM_ARENA.stadium2.lib.render_callbacks.flame")
+local Registry = require("mods.gen2-aio.stadium2.lib.handler_registry")
+local DynamicObject = require("mods.gen2-aio.stadium2.lib.effects.dynamic_object")
+local Phase5Geometry = require("mods.gen2-aio.stadium2.lib.render_callbacks.phase5_geometry")
+local DualTexture = require("mods.gen2-aio.stadium2.lib.render_callbacks.dual_texture_material")
+local Flame = require("mods.gen2-aio.stadium2.lib.render_callbacks.flame")
 local Handlers = {}
 
 -- Compatibility exports.  New code should require handler_registry directly.
@@ -460,7 +460,7 @@ end
 
 function Handlers.prepare(extension)
   if type(extension) ~= "table" or type(extension.records) ~= "table" then return extension end
-  local Materials = require("mods.KIM_ARENA.stadium2.lib.materials")
+  local Materials = require("mods.gen2-aio.stadium2.lib.materials")
   for _, record in ipairs(extension.records) do
     local scanBytes = record.family == "render-time-geometry-pipeline" and 0x400 or 0x100
     local assets = pointerWords(extension, record.argOffset, scanBytes)

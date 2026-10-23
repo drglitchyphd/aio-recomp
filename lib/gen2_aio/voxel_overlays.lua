@@ -1,4 +1,4 @@
--- KIM_ARENA 0.9.41: the overlays World:draw paints AFTER the map, in 3D too.
+-- gen2-aio 0.9.41: the overlays World:draw paints AFTER the map, in 3D too.
 --
 -- gmarc replaces Crystal's World:draw with its voxel frame and returns early,
 -- so everything the engine draws after the world body never appeared in 3D:
@@ -150,7 +150,7 @@ return function(host)
     end
     if not signDrawn and self.mapImage and self.player then
       local ok, err = pcall(overlays, self)
-      if not ok and host.log then host.log("warn", "KIM Arena voxel overlays: %s", tostring(err)) end
+      if not ok and host.log then host.log("warn", "Gen2-AIO voxel overlays: %s", tostring(err)) end
     end
     return unpack(r)
   end

@@ -4,31 +4,31 @@
 -- HOW the stage, camera, shadows and model renderers become a window-sized
 -- image. It deliberately has no knowledge of turn order, capture rolls,
 -- battle queues or generation-specific phase names.
-local Renderer = require("mods.KIM_ARENA.stadium2.lib.renderer")
-local Camera = require("mods.KIM_ARENA.stadium2.lib.battle_camera")
-local Stage = require("mods.KIM_ARENA.stadium2.lib.battle_stage")
-local StadiumBattleLayout = require("mods.KIM_ARENA.stadium2.lib.stadium_battle_layout")
-local Shadow = require("mods.KIM_ARENA.stadium2.lib.battle_shadow")
-local Sky = require("mods.KIM_ARENA.stadium2.lib.battle_sky")
-local Hud = require("mods.KIM_ARENA.stadium2.lib.battle_hud")
-local AA = require("mods.KIM_ARENA.stadium2.lib.battle_aa")
-local Extensions = require("mods.KIM_ARENA.stadium2.lib.battle_scene_extensions")
-local ArenaLighting = require("mods.KIM_ARENA.stadium2.lib.arena_lighting")
+local Renderer = require("mods.gen2-aio.stadium2.lib.renderer")
+local Camera = require("mods.gen2-aio.stadium2.lib.battle_camera")
+local Stage = require("mods.gen2-aio.stadium2.lib.battle_stage")
+local StadiumBattleLayout = require("mods.gen2-aio.stadium2.lib.stadium_battle_layout")
+local Shadow = require("mods.gen2-aio.stadium2.lib.battle_shadow")
+local Sky = require("mods.gen2-aio.stadium2.lib.battle_sky")
+local Hud = require("mods.gen2-aio.stadium2.lib.battle_hud")
+local AA = require("mods.gen2-aio.stadium2.lib.battle_aa")
+local Extensions = require("mods.gen2-aio.stadium2.lib.battle_scene_extensions")
+local ArenaLighting = require("mods.gen2-aio.stadium2.lib.arena_lighting")
 
-local Watercolor = require("mods.KIM_ARENA.stadium2.lib.battle_watercolor")
-local Nature = require("mods.KIM_ARENA.stadium2.lib.battle_nature")
-local Cave = require("mods.KIM_ARENA.stadium2.lib.battle_cave")
-local Lake = require("mods.KIM_ARENA.stadium2.lib.battle_freshwater")
-local Ocean = require("mods.KIM_ARENA.stadium2.lib.battle_ocean")
-local Town = require("mods.KIM_ARENA.stadium2.lib.battle_town")
-local Importer = require("mods.KIM_ARENA.stadium2.lib.importer")
+local Watercolor = require("mods.gen2-aio.stadium2.lib.battle_watercolor")
+local Nature = require("mods.gen2-aio.stadium2.lib.battle_nature")
+local Cave = require("mods.gen2-aio.stadium2.lib.battle_cave")
+local Lake = require("mods.gen2-aio.stadium2.lib.battle_freshwater")
+local Ocean = require("mods.gen2-aio.stadium2.lib.battle_ocean")
+local Town = require("mods.gen2-aio.stadium2.lib.battle_town")
+local Importer = require("mods.gen2-aio.stadium2.lib.importer")
 -- CAMERA option STADIUM (the Stadium 2 camera, arenas and custom scenes)
 local function stadiumCameraMode()
   return type(Importer.cameraMode)=="function" and Importer.cameraMode()=="stadium"
 end
 
 -- In-battle evolution (user-requested extension, not Stadium 2 behaviour).
-local Evolution = require("mods.KIM_ARENA.stadium2.lib.battle_evolution")
+local Evolution = require("mods.gen2-aio.stadium2.lib.battle_evolution")
 
 local Scene = {}
 Scene.__index = Scene
@@ -388,7 +388,7 @@ end
 -- (Scene:stadiumPresentationBusy). Only its camera pose depends on STADIUM
 -- (stadiumCameraActive); stadiumDirectorActive says the machine runs.
 function Scene:updateStadiumCamera(dt)
-  local StadiumCamera=require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_camera")
+  local StadiumCamera=require("mods.gen2-aio.stadium2.lib.stadium2_battle_camera")
   local camera,err=StadiumCamera.forScene(self,self.warn)
   if not camera then
     if stadiumCameraMode() and not self.stadiumCameraReported and self.warn then
@@ -429,7 +429,7 @@ function Scene:stadiumPresentAttempt(side,moveId)
   self:stadiumCameraAttack(side,moveId)
   local fx=self.battleFx
   if fx and fx.playMoveAndImpact then
-    local FxSequence=require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_sequence")
+    local FxSequence=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_sequence")
     pcall(fx.playMoveAndImpact,fx,moveId,side,actor,FxSequence.RESULT_MISSED,
       self.actors[side=="player" and "enemy" or "player"])
   end
@@ -656,7 +656,7 @@ function Scene:stadiumHitResult(side,moveId)
   end
   -- MOVE EFFECTS off: the hit facts main.lua records from battle.damage_dealt
   -- are nobody else's, so the camera takes them (Sequence.resultByte)
-  local okA,Adapter=pcall(require,"mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_battle_adapter")
+  local okA,Adapter=pcall(require,"mods.gen2-aio.stadium2.lib.stadium2_battle_fx_battle_adapter")
   if not okA or type(Adapter.takeHitResult)~="function" then return nil end
   local okT,result=pcall(Adapter.takeHitResult,source,moveId)
   return okT and tonumber(result) or nil
@@ -744,7 +744,7 @@ function Scene:stadiumClipFrames(side,context)
   local actor=self.actors and self.actors[side]
   local model=actor and actor.renderer and actor.renderer.model
   if not model then return nil end
-  local okP,Pack=pcall(require,"mods.KIM_ARENA.stadium2.lib.pack")
+  local okP,Pack=pcall(require,"mods.gen2-aio.stadium2.lib.pack")
   local index=okP and Pack.contextIndex(model,context)
   local anim=index and model.anims and model.anims[index]
   return anim and tonumber(anim.frames) or nil
@@ -903,7 +903,7 @@ function Scene.nativeOriginHeight(actor)
   local model=actor and actor.renderer and actor.renderer.model
   local bytes=model and model.fxBattleProfile
   if not bytes then return nil end
-  local Dispatch=require("mods.KIM_ARENA.stadium2.lib.animation_dispatch")
+  local Dispatch=require("mods.gen2-aio.stadium2.lib.animation_dispatch")
   local profile=Dispatch.battleProfile(bytes)
   return profile and profile.groundY or nil
 end
@@ -1018,7 +1018,7 @@ function Scene:render(requestedWidth,requestedHeight)
   local ok,err=pcall(function()
     g.setCanvas(sceneTarget(self))
     self.environment=self:resolveEnvironment()
-    local selection=self.environmentSelection or require('mods.KIM_ARENA.stadium2.lib.battle_environment').select(
+    local selection=self.environmentSelection or require('mods.gen2-aio.stadium2.lib.battle_environment').select(
       self.battleContext,Importer.environmentStyle(),false,nil,
       Importer.environmentTest and Importer.environmentTest(),
     Importer.arenaTest and Importer.arenaTest())
@@ -1028,12 +1028,12 @@ function Scene:render(requestedWidth,requestedHeight)
     -- EXTRA EFFECTS off (user option): no ambient visitors, weather, or
     -- Kenney-scene sun/torch shadows; Stadium arenas keep their shadows.
     local extras=not Importer.extraEffectsEnabled or Importer.extraEffectsEnabled()~=false
-    require('mods.KIM_ARENA.stadium2.lib.battle_torch_shadows').setEnabled(extras)
+    require('mods.gen2-aio.stadium2.lib.battle_torch_shadows').setEnabled(extras)
     local visitorMode=extras and Importer.visitorMode and Importer.visitorMode() or 'off'
     local now=love.timer and love.timer.getTime and love.timer.getTime() or 0
     if natureActive and visitorMode~='off' and environmentScene.visitors~=false then
       if self.visitors and (self.visitors.environment~=selection.id or self.visitors.mode~=visitorMode) then self.visitors:release();self.visitors=nil end
-      if not self.visitors then self.visitors=require('mods.KIM_ARENA.stadium2.lib.battle_visitors').new(selection.id,visitorMode) end
+      if not self.visitors then self.visitors=require('mods.gen2-aio.stadium2.lib.battle_visitors').new(selection.id,visitorMode) end
       self.pendingVisitorDT=self.visitorTime and now-self.visitorTime or 0
     elseif self.visitors then self.visitors:release();self.visitors=nil end
     self.visitorTime=now
@@ -1045,7 +1045,7 @@ function Scene:render(requestedWidth,requestedHeight)
       self.weather:release();self.weather=nil
     end
     if outdoors and weatherMode~='off' then
-      self.weather=self.weather or require('mods.KIM_ARENA.stadium2.lib.battle_weather').new(selection.id,weatherMode)
+      self.weather=self.weather or require('mods.gen2-aio.stadium2.lib.battle_weather').new(selection.id,weatherMode)
       self.weatherDT=self.weatherTime and math.max(0,now-self.weatherTime) or 0
       self.environment=self.weather:lighting(self.environment,self.weatherDT)
     end
@@ -1094,7 +1094,7 @@ function Scene:render(requestedWidth,requestedHeight)
     local selectedFrame=Extensions.camera(cameraCtx,function() return defaultFrame end)
     local frame=normalizeFrame(selectedFrame,defaultFrame)
     frame=Evolution.sceneFrame(self,frame)
-    -- KIM_ARENA: a backdrop scene follows the host battle camera exactly.
+    -- gen2-aio: a backdrop scene follows the host battle camera exactly.
     if self.cameraOverride then
       local okCam,camFrame=pcall(self.cameraOverride,self,width,height,frame)
       if okCam and type(camFrame)=="table" then frame=normalizeFrame(camFrame,frame) end
@@ -1315,7 +1315,7 @@ function Scene:render(requestedWidth,requestedHeight)
     if natureActive then
       if self.visitors then self.visitors:draw(g,frame,self.environment,environmentScene,shadow) end
       if environmentScene.drawEffects then environmentScene.drawEffects(g,frame)
-      else require("mods.KIM_ARENA.stadium2.lib.battle_torches").draw(g,frame) end
+      else require("mods.gen2-aio.stadium2.lib.battle_torches").draw(g,frame) end
     end
     if self.weather then
       self.weather:draw(g,frame,self.weatherDT or 0)

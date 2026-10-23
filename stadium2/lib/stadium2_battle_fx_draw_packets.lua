@@ -1,7 +1,7 @@
 -- Renderer-neutral packets built from persistent battle-FX snapshots.
-local Attachment=require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_attachment")
-local single=require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_float")
-local ModelAnimation=require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_model_animation")
+local Attachment=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_attachment")
+local single=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_float")
+local ModelAnimation=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_model_animation")
 local Packets={}
 local function copy(v,s)if type(v)~="table"then return v end;s=s or{};if s[v]then return s[v]end;local o={};s[v]=o;for k,x in pairs(v)do o[copy(k,s)]=copy(x,s)end;return o end
 local function vec(v,d)if type(v)~="table"then return{d,d,d}end;return{tonumber(v[1]or v.x)or d,tonumber(v[2]or v.y)or d,tonumber(v[3]or v.z)or d}end

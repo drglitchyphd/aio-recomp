@@ -14,8 +14,8 @@
 --   signal() -> integer     841094EC
 --   random() -> integer     guRandom (8007AFA0), an injected generator
 --   alloc(bytes) -> address 80006DEC, the frame's display-list arena
-local f32 = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_float")
-local U = require("mods.KIM_ARENA.stadium2.lib.stadium2_libultra")
+local f32 = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_float")
+local U = require("mods.gen2-aio.stadium2.lib.stadium2_libultra")
 
 local N = {}
 
@@ -35,7 +35,7 @@ N.SPRITE_DL = 0x84187CC0   -- D_84187CC0: the sprite quad's display list
 N.TRAIL_DL = 0x84187C30    -- D_84187C30: the trail's material
 
 -- A big-endian double in plain Lua (the mod sandbox refuses ffi at run time).
-local wordsToDouble = require("mods.KIM_ARENA.stadium2.lib.stadium2_native_memory").wordsToDouble
+local wordsToDouble = require("mods.gen2-aio.stadium2.lib.stadium2_native_memory").wordsToDouble
 local function double(mem, address)
   return wordsToDouble(mem:u32(address), mem:u32(address + 4))
 end

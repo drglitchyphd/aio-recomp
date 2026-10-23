@@ -3,7 +3,7 @@ local V = ...
 
 local Config = {}
 
--- KIM_ARENA: bundled Wilds keeps every setting under its key prefix
+-- gen2-aio: bundled Wilds keeps every setting under its key prefix
 -- (mod._kimKeyPrefix). kimKey names a key; kimView is a bucket[mod.id]
 -- stand-in that prefixes on read and write, for the direct bucket accesses.
 local function kimKey(mod, key)
@@ -13,7 +13,7 @@ local function kimKey(mod, key)
   end
   return key
 end
--- KIM_ARENA: settings the host pins (mod._kimForce), e.g. sprite_style =
+-- gen2-aio: settings the host pins (mod._kimForce), e.g. sprite_style =
 -- "followers" so Wilds' Pokemon match Crystal's own overworld characters.
 local function kimForced(mod, key)
   local force = type(mod) == "table" and rawget(mod, "_kimForce") or nil
@@ -621,7 +621,7 @@ end
 -- mod.options_changed. In-game menus must mirror that bucket write.
 local function writeOptionBucket(mod, game, key, value)
   if not (mod and mod.id) then return false end
-  -- KIM_ARENA: bundled Wilds keeps its settings under its own prefix, so a
+  -- gen2-aio: bundled Wilds keeps its settings under its own prefix, so a
   -- key like "enabled" cannot overwrite another component's setting.
   key = kimKey(mod, key)
   local function write(bucket)

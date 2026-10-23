@@ -1,4 +1,4 @@
--- KIM_ARENA: choose a Kanto in Motion HD battle background (1920x950, the
+-- gen2-aio: choose a Kanto in Motion HD battle background (1920x950, the
 -- set KIM downloads into its asset cache) for a Gold/Silver/Crystal battle.
 --
 -- KIM's own router reads Gen 1 map ids. Crystal maps are Johto names, so this

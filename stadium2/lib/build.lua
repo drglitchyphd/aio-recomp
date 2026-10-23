@@ -1,5 +1,5 @@
-local StadiumFragment = require("mods.KIM_ARENA.stadium2.lib.fragment")
-local Handlers = require("mods.KIM_ARENA.stadium2.lib.model_handlers")
+local StadiumFragment = require("mods.gen2-aio.stadium2.lib.fragment")
+local Handlers = require("mods.gen2-aio.stadium2.lib.model_handlers")
 
 local StadiumBuild = {}
 

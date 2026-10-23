@@ -359,7 +359,7 @@ return function(mod)
         if row then
           local yy=listTop+(slot-1)*rowH
           local sel=i==selected
-          -- KIM_ARENA 0.9.41: tap a species to select it, tap it again for its entry
+          -- gen2-aio 0.9.41: tap a species to select it, tap it again for its entry
           local Tap=rawget(mod,"_kimTap")
           if Tap and Tap.buf then Tap.add(x,yy,usableW,rowH,function(st) st.index=i end,sel and "a" or false) end
           if sel then
@@ -506,7 +506,7 @@ return function(mod)
 
     local tabX=x+w-tabsWidth
     local tabW=tabsWidth/math.max(1,#tabs)
-    -- KIM_ARENA 0.9.46: tap PAGE / AREA / CRY / PRINT; a new-entry page
+    -- gen2-aio 0.9.46: tap PAGE / AREA / CRY / PRINT; a new-entry page
     -- (just caught) takes a tap anywhere as A
     local Tap=rawget(mod,"_kimTap")
     if Tap and Tap.buf then
@@ -718,7 +718,7 @@ return function(mod)
       if not ok then error(result[1],0) end
       local top=game and game.stack and type(game.stack.top)=="function" and game.stack:top()
       if enabled() and isDex(top) then
-        -- KIM_ARENA 0.9.41: publish touch targets (KIM Touch) while drawing
+        -- gen2-aio 0.9.41: publish touch targets (KIM Touch) while drawing
         local Tap=rawget(mod,"_kimTap")
         if Tap and Tap.begin then Tap.begin(top) end
         G.push("all"); G.origin(); pcall(drawDex,top); G.pop()

@@ -80,13 +80,13 @@ function E.resolve(ctx,env,test)
  local kind=key(ctx and ctx.kind)
  if not forced and kind~='WILD' and kind~='TRAINER' then return nil,id end
  local name=E.catalog[id].module
- return name and require('mods.KIM_ARENA.stadium2.lib.'..name) or nil,id
+ return name and require('mods.gen2-aio.stadium2.lib.'..name) or nil,id
 end
 -- Arena options retain their existing policy when custom environments are off.
 -- With automatic environments on, unsupported wild encounters may use arenas too.
 function E.select(ctx,style,arenas,env,test,arenaTest)
  if type(arenaTest)=='number' and arenaTest%1==0 and arenaTest>=0
-   and arenaTest<require('mods.KIM_ARENA.stadium2.lib.layout').STADIUM_MODEL_TABLE_RECORDS then
+   and arenaTest<require('mods.gen2-aio.stadium2.lib.layout').STADIUM_MODEL_TABLE_RECORDS then
   return {mode='arena',arena=arenaTest,reason='test-override',id='arena_test'}
  end
  local forced=type(test)=='string' and test~='unknown' and E.catalog[test]~=nil
@@ -97,7 +97,7 @@ function E.select(ctx,style,arenas,env,test,arenaTest)
  -- arena cannot load. An explicit test override still wins.
  local kind=tostring(ctx and ctx.kind or ''):upper()
  if not forced and (kind=='TRAINER' or kind=='WILD') then
-  local gym=require('mods.KIM_ARENA.stadium2.lib.arena_selector').gymArena(ctx.mapId)
+  local gym=require('mods.gen2-aio.stadium2.lib.arena_selector').gymArena(ctx.mapId)
   if gym~=nil then
    local fallback=style=='kenney' and scene and {mode='environment',scene=scene,id=id} or {mode='classic',id=id}
    return {mode='arena',arena=gym,reason='gym',id=id,fallback=fallback}
@@ -105,7 +105,7 @@ function E.select(ctx,style,arenas,env,test,arenaTest)
  end
  if style=='kenney' and scene then return {mode='environment',scene=scene,id=id} end
  if arenas then
-  local arena,reason=require('mods.KIM_ARENA.stadium2.lib.arena_selector').resolve(ctx,
+  local arena,reason=require('mods.gen2-aio.stadium2.lib.arena_selector').resolve(ctx,
    style=='kenney' and {environmentFallback=true} or nil)
   if arena~=nil then return {mode='arena',arena=arena,reason=reason,id=id} end
  end

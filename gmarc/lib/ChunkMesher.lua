@@ -171,7 +171,7 @@ local function newFfiSink(fromPtr, fromN)
   local cap = 4096 * 4
   local buf = ffi.new("float[?]", cap * 6)
   local n = 0
-  -- KIM_ARENA: a sink restored from the disk cache (MeshStore) starts full
+  -- gen2-aio: a sink restored from the disk cache (MeshStore) starts full
   local keepAlive
   if fromPtr then
     keepAlive = fromPtr
@@ -1130,7 +1130,7 @@ local function finishJob(job, ok, err)
 end
 
 
--- ------------------------------------------------- KIM_ARENA disk cache
+-- ------------------------------------------------- gen2-aio disk cache
 -- (MeshStore). A finished build is captured, packed and written by a
 -- worker thread; a later build of the same inputs restores from it.
 local MeshStore
@@ -1320,7 +1320,7 @@ end
 local function runJob(job)
   local map = job.map
   local c = entry(job.id)
-  -- KIM_ARENA: restore from the disk cache when this exact build exists
+  -- gen2-aio: restore from the disk cache when this exact build exists
   local storeName = storeKey(map, job)
   if storeName then
     local ticket = store().begin(storeName)

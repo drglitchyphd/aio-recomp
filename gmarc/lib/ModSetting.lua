@@ -87,7 +87,7 @@ end
 -- What the player left it at last session. Read lazily rather than at load
 -- time: the loader fills modOptions before a mod runs, but reading through
 -- the API keeps this honest about where the value lives.
--- KIM_ARENA: the host mod can pin a setting (a constant or a function that
+-- gen2-aio: the host mod can pin a setting (a constant or a function that
 -- is re-evaluated on every read). A pinned setting ignores the cached index
 -- and refuses writes, so the host stays the single owner of that choice.
 local function lockFor(key)

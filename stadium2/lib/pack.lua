@@ -1,8 +1,8 @@
-local Handlers = require("mods.KIM_ARENA.stadium2.lib.model_handlers")
-local Materials = require("mods.KIM_ARENA.stadium2.lib.materials")
-local TextureParity = require("mods.KIM_ARENA.stadium2.lib.texture_parity")
-local Flame = require("mods.KIM_ARENA.stadium2.lib.render_callbacks.flame")
-local Palette = require("mods.KIM_ARENA.stadium2.lib.palette")
+local Handlers = require("mods.gen2-aio.stadium2.lib.model_handlers")
+local Materials = require("mods.gen2-aio.stadium2.lib.materials")
+local TextureParity = require("mods.gen2-aio.stadium2.lib.texture_parity")
+local Flame = require("mods.gen2-aio.stadium2.lib.render_callbacks.flame")
+local Palette = require("mods.gen2-aio.stadium2.lib.palette")
 
 local Pack = {}
 Pack.SUBSTITUTE_SPECIES = 252

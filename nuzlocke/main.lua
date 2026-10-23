@@ -10,7 +10,7 @@
 -- IMPORTANT: beta.25 is built only from beta.24. Older behavior is ported
 -- only as targeted fixes after comparison; no older branch is restored wholesale.
 return function(mod)
-  -- KIM_ARENA: Gold, Silver and Crystal share the GSC engine paths, so every
+  -- gen2-aio: Gold, Silver and Crystal share the GSC engine paths, so every
   -- Gold-only gate in this mod now asks for Generation 2 instead. Without
   -- this, Crystal fell through to the Red/Blue/Yellow code.
   mod.__nzIsGen2 = function()
@@ -3864,7 +3864,7 @@ return function(mod)
       end
 
       if (tonumber(ctx.mon.level) or 1) >= cap then
-          -- KIM_ARENA: one message, after the battle, naming every Pokemon
+          -- gen2-aio: one message, after the battle, naming every Pokemon
           -- that hit the cap -- not a box per EXP award in the middle of it.
           local lastCap = tonumber(ctx.mon.nuzlockeWorldCapNotified) or 0
           if lastCap ~= cap then
@@ -6161,7 +6161,7 @@ return function(mod)
   -- silently discard our inserted entries.  That was why RULES/TRACKER
   -- disappeared in the previous build.
   ---------------------------------------------------------------------
-  -- KIM_ARENA 0.9.35: rule table + accessors for the Modern UI RULES page
+  -- gen2-aio 0.9.35: rule table + accessors for the Modern UI RULES page
   mod.exports.ruleCategories = ruleCategories
   mod.exports.getRule = function(key) return getConfigValue(key, false) end
   mod.exports.setRule = function(key, value) return setConfigValue(key, value, false) end
@@ -6196,8 +6196,8 @@ return function(mod)
           -- Short underlying label preserves the original start-menu width.
           label = "RULES",
           onSelect = function()
-              -- KIM_ARENA 0.9.35: the run's rules on a Modern UI page of
-              -- Crystal's OPTION screen (lib/kim_arena/nuz_rules.lua);
+              -- gen2-aio 0.9.35: the run's rules on a Modern UI page of
+              -- Crystal's OPTION screen (lib/gen2_aio/nuz_rules.lua);
               -- the Game Boy screen stays as the fallback and for SETUP.
               local open = mod._kimArenaNuzRules
               if type(open) == "function" and open(game) then return end
@@ -8962,7 +8962,7 @@ return function(mod)
       local G2 = {}
 
       function G2.isGold()
-          -- KIM_ARENA: the whole GSC family (see __nzIsGen2)
+          -- gen2-aio: the whole GSC family (see __nzIsGen2)
           local v = getGameVersion()
           return v == "GOLD" or v == "SILVER" or v == "CRYSTAL" or mod.__nzIsGen2()
       end

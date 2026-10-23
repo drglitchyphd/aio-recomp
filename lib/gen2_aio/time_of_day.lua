@@ -1,4 +1,4 @@
--- KIM_ARENA: TIME OF DAY.
+-- gen2-aio: TIME OF DAY.
 --
 -- One setting decides what time it is for EVERYTHING that asks Crystal's
 -- clock (World:hour / minute / weekday): the day/night palettes, the voxel

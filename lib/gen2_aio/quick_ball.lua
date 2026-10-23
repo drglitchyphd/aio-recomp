@@ -1,4 +1,4 @@
--- KIM_ARENA: Quick Poke Ball on SELECT.
+-- gen2-aio: Quick Poke Ball on SELECT.
 --
 -- Wild battles, battle command menu (phase "menu") only: in the move list
 -- SELECT swaps moves, so it is never taken there. The throw goes through

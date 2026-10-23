@@ -488,7 +488,7 @@ function BattleScene.render(state, arena, textures, token)
   end
 
   local groundY = BattleScene.groundY(host, arena)
-  -- KIM_ARENA: BATTLE BACKGROUND plate (KIM HD art, or a Kenney / Stadium 2
+  -- gen2-aio: BATTLE BACKGROUND plate (KIM HD art, or a Kenney / Stadium 2
   -- scene rendered through this camera). Only on the platform arena, whose
   -- discs it replaces; a frame it cannot produce falls back to the discs.
   local kimPlate, kimImage = nil, nil
@@ -505,7 +505,7 @@ function BattleScene.render(state, arena, textures, token)
     end
   end
   local cam, pitch = BattleCam.rig(arena, groundY)
-  -- KIM_ARENA: a host camera (locked KENNEY HD) is already framed for the
+  -- gen2-aio: a host camera (locked KENNEY HD) is already framed for the
   -- whole screen; only gmarc's own rig is framed for the GB's 144 rows.
   if cam.screenFov then cam.fov = cam.screenFov
   else cam.fov = BattleScene.letterboxFov(cam.fov, ph, s) end
@@ -525,7 +525,7 @@ function BattleScene.render(state, arena, textures, token)
   -- and the real one is rebuilt inside the scene below.
   Voxel3D.camera = cam
   local kimVp = Voxel3D.viewProjection(cx, cy, vw, vh)
-  -- KIM_ARENA anchored plate. The painting keeps its proportions: scaled
+  -- gen2-aio anchored plate. The painting keeps its proportions: scaled
   -- so both authored ground spots fit across the screen (and to fill it
   -- where that allows), centred on the battle's own composition. Then the
   -- BATTLERS move instead of the art: each spot's screen point is cast back
@@ -564,7 +564,7 @@ function BattleScene.render(state, arena, textures, token)
       local ex, ez = ground((tx + s * A.enemy[1]) / W, (ty + s * A.enemy[2]) / H)
       kimPlate.fit = { tx = tx / W, ty = ty / H, sw = iw * s / W, sh = ih * s / H,
         fill = kimPlate.fill }
-      -- KIM_ARENA 0.9: when the battlers cannot be moved onto the spots, move
+      -- gen2-aio 0.9: when the battlers cannot be moved onto the spots, move
       -- the ART instead -- scale and shift it so its two spots land exactly
       -- under the cards' feet -- rather than leaving a plate whose spots (and
       -- painted ground) sit apart from the Pokemon on tall screens.
@@ -581,7 +581,7 @@ function BattleScene.render(state, arena, textures, token)
           fill = kimPlate.fill }
         if not BattleScene._kimFitWarned and V.mod and V.mod.log then
           BattleScene._kimFitWarned = true
-          pcall(V.mod.log.info, V.mod.log, "KIM_ARENA plate: art fitted to the cards (%s)", tostring(why))
+          pcall(V.mod.log.info, V.mod.log, "gen2-aio plate: art fitted to the cards (%s)", tostring(why))
         end
       end
       -- Stadium 3D models are posed on the arena slots before this scene
@@ -621,7 +621,7 @@ function BattleScene.render(state, arena, textures, token)
       if not okRender then
         diag("plate render ERROR: " .. tostring(rendered))
         if V.mod and V.mod.log then
-          pcall(V.mod.log.warn, V.mod.log, "KIM_ARENA plate render: %s", tostring(rendered))
+          pcall(V.mod.log.warn, V.mod.log, "gen2-aio plate render: %s", tostring(rendered))
         end
       end
     else
@@ -631,7 +631,7 @@ function BattleScene.render(state, arena, textures, token)
   elseif arena.discs then
     diag("platform arena, no plate offered")
   end
-  -- KIM_ARENA 0.9: KIM's contact shadows, painted ON the plate under each
+  -- gen2-aio 0.9: KIM's contact shadows, painted ON the plate under each
   -- card's projected feet (so they sit behind the Pokemon and exactly at
   -- their feet on any screen shape) instead of inside the upright card.
   local kimShadows = nil

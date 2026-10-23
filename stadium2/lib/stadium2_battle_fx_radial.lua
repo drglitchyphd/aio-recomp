@@ -1,6 +1,6 @@
 -- US fragment79 Radial20 mode 2, families 4/6/21. Native pool at
 -- *(84187530)+3C8; ten records, twenty independently delayed nodes each.
-local f=require('mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_float')
+local f=require('mods.gen2-aio.stadium2.lib.stadium2_battle_fx_float')
 local Radial={families={[4]=true,[6]=true,[21]=true}}
 local function copy(v)if type(v)~='table' then return v end local out={} for k,x in pairs(v) do out[k]=copy(x) end return out end
 local function vec(v)return {f(v[1]),f(v[2]),f(v[3])}end

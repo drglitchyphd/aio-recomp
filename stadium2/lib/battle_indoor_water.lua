@@ -1,7 +1,7 @@
 -- Indoor water: a bright pool hall. A round turquoise pool fills the middle
 -- of a tiled hall; the battlers stand on floating platforms. Columns, tall
 -- windows, skylights, benches and potted plants frame it.
-local Kit=require('mods.KIM_ARENA.stadium2.lib.scene_kit')
+local Kit=require('mods.gen2-aio.stadium2.lib.scene_kit')
 
 local POOL=96
 local HX,HZ,H=150,150,95

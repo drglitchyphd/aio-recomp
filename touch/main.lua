@@ -1,6 +1,6 @@
 -- Kanto in Motion: Touch (KIM_TOUCH)
 --
--- Dragon Quest smartphone-style controls for Crystal, on top of KIM_ARENA:
+-- Dragon Quest smartphone-style controls for Crystal, on top of gen2-aio:
 --
 --   * put a finger down ANYWHERE: a D-pad ring appears there; drag past the
 --     dead zone to hold a direction (4-way, the grid's own); the ring follows
@@ -34,7 +34,7 @@ return function(mod)
     return default
   end
 
-  -- KIM_ARENA: one button layout per screen SHAPE (Fold outer / inner,
+  -- gen2-aio: one button layout per screen SHAPE (Fold outer / inner,
   -- portrait / landscape), detected from the window's proportions. Change a
   -- layout setting on one screen and only that screen keeps it; folding or
   -- rotating loads the other screen's layout. Kept in mod.cache (per
@@ -127,10 +127,10 @@ return function(mod)
   end
 
   local function kim()
-    local handle = mod.find and mod.find("KIM_ARENA")
+    local handle = mod.find and mod.find("gen2-aio")
     return handle and handle.exports or nil
   end
-  -- KIM_ARENA 0.9.46: QUICK MENU / KEY ITEM WHEEL / info cards (host module)
+  -- gen2-aio 0.9.46: QUICK MENU / KEY ITEM WHEEL / info cards (host module)
   local function Q()
     local q = mod._kimArenaQuick
     return type(q) == "table" and q or nil
@@ -307,7 +307,7 @@ return function(mod)
   local LIST_KINDS = { party = true, pack = true, pocket = true, start = true }
   local SUB_KINDS = { partySub = true, modal = true }
   local function screenMode(t, state)
-    -- KIM_ARENA 0.9.8: generic screens publish their own focus ("list" by
+    -- gen2-aio 0.9.8: generic screens publish their own focus ("list" by
     -- default); their cells carry a select function and a button to press.
     if t.generic then
       -- targets drawn for another phase of the same state (a battle YES/NO
@@ -410,7 +410,7 @@ return function(mod)
     if dir then g.token = press(game, dir); buzz() end
   end
 
-  -- KIM_ARENA 0.9.40: LONG PRESS (setting touchLongPress, default on).
+  -- gen2-aio 0.9.40: LONG PRESS (setting touchLongPress, default on).
   -- Hold a battle move ~0.45 s for its full info; hold a Pokemon on the PKMN
   -- list (outside battle) to pick it up and drag it to a new slot -- let go
   -- on its own row to open its STATS instead. A long press never also taps A.
@@ -873,7 +873,7 @@ return function(mod)
   local function font(px)
     px = math.max(8, math.floor(px + 0.5))
     if not fonts[px] then
-      -- KIM_ARENA: touch labels share KIM's UI font
+      -- gen2-aio: touch labels share KIM's UI font
       local arenaFont = mod._kimArenaFont
       local ok, f = false, nil
       if type(arenaFont) == "function" then ok, f = pcall(arenaFont, px) end
@@ -927,7 +927,7 @@ return function(mod)
       end
       G.setFont(f)
       G.setColor(th.text[1], th.text[2], th.text[3], math.min(1, a + 0.1))
-      -- KIM_ARENA: the SELECT pill reads BALL while SELECT throws a quick ball
+      -- gen2-aio: the SELECT pill reads BALL while SELECT throws a quick ball
       local label = z.label
       if z.btn == "select" then
         local qb = mod._kimArenaQuickBallReady

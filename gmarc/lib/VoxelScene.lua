@@ -470,7 +470,7 @@ function VoxelScene.prefetch(state)
     live[nb.map.id] = true
     liveKey = liveKey .. "|" .. nb.map.id
   end
-  -- KIM_ARENA VOXEL PRECACHE: the current map's door destinations stay live
+  -- gen2-aio VOXEL PRECACHE: the current map's door destinations stay live
   -- (and are queued below) so walking through a door swaps in a ready mesh
   for _, id in ipairs(V.require("Prefetch").ids(state)) do
     live[id] = true
@@ -995,7 +995,7 @@ function VoxelScene.render(state, w, h, vw, vh, paletteFor)
 
   local function drawScene()
 
-  -- KIM_ARENA: the border block's floor past the meshed ring (VoidFloor)
+  -- gen2-aio: the border block's floor past the meshed ring (VoidFloor)
   pcall(function() V.require("VoidFloor").draw(state, cx, cy, atlasFor(state.map)) end)
 
   -- Opaque rock goes first so its depth rejects the hidden terrain pixels.

@@ -1,4 +1,4 @@
--- KIM_ARENA: locked KENNEY HD battle camera.
+-- gen2-aio: locked KENNEY HD battle camera.
 --
 -- With BATTLE BACKGROUND = KENNEY HD and BATTLE CAMERA = LOCKED, gmarc's battle
 -- rig is replaced by a solved camera: the player's feet land where KIM HD's

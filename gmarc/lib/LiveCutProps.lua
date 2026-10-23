@@ -76,7 +76,7 @@ function P.draw(map,texture,ox,oz,shadow)
   end
  end end
 end
--- KIM_ARENA: disk cache (MeshStore). snapshot -> plain data with each
+-- gen2-aio: disk cache (MeshStore). snapshot -> plain data with each
 -- stamp's vertices flattened (same shading as mesh()); restore rebuilds a
 -- plan whose stamps already carry their meshes.
 function P.snapshot(mapId)

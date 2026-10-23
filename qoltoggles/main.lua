@@ -656,7 +656,7 @@ return function(mod)
 
   -- the stored value for a key, falling back to scoped storage and then the
   -- per-toggle default: everything except INFINITE REPEL ships ON
-  -- KIM_ARENA (Gen2 All-in-One): the toggle specs, so the host can file them
+  -- gen2-aio (Gen2 All-in-One): the toggle specs, so the host can file them
   -- as rows of Crystal's own OPTION pages (KIM-themed, tappable) instead of
   -- this mod's Game Boy card grid.
   mod.exports.toggleSpecs = TOGGLES

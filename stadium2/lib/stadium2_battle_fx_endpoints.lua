@@ -2,7 +2,7 @@
 -- 8411DCCC (missing source marker), and 84109630 (signed offsets).
 -- Positions and the rotation matrix are already in the caller's native frame.
 local Endpoints={}
-local f=require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_float")
+local f=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_float")
 -- 8411DD8C, including the two halfwords at D_84183AB0 (82 and 102).
 local heightMarkers={[51]=9,[73]=7,[87]=7,[145]=7,[184]=9,[217]=9,
   [218]=2,[232]=8,[233]=4,[226]=1,[245]=9,[178]=10,[247]=3,

@@ -6,7 +6,7 @@
 -- resolution so HD sources are not crushed through the native low-resolution
 -- Game3 slots. The Gen 1 BattleState stack is never loaded on this generation.
 return function(mod)
-  local MOD_ID = "KIM_ARENA"
+  local MOD_ID = "gen2-aio"
   local LEGACY_DATA = "data/hd_pokemon_sprites.lua"
   local NATIONAL_DATA = "data/hd_pokemon_national.lua"
 

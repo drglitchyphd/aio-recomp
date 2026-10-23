@@ -1,4 +1,4 @@
--- KIM_ARENA: HD Poke Balls in Crystal's own ball animations.
+-- gen2-aio: HD Poke Balls in Crystal's own ball animations.
 --
 -- The throw (and any other animation drawing from the POKE_BALL sheet) keeps
 -- running exactly as Crystal plays it -- path, bounces, wobbles, click or
@@ -23,7 +23,7 @@ return function(host)
     local hit = images[name]
     if hit ~= nil then return hit or nil, quads[name] end
     local ok, img = pcall(function()
-      local bytes = mod:read("assets/kim_arena/balls/" .. name .. ".png")
+      local bytes = mod:read("assets/gen2_aio/balls/" .. name .. ".png")
       local fd = love.filesystem.newFileData(bytes, name .. ".png")
       local i = love.graphics.newImage(love.image.newImageData(fd))
       i:setFilter("nearest", "nearest")
@@ -121,6 +121,6 @@ return function(host)
 
   local api = { icon = icon }
   View._kimArenaHdBall = api
-  if log then log("info", "KIM Arena: HD Poke Balls installed") end
+  if log then log("info", "Gen2-AIO: HD Poke Balls installed") end
   return api
 end

@@ -620,7 +620,7 @@ local __kimSpec = {
   },
 }
 
--- KIM_ARENA (Gen2 All-in-One): the bundle already carries these, so QOL's
+-- gen2-aio (Gen2 All-in-One): the bundle already carries these, so QOL's
 -- copies are left out entirely -- Wilds of Kanto's followers, the host's ALL
 -- 251 CATCHABLE (which places Celebi too), and Gen151 (Red/Blue/Yellow only).
 -- CAUGHT MARKER ships off: the modern HP cards show the caught ball already.

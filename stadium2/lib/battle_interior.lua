@@ -1,7 +1,7 @@
 -- Interior: a cozy home. Warm plank floor with a rug under the battle,
 -- cream plaster walls over wood wainscoting, ceiling beams, sunny windows,
 -- and Kenney Furniture Kit pieces (CC0) along the walls.
-local Kit=require('mods.KIM_ARENA.stadium2.lib.scene_kit')
+local Kit=require('mods.gen2-aio.stadium2.lib.scene_kit')
 
 local HX,HZ,H=105,105,78
 local F=52 -- furniture scale: a bookcase stands about 46 units tall

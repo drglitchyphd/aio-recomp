@@ -1,4 +1,4 @@
--- KIM_ARENA: per-screen overworld ZOOM.
+-- gen2-aio: per-screen overworld ZOOM.
 --
 -- The engine keeps ONE survey-zoom offset (src/render/Zoom.lua, stored as
 -- options.zoom) on top of an integer fit scale floor(min(w/160, h/144)). On a

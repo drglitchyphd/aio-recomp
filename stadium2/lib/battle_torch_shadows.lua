@@ -1,8 +1,8 @@
 -- Omnidirectional point shadows: six cached static faces per torch, packed into
 -- two GLES2-compatible atlases. Only moving battlers are redrawn at 20Hz.
-local Mat=require('mods.KIM_ARENA.stadium2.lib.renderer')
-local Torches=require('mods.KIM_ARENA.stadium2.lib.battle_torches')
-local P=require('mods.KIM_ARENA.stadium2.lib.torch_projection')
+local Mat=require('mods.gen2-aio.stadium2.lib.renderer')
+local Torches=require('mods.gen2-aio.stadium2.lib.battle_torches')
+local P=require('mods.gen2-aio.stadium2.lib.torch_projection')
 -- EXTRA EFFECTS (user option): one switch shared by every torch/lamp set.
 local switch={enabled=true}
 local function new(options)

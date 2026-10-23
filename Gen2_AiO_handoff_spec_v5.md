@@ -1,10 +1,22 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.49)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.50)
 
-Mod id `KIM_ARENA` (unchanged so settings and KIM's downloaded HD assets carry over).
+Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Previous spec: `Gen2_AiO_handoff_spec_v2.md` (0.9.7). This file covers 0.9.8 → 0.9.24
 (0.9.24 section below; everything else as of 0.9.23).
+
+## 0.9.50 — full gen2-aio identity and readable HUD clock
+
+- ID gen2-aio, full ZIP gen2-aio-0.9.50.zip, lib/gen2_aio and assets/gen2_aio;
+  all bundled require namespaces now mods.gen2-aio. README_GEN2_AIO.md.
+- identity_migration.lua imports legacy settings/cache/storage on first boot,
+  preserving originals and existing new values. Old identity is a conflict:
+  disable old entry and install full ZIP once. No overlay patch for this change.
+- Clock now max(20, short screen dimension * .038), with independent status
+  width/height and larger party dots. Was capped near 15px by shortcut size.
+- Index keeps its old entry until the first renamed ZIP exists, then switches
+  identity; future releases use the normal same-ID overlay patches.
 
 ## 0.9.49 — overworld HUD and Kenney Fold cover-screen rendering
 

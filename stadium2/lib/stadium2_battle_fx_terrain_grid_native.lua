@@ -12,9 +12,9 @@
 -- The camera is Stadium's GeoCamera at *D_80094908 (eye +0xA8, target
 -- +0xB4, up +0xC0, FOV +0x2C, aspect +0x30, near +0x34), written by the
 -- host into memory.
-local f32 = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_float")
-local U = require("mods.KIM_ARENA.stadium2.lib.stadium2_libultra")
-local CameraNative = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_camera_native")
+local f32 = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_float")
+local U = require("mods.gen2-aio.stadium2.lib.stadium2_libultra")
+local CameraNative = require("mods.gen2-aio.stadium2.lib.stadium2_battle_camera_native")
 local bit = require("bit")
 
 local W = {}
@@ -29,7 +29,7 @@ W.GRID, W.VERTEX = 0x1010, 0x14 -- state + 0x1010: 16x16 vertices of 0x14
 W.ATAN_TABLE = 0x8008CE50
 
 -- A big-endian double in plain Lua (the mod sandbox refuses ffi at run time).
-local wordsToDouble = require("mods.KIM_ARENA.stadium2.lib.stadium2_native_memory").wordsToDouble
+local wordsToDouble = require("mods.gen2-aio.stadium2.lib.stadium2_native_memory").wordsToDouble
 local function double(mem, address)
   return wordsToDouble(mem:u32(address), mem:u32(address + 4))
 end

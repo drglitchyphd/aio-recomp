@@ -3,8 +3,8 @@
 -- stadium2_battle_fx_stochastic_native.lua, run on Stadium's own memory
 -- layout; this module steps it at 30 Hz and reads its display list back
 -- into renderer geometry.
-local Native=require('mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_stochastic_native')
-local Memory=require('mods.KIM_ARENA.stadium2.lib.stadium2_native_memory')
+local Native=require('mods.gen2-aio.stadium2.lib.stadium2_battle_fx_stochastic_native')
+local Memory=require('mods.gen2-aio.stadium2.lib.stadium2_native_memory')
 local bit=require('bit')
 local Stochastic={}
 local POOL,DL,VERT=0x8419F070,0x85200000,0x85300000

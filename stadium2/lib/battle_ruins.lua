@@ -2,7 +2,7 @@
 -- worn round plaza ringed by broken columns; tumbled walls, an archway,
 -- urns and lanterns stand among grass and crooked pines. Kenney Graveyard
 -- and Castle Kit meshes (CC0), painted with the shared watercolor kit.
-local Kit=require('mods.KIM_ARENA.stadium2.lib.scene_kit')
+local Kit=require('mods.gen2-aio.stadium2.lib.scene_kit')
 
 local function height(x,z)
  local r=math.sqrt(x*x+z*z)

@@ -113,7 +113,7 @@ function T.draw(mesh,texture,shader,vp,k,cx,cz)
  shader:send('instanced',0)
  return count
 end
--- KIM_ARENA: disk cache (MeshStore). capture -> plain data; restore builds
+-- gen2-aio: disk cache (MeshStore). capture -> plain data; restore builds
 -- the same models and hands them to `mesh` like finish() does.
 function T.capture(mesh)
  local list=owners[mesh];if not list then return nil end

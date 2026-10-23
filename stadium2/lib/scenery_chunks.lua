@@ -3,7 +3,7 @@
 local C={};C.__index=C
 local floor,min,max=math.floor,math.min,math.max
 function C.new(g,format,vertices,groundCount)
- local Instances=require("mods.KIM_ARENA.stadium2.lib.scenery_instances")
+ local Instances=require("mods.gen2-aio.stadium2.lib.scenery_instances")
  if vertices.instances and Instances.available(g) then return Instances.new(g,format,vertices,groundCount,C) end
  local groups={}
  local group

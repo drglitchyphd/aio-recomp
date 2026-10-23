@@ -6,7 +6,7 @@ local Pack=V.require('StadiumPack')
 local Mon2=V.require('Stadium2BattleMon')
 local S={};S.__index=S
 local function externalModels()
- -- KIM_ARENA: the bundled Stadium 2 importer's model API (BATTLE SPRITES =
+ -- gen2-aio: the bundled Stadium 2 importer's model API (BATTLE SPRITES =
  -- STADIUM 2), published by the host once its model cache is built.
  local hostFn=V.mod and rawget(V.mod,'_kimArenaStadiumModels')
  if type(hostFn)=='function' then

@@ -1,4 +1,4 @@
--- KIM_ARENA: persistent voxel map cache (VOXEL DISK CACHE).
+-- gen2-aio: persistent voxel map cache (VOXEL DISK CACHE).
 --
 -- Every finished map build (terrain + water + instanced trees + grass,
 -- flowers, figures, cuttable trees and authored support heights) is packed

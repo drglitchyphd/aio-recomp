@@ -1,4 +1,4 @@
--- KIM_ARENA 0.9.27: HIT FLICKER = STEADY, at the engine seam.
+-- gen2-aio 0.9.27: HIT FLICKER = STEADY, at the engine seam.
 --
 -- Crystal's damage animation blinks the target: BattleAnim_EnemyDamage is
 -- HIDE_MON / wait / SHOW_MON / wait, three times, and other moves clear the

@@ -64,7 +64,7 @@ end
 -- Preserve native NPC poses. Player interfaces vary across engine builds:
 -- some expose pose(), others walkPhase()/drawFlip(). Both player paths must
 -- use the visible walking cadence, while retaining native facing and lift.
--- KIM_ARENA: the ledge-hop height for any walker. The engine's own offset
+-- gen2-aio: the ledge-hop height for any walker. The engine's own offset
 -- when it sets one (the player); otherwise a TWO-cell step in progress (a
 -- follower or NPC crossing a ledge, which only double-steps) gets the same
 -- arc from the cart's jump table, so it hops instead of passing through.
@@ -114,7 +114,7 @@ function Gen2.poseFor(e, map, isPlayer)
       phase, flip = V.require('WalkAnimation').pose(e, phase, flip,
         love.timer.getTime(), map)
     end
-    -- KIM_ARENA: the ledge hop. Crystal's player has no pose(), so this
+    -- gen2-aio: the ledge hop. Crystal's player has no pose(), so this
     -- path built y from e.py alone and the hop arc (spriteYOffset, set by
     -- Player:update during STEP_LEDGE) was lost: the player walked straight
     -- through the ledge. lift = e.py - y, so a negative offset raises the card.

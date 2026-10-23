@@ -660,7 +660,7 @@ mod.hooks:wrap("ui.options.rows", function(next, game, rows)
     -- with it. The mod manager's page carries every one of them either way.
     local offered = (entry.full or not full)
                     and (not entry.when or entry.when())
-    -- KIM_ARENA: the host hides rows it owns (3D-BTL) or that do not apply.
+    -- gen2-aio: the host hides rows it owns (3D-BTL) or that do not apply.
     local kimHidden = rawget(mod, "_kimArenaRowHidden")
     if offered and kimHidden and kimHidden(entry[1].key) then offered = false end
     if offered then extra[#extra + 1] = entry[1]:row() end

@@ -139,7 +139,7 @@ return function(mod)
     local ww,wh=G.getDimensions()
     local mult=Style.fontScale(ww,wh)
     px=math.max(8,math.floor((tonumber(px) or 12)*mult+.5))
-    -- KIM_ARENA 0.9: Pixel Operator (lib/kim_arena/font.lua) unless UI FONT = KIM
+    -- gen2-aio 0.9: Pixel Operator (lib/gen2_aio/font.lua) unless UI FONT = KIM
     local arenaFont=rawget(mod,"_kimArenaFont")
     if type(arenaFont)=="function" then
       local okA,fA=pcall(arenaFont,px)
@@ -178,13 +178,13 @@ return function(mod)
   end
 
   local function frameImage(c)
-    -- KIM_ARENA 0.9.37: a theme may pick its frame (GEN 3, CUSTOM)
+    -- gen2-aio 0.9.37: a theme may pick its frame (GEN 3, CUSTOM)
     local id=tostring((c and c.frameAsset) or opt("frameAsset","2"))
-    -- KIM_ARENA 0.9.37: "4" = Gen 3 (FRLG-style) frame, greyscale so a
+    -- gen2-aio 0.9.37: "4" = Gen 3 (FRLG-style) frame, greyscale so a
     -- theme's frameTint colours it
     local path=(id=="1" and "assets/pixel_frame1.png")
       or (id=="3" and "assets/pixel_frame3.png")
-      or (id=="4" and "assets/kim_arena/frames/pixel_frame_gen3.png")
+      or (id=="4" and "assets/gen2_aio/frames/pixel_frame_gen3.png")
       or "assets/pixel_frame2.png"
     if imageCache[path]~=nil then return imageCache[path] or nil end
     local ok,img=false,nil
@@ -246,7 +246,7 @@ return function(mod)
     Style.color(c.surface,math.min(1,(c.surface[4] or 1)*fillAlpha))
     G.rectangle("fill",x,y,w,h,radius,radius)
     if style=="pixel" then
-      -- KIM_ARENA 0.9.37: themes may tint the PNG frame (GEN 3, CUSTOM)
+      -- gen2-aio 0.9.37: themes may tint the PNG frame (GEN 3, CUSTOM)
       Style.color(c.frameTint or {1,1,1,1},Style.foregroundOpacity(1))
       local img=frameImage(c)
       if img and drawNineSlice(img,x,y,w,h,opt("frameScale","2")) then return end

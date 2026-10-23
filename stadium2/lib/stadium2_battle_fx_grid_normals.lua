@@ -5,7 +5,7 @@
 -- accumulated, and the accumulated vector is normalized once more.  Keeping
 -- the intermediate rounding here is useful when comparing the generated
 -- vertex stream with the N64 effect.
-local f = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_float")
+local f = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_float")
 
 local function vec(a, b, c)
     return {f(a), f(b), f(c)}

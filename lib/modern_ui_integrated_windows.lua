@@ -10,7 +10,7 @@
 -- intact.  That keeps menu rows supplied by other mods visible without
 -- replacing their state objects or reimplementing the renderer.
 
-local MOD_ID = "KIM_ARENA"
+local MOD_ID = "gen2-aio"
 local API_VERSION = 1
 local SURFACE_API_VERSION = 2
 
@@ -3968,8 +3968,8 @@ return function(mod)
   -- option renderer.  This keeps the stock OPTIONS page free of mod-specific
   -- rows without taking ownership of the underlying setting callbacks.
   local CENTRAL_MOD_CATALOG = {
-    { id = "KIM_ARENA", label = "KANTO IN MOTION",
-      screens = { { label = "KANTO SETTINGS", id = "KIM_ARENA:settings" } },
+    { id = "gen2-aio", label = "KANTO IN MOTION",
+      screens = { { label = "KANTO SETTINGS", id = "gen2-aio:settings" } },
       modernUi = true },
     { id = "BATTLE_ART_VOXEL_FORK", label = "BATTLE ART",
       screens = { { label = "SETTINGS", id = "BATTLE_ART_VOXEL_FORK:settings", schemaFallback = true } },
@@ -7344,7 +7344,7 @@ return function(mod)
         and kind ~= "box" and kind ~= "box_mon_list" then return nil end
     local exports = type(mod.exports) == "table" and mod.exports or nil
     if not (type(exports) == "table" and type(exports.getSprite) == "function") then
-      local okHandle, handle = pcall(mod.find, "KIM_ARENA")
+      local okHandle, handle = pcall(mod.find, "gen2-aio")
       exports = okHandle and type(handle) == "table" and handle.exports or nil
     end
     if type(exports) ~= "table" or type(exports.getSprite) ~= "function" then
@@ -18599,7 +18599,7 @@ return function(mod)
       for _, entry in ipairs(rows) do
         local raw = type(entry) == "table" and entry.source
         if type(raw) == "table" and type(raw.id) == "string"
-            and raw.id:match("^KIM_ARENA:") then
+            and raw.id:match("^gen2-aio:") then
           kimSettingsMenu = true
           break
         end

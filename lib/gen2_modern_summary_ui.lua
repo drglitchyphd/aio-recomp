@@ -5,7 +5,7 @@
 -- party cycling, move reordering, cries, callbacks). KIM hides only the
 -- original 160x144 rendering and redraws the live state at final resolution.
 
--- KIM_ARENA: Crystal's type constants as players read them: the "_TYPE"
+-- gen2-aio: Crystal's type constants as players read them: the "_TYPE"
 -- suffix dropped (PSYCHIC_TYPE exists only to differ from the move PSYCHIC),
 -- CURSE_TYPE shown as ???, and a single-type Pokemon (stored as the same
 -- type twice) shown once.
@@ -328,7 +328,7 @@ return function(mod)
     local tw=(w-gap*2)/3
     for i,label in ipairs(labels) do
       local xx=x+(i-1)*(tw+gap)
-      -- KIM_ARENA 0.9.8: tap a tab to turn to its page
+      -- gen2-aio 0.9.8: tap a tab to turn to its page
       local tap=rawget(mod,"_kimTap")
       if tap and not self.moveDetail then
         tap.add(xx,y,tw,h,function(st)

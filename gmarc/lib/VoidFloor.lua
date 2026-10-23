@@ -1,4 +1,4 @@
--- KIM_ARENA: the floor beyond the map.
+-- gen2-aio: the floor beyond the map.
 --
 -- gmarc meshes the map, its connected neighbours and a three-block ring of
 -- the border block around them; past that ring the scene was cleared to
@@ -419,7 +419,7 @@ function VoidFloor.draw(world, cx, cy, atlas)
   if not (world and world.map and type(world.borderImageFor) == "function") then return false end
   local okI, image = pcall(world.borderImageFor, world, world.map.id)
   if okI and not image then
-    -- KIM_ARENA 0.9.1: WORLD EDGE FILL always repeats the map's OWN border,
+    -- gen2-aio 0.9.1: WORLD EDGE FILL always repeats the map's OWN border,
     -- like the original game. Crystal's VOID FILL = BLACK returns no image,
     -- so ask once more with FADE (the map's own border block) for this draw.
     local okB, BorderFill = pcall(require, "src.world.gen2.BorderFill")

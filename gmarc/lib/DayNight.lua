@@ -335,7 +335,7 @@ local function nativeWorld()
 end
 
 function DayNight.hours()
-  -- KIM_ARENA: TIME OF DAY drives the sky too
+  -- gen2-aio: TIME OF DAY drives the sky too
   local hostHour=V.mod and rawget(V.mod,'_kimArenaHour')
   if type(hostHour)=='function' then
     local ok,h=pcall(hostHour)

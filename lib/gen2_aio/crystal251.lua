@@ -1,4 +1,4 @@
--- KIM_ARENA: ALL 251 CATCHABLE (Pokemon Crystal).
+-- gen2-aio: ALL 251 CATCHABLE (Pokemon Crystal).
 --
 -- Crystal leaves 33 species unobtainable on one save (computed from
 -- pret/pokecrystal: every wild table -- grass, water, fishing, headbutt, rock

@@ -1,13 +1,13 @@
 -- Cosmetic visitors own no battle state and never use the gameplay RNG.
-local Actor=require('mods.KIM_ARENA.stadium2.lib.battle_actor')
-local Mat=require('mods.KIM_ARENA.stadium2.lib.renderer')
+local Actor=require('mods.gen2-aio.stadium2.lib.battle_actor')
+local Mat=require('mods.gen2-aio.stadium2.lib.renderer')
 local V={};V.__index=V
 local serial=0
 local passes={"opaque","additive"}
-local TorchShadows=require("mods.KIM_ARENA.stadium2.lib.battle_torch_shadows")
-local Catalog=require('mods.KIM_ARENA.stadium2.lib.visitor_catalog')
-local Behaviour=require('mods.KIM_ARENA.stadium2.lib.visitor_behaviour')
-local Locomotion=require('mods.KIM_ARENA.stadium2.lib.visitor_locomotion')
+local TorchShadows=require("mods.gen2-aio.stadium2.lib.battle_torch_shadows")
+local Catalog=require('mods.gen2-aio.stadium2.lib.visitor_catalog')
+local Behaviour=require('mods.gen2-aio.stadium2.lib.visitor_behaviour')
+local Locomotion=require('mods.gen2-aio.stadium2.lib.visitor_locomotion')
 local species,heights={},{}
 for name,spec in pairs(Catalog) do if name~='pools' then species[name]=spec[1];heights[name]=spec[2] end end
 local function random(self)
@@ -50,7 +50,7 @@ end
 function V.pose(name,t,environment)
  local u=t/18
  if name=='caterpie' then
-  local x,y,z=require('mods.KIM_ARENA.stadium2.lib.woodland_perch').position()
+  local x,y,z=require('mods.gen2-aio.stadium2.lib.woodland_perch').position()
   return x,y,z,.65,1
  elseif name=='meowth' then
   local x=t<7 and (-115+58*smooth(t/7)) or t<14 and -57 or (-57-58*smooth((t-14)/8))

@@ -5,7 +5,7 @@
 -- input, state transitions, item logic, calls/maps/radio and page navigation.
 return function(mod)
   local G=love.graphics
-  -- KIM_ARENA 0.9.8 continuity pass: generic tap targets for KIM's Modern
+  -- gen2-aio 0.9.8 continuity pass: generic tap targets for KIM's Modern
   -- screens. A draw function adds row rectangles while the dispatcher has a
   -- buffer open; KIM Touch taps a row by calling its `select` and then
   -- pressing `button` (A by default; false = select only).
@@ -26,7 +26,7 @@ return function(mod)
     if b then mod._kimScreenTapTargets=b end
   end
   mod._kimTap=KimTap
-  -- KIM_ARENA 0.9.47: FREE SCROLL. KIM Touch drags a list like a web page:
+  -- gen2-aio 0.9.47: FREE SCROLL. KIM Touch drags a list like a web page:
   -- it writes FreeScroll[state].offset (rows, fractional, with fling
   -- momentum) and the list drawers below show that window WITHOUT moving
   -- the selection. Any selection change (a tap on a row, a pad press) hands
@@ -294,7 +294,7 @@ return function(mod)
       local yy=startY+(i-1)*rh
       local barY,barH=centeredRowRect(yy,rh,2)
       if i==selected then color(c.selected); G.rectangle("fill",mx+12,barY,mw-24,barH,5,5) end
-      -- KIM_ARENA: modal option cells for touch (KIM_TOUCH)
+      -- gen2-aio: modal option cells for touch (KIM_TOUCH)
       do
         local t = rawget(mod, "_kimScreenTapTargets")
         if t and #t.cells < 64 then t.cells[#t.cells + 1] = { kind = "modal", index = i, x = mx + 12, y = barY, w = mw - 24, h = barH } end
@@ -447,7 +447,7 @@ return function(mod)
     if isManagerState
         and s.screen=="options"
         and s.currentMod
-        and (tostring(s.currentMod.id or "")=="KIM_ARENA"
+        and (tostring(s.currentMod.id or "")=="gen2-aio"
           or tostring(s.currentMod.name or ""):lower()=="kanto in motion") then
       return "modoptions"
     end
@@ -512,7 +512,7 @@ return function(mod)
 
   local function drawStart(s)
     pruneStartMapRow(s)
-    -- KIM_ARENA: START rows are touchable (KIM_TOUCH)
+    -- gen2-aio: START rows are touchable (KIM_TOUCH)
     mod._kimScreenTapTargets = { state = s, kind = "start", cells = {},
       time = love.timer and love.timer.getTime and love.timer.getTime() or 0 }
     local c=theme(); local sx,sy,sw,sh=playfield()
@@ -924,7 +924,7 @@ return function(mod)
     return line1
   end
 
-  -- KIM_ARENA: touchable rows drawn this frame (window units), for KIM_TOUCH.
+  -- gen2-aio: touchable rows drawn this frame (window units), for KIM_TOUCH.
   local function screenTaps(state, kind)
     local t = { state = state, kind = kind, cells = {},
       time = love.timer and love.timer.getTime and love.timer.getTime() or 0 }
@@ -1876,7 +1876,7 @@ return function(mod)
     local cy=tabTop+tabH+math.max(8,12*scale)
     local ch=math.max(1,y+h-footerH-cy)
     local id=cardId(s)
-    -- KIM_ARENA 0.9.47: the card strip previews the highlighted card (it
+    -- gen2-aio 0.9.47: the card strip previews the highlighted card (it
     -- showed only "Choose a POKeGEAR card." over an empty panel)
     if s.mode=="strip" then
       local hint="A OPEN"
@@ -2192,7 +2192,7 @@ return function(mod)
     local valueFont=font(23*scale)
     local small=font(19*scale)
 
-    -- KIM_ARENA 0.9.46: hub / quick-menu pages show their own title
+    -- gen2-aio 0.9.46: hub / quick-menu pages show their own title
     local pageTitle=type(rawget(s,"title"))=="string" and rawget(s,"title") or nil
     fittedText(pageTitle or "OPTIONS",38*scale,x+28*scale,y+18*scale,w*.55,"left",c.text)
     fittedText(rawget(s,"kimSubtitle") or (s.sub and "CATEGORY" or "SETTINGS"),19*scale,x+w*.62,y+30*scale,w*.30,"right",c.accent)

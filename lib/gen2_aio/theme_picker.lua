@@ -1,10 +1,10 @@
--- KIM_ARENA 0.9.37: CUSTOM UI THEME pickers.
+-- gen2-aio 0.9.37: CUSTOM UI THEME pickers.
 --
 -- Three rows at the top of the hub's DISPLAY & UI page -- CUSTOM BORDER,
 -- CUSTOM BACKING, CUSTOM BORDER COLOR. Each opens a LIST (a page of Crystal's
 -- OPTION screen) instead of cycling left/right; picking an entry saves it and
 -- returns. The colours themselves live in gen2_modern_battle_ui.lua's
--- "kim_arena:custom" theme (UI THEME = CUSTOM).
+-- "gen2_aio:custom" theme (UI THEME = CUSTOM).
 return function(host)
   local mod = host.mod
   local Hub = rawget(mod, "_kimArenaHub")
@@ -13,17 +13,17 @@ return function(host)
   -- UI THEME itself (KIM's gen2UiTheme), as a list. Same entries, same order
   -- as kim_main.lua's UI THEME choices.
   local THEME = { key = "gen2UiTheme", label = "UI THEME", default = "default", items = {
-    { "GEN1 MODERN", "default" }, { "HEARTGOLD", "kim_arena:heartgold" },
-    { "SOULSILVER", "kim_arena:soulsilver" }, { "JOHTO NIGHT", "kim_arena:johto_night" },
+    { "GEN1 MODERN", "default" }, { "HEARTGOLD", "gen2_aio:heartgold" },
+    { "SOULSILVER", "gen2_aio:soulsilver" }, { "JOHTO NIGHT", "gen2_aio:johto_night" },
     { "CLASSIC MONO", "gen1_modern_ui:classic_mono" }, { "CRIMSON", "gen1_modern_ui:crimson" },
     { "CRIMSON GLASS", "gen1_modern_ui:crimson_glass" }, { "MODERN GLASS", "gen1_modern_ui:modern_glass" },
     { "POCKET GREEN", "gen1_modern_ui:pocket_green" }, { "MIDNIGHT", "gen1_modern_ui:midnight" },
     { "MIDNIGHT GLASS", "gen1_modern_ui:midnight_glass" }, { "FROST", "gen1_modern_ui:frost" },
     { "LIGHT", "gen1_modern_ui:light" }, { "DARK", "gen1_modern_ui:dark" },
-    { "CRYSTAL", "kim_arena:crystal" }, { "GOLD", "kim_arena:gold" }, { "SILVER", "kim_arena:silver" },
-    { "POKEGEAR", "kim_arena:pokegear" }, { "HIGH CONTRAST", "kim_arena:high_contrast" },
-    { "TYPE (LEAD POKEMON)", "kim_arena:type" }, { "GEN 3 (FRLG)", "kim_arena:gen3" },
-    { "CUSTOM", "kim_arena:custom" } } }
+    { "CRYSTAL", "gen2_aio:crystal" }, { "GOLD", "gen2_aio:gold" }, { "SILVER", "gen2_aio:silver" },
+    { "POKEGEAR", "gen2_aio:pokegear" }, { "HIGH CONTRAST", "gen2_aio:high_contrast" },
+    { "TYPE (LEAD POKEMON)", "gen2_aio:type" }, { "GEN 3 (FRLG)", "gen2_aio:gen3" },
+    { "CUSTOM", "gen2_aio:custom" } } }
 
   local PICKERS = {
     { key = "kimArenaCustomFrame", label = "CUSTOM BORDER", default = "gen3", items = {
@@ -43,7 +43,7 @@ return function(host)
     local ok, v = pcall(mod.options.get, mod.options, key)
     return ok and v ~= nil and tostring(v) or default
   end
-  -- same write path as the OPTION rows (lib/kim_arena/ingame_options.lua)
+  -- same write path as the OPTION rows (lib/gen2_aio/ingame_options.lua)
   local function set(game, key, value)
     local opts = game and ((game.save and game.save.options) or game.options)
     if not opts then return false end
@@ -100,7 +100,7 @@ return function(host)
     themeRow.activate = function(g) openList(g or game, THEME, themeRow, true) end
     rows[1] = themeRow
     -- the CUSTOM settings sit under UI THEME, only while CUSTOM is chosen
-    if get(THEME.key, THEME.default) == "kim_arena:custom" then
+    if get(THEME.key, THEME.default) == "gen2_aio:custom" then
       for _, p in ipairs(PICKERS) do
         local short = p.label:gsub("^CUSTOM ", "")
         local row = { id = "kimArena.picker." .. p.key,

@@ -16,8 +16,8 @@ return function(mod)
   -- This Gen 2 adapter only needs the battle-panel color tokens; layout and
   -- the native G/S/C HP/status HUD remain Gen 2-owned.
   local THEMES = {
-    -- KIM_ARENA: HeartGold / SoulSilver-inspired themes
-    ["kim_arena:heartgold"] = {
+    -- gen2-aio: HeartGold / SoulSilver-inspired themes
+    ["gen2_aio:heartgold"] = {
       surface = { 0.130, 0.085, 0.040, 0.98 },
       raised = { 0.200, 0.130, 0.060, 1.00 },
       selected = { 0.550, 0.360, 0.080, 1.00 },
@@ -28,7 +28,7 @@ return function(mod)
       muted = { 0.880, 0.780, 0.600, 1.00 },
       divider = { 0.620, 0.470, 0.220, 0.94 },
     },
-    ["kim_arena:soulsilver"] = {
+    ["gen2_aio:soulsilver"] = {
       surface = { 0.100, 0.120, 0.160, 0.98 },
       raised = { 0.160, 0.190, 0.250, 1.00 },
       selected = { 0.360, 0.460, 0.620, 1.00 },
@@ -39,7 +39,7 @@ return function(mod)
       muted = { 0.740, 0.790, 0.880, 1.00 },
       divider = { 0.480, 0.550, 0.660, 0.94 },
     },
-    ["kim_arena:johto_night"] = {
+    ["gen2_aio:johto_night"] = {
       surface = { 0.060, 0.050, 0.160, 0.98 },
       raised = { 0.110, 0.090, 0.260, 1.00 },
       selected = { 0.330, 0.220, 0.620, 1.00 },
@@ -173,46 +173,46 @@ return function(mod)
     },
   }
 
-  -- KIM_ARENA 0.9: additional themes.
-  THEMES["kim_arena:crystal"] = {
+  -- gen2-aio 0.9: additional themes.
+  THEMES["gen2_aio:crystal"] = {
     surface = { 0.055, 0.115, 0.165, 0.97 }, raised = { 0.10, 0.19, 0.26, 1 },
     selected = { 0.16, 0.50, 0.66, 1 }, accent = { 0.62, 0.93, 0.98, 1 },
     frame = { 0.78, 0.90, 0.96, 1 }, frameShadow = { 0.01, 0.03, 0.05, 0.45 },
     text = { 0.95, 0.99, 1.00, 1 }, muted = { 0.70, 0.85, 0.92, 1 },
     divider = { 0.40, 0.62, 0.72, 0.94 },
   }
-  THEMES["kim_arena:gold"] = {
+  THEMES["gen2_aio:gold"] = {
     surface = { 0.14, 0.095, 0.035, 0.97 }, raised = { 0.23, 0.16, 0.06, 1 },
     selected = { 0.70, 0.48, 0.10, 1 }, accent = { 1.00, 0.82, 0.36, 1 },
     frame = { 0.98, 0.78, 0.30, 1 }, frameShadow = { 0.05, 0.03, 0.00, 0.50 },
     text = { 1.00, 0.97, 0.88, 1 }, muted = { 0.90, 0.80, 0.60, 1 },
     divider = { 0.62, 0.46, 0.18, 0.94 },
   }
-  THEMES["kim_arena:silver"] = {
+  THEMES["gen2_aio:silver"] = {
     surface = { 0.13, 0.14, 0.16, 0.97 }, raised = { 0.21, 0.22, 0.25, 1 },
     selected = { 0.42, 0.46, 0.54, 1 }, accent = { 0.84, 0.88, 0.96, 1 },
     frame = { 0.80, 0.83, 0.88, 1 }, frameShadow = { 0.02, 0.02, 0.03, 0.48 },
     text = { 0.97, 0.97, 0.98, 1 }, muted = { 0.76, 0.78, 0.82, 1 },
     divider = { 0.48, 0.51, 0.56, 0.94 },
   }
-  THEMES["kim_arena:pokegear"] = {
+  THEMES["gen2_aio:pokegear"] = {
     surface = { 0.03, 0.05, 0.05, 0.97 }, raised = { 0.06, 0.12, 0.11, 1 },
     selected = { 0.05, 0.46, 0.42, 1 }, accent = { 0.36, 0.96, 0.82, 1 },
     frame = { 0.30, 0.86, 0.74, 1 }, frameShadow = { 0.00, 0.02, 0.02, 0.55 },
     text = { 0.92, 1.00, 0.97, 1 }, muted = { 0.62, 0.84, 0.78, 1 },
     divider = { 0.20, 0.50, 0.44, 0.94 },
   }
-  THEMES["kim_arena:high_contrast"] = {
+  THEMES["gen2_aio:high_contrast"] = {
     surface = { 0, 0, 0, 1 }, raised = { 0.10, 0.10, 0.10, 1 },
     selected = { 0.00, 0.30, 0.85, 1 }, accent = { 1.00, 0.86, 0.00, 1 },
     frame = { 1, 1, 1, 1 }, frameShadow = { 0, 0, 0, 0.80 },
     text = { 1, 1, 1, 1 }, muted = { 0.90, 0.90, 0.90, 1 },
     divider = { 1, 1, 1, 1 },
   }
-  -- KIM_ARENA 0.9.37 GEN 3: FireRed / LeafGreen-style light panels -- white
+  -- gen2-aio 0.9.37 GEN 3: FireRed / LeafGreen-style light panels -- white
   -- boxes, dark grey text, teal frame (greyscale GEN 3 PNG frame tinted
   -- teal), red cursor accent, pale-blue selection with dark text.
-  THEMES["kim_arena:gen3"] = {
+  THEMES["gen2_aio:gen3"] = {
     surface = { 0.97, 0.97, 0.96, 0.98 }, raised = { 0.89, 0.92, 0.94, 1 },
     selected = { 0.76, 0.86, 0.96, 1 }, accent = { 0.84, 0.22, 0.17, 1 },
     frame = { 0.27, 0.55, 0.62, 1 }, frameTint = { 0.60, 0.85, 0.92, 1 },
@@ -222,7 +222,7 @@ return function(mod)
     divider = { 0.58, 0.72, 0.78, 0.94 },
   }
 
-  -- KIM_ARENA 0.9.37 CUSTOM: backing colour + border colour picked from lists
+  -- gen2-aio 0.9.37 CUSTOM: backing colour + border colour picked from lists
   -- (options kimArenaCustomBacking / kimArenaCustomBorder, set from the hub's
   -- DISPLAY & UI page). Text, selection and accents are derived so they stay
   -- readable on a light or a dark backing.
@@ -341,11 +341,11 @@ return function(mod)
     return t and (tostring(t):gsub("_TYPE$", "")) or nil
   end
   setmetatable(THEMES, { __index = function(_, k)
-    if k == "kim_arena:custom" then
+    if k == "gen2_aio:custom" then
       local ok, c = pcall(customTheme)
       return ok and c or rawget(THEMES, "default")
     end
-    if k == "kim_arena:type" then
+    if k == "gen2_aio:type" then
       local ok, t = pcall(leadType)
       local hue = ok and t and TYPE_HUE[t]
       return hue and typeTheme(hue) or rawget(THEMES, "default")
@@ -636,7 +636,7 @@ return function(mod)
     return moves and move and moves[move.id] or nil
   end
 
-  -- KIM_ARENA 0.9.44: MOVE TYPE COLORS (on) tint each move's cell with its
+  -- gen2-aio 0.9.44: MOVE TYPE COLORS (on) tint each move's cell with its
   -- type colour and a stripe; EFFECTIVENESS HINT (off -- Nuzlocke-friendly)
   -- adds SUPER / WEAK / NO EFFECT against the current enemy, computed with
   -- the battle's own Damage.typeMultiplier and matchup rows (Foresight
@@ -806,7 +806,7 @@ return function(mod)
     end
   end
 
-  -- KIM_ARENA: where each touchable cell was drawn this frame (window units),
+  -- gen2-aio: where each touchable cell was drawn this frame (window units),
   -- for touch-control mods (KIM_TOUCH). Rebuilt on every panel draw.
   local tapTargets = { cells = {} }
   local function tapCell(kind, index, x, y, w, h)
@@ -907,7 +907,7 @@ return function(mod)
     end
   end
 
-  -- KIM_ARENA: "which move should be forgotten?" in the KIM style (it was
+  -- gen2-aio: "which move should be forgotten?" in the KIM style (it was
   -- Crystal's native list box behind KIM's message panel). The prompt, then
   -- the Pokemon's moves as rows; tapping a row picks it (KIM_TOUCH).
   local function drawForget(state, x, y, w, h, bodyFont, captionFont, scale)
@@ -1148,7 +1148,7 @@ return function(mod)
       local bottomReserve=math.max(28*fit,winH*0.27)
       local maxY=winH-panelH-bottomReserve
       y=math.max(gy+gh-panelH*0.08,math.min(desiredY,maxY))
-      -- KIM_ARENA tall layout (screens over 1.9x taller than wide, e.g. a
+      -- gen2-aio tall layout (screens over 1.9x taller than wide, e.g. a
       -- Fold cover screen) with KIM Touch's floating controls: the stock pad
       -- is gone, so the panel moves into the bottom third, clear of the
       -- battlers, leaving the strip below it for the side buttons.
@@ -1228,7 +1228,7 @@ return function(mod)
   if mod.hooks and type(mod.hooks.wrap) == "function" then
     mod.hooks:wrap("battle.bottom_ui_visible", function(nextFn, state)
       if supportedSurface(state) and hideOriginal() then return false end
-      -- KIM_ARENA: with Modern UI on, an EMPTY native message box (the battle
+      -- gen2-aio: with Modern UI on, an EMPTY native message box (the battle
       -- intro's slide-in, the beat between lines) is hidden too; it read as a
       -- blank text box for a couple of seconds, and gmarc's 3D battle drew a
       -- glass panel behind it. Phases whose box carries content of its own
@@ -1266,7 +1266,7 @@ return function(mod)
   mod.exports.gen2ModernBattleUi = {
     apiVersion = 2,
     active = function(state) return supportedSurface(state) end,
-    -- KIM_ARENA: cells drawn on the last panel frame, in window units:
+    -- gen2-aio: cells drawn on the last panel frame, in window units:
     -- { state, phase, time, panel = {x,y,w,h}, cells = {{kind,index,x,y,w,h}} }
     tapTargets = function() return tapTargets end,
   }

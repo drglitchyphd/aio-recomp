@@ -1,4 +1,4 @@
--- KIM_ARENA battle background provider.
+-- gen2-aio battle background provider.
 --
 -- Battle Art's 3D battle stage (bundled under voxel/) is the compositor on
 -- Crystal: it owns the camera, KIM's HD Pokemon cards and the battle UI. Its
@@ -19,7 +19,7 @@
 -- for uses KIM HD; KIM HD art that has not been downloaded yet shows the
 -- voxel world.
 
-local SROOT = "mods.KIM_ARENA.stadium2.lib."
+local SROOT = "mods.gen2-aio.stadium2.lib."
 
 return function(host)
   local mod = host.mod
@@ -27,7 +27,7 @@ return function(host)
 
   local function warn(fmt, ...)
     if mod.log and mod.log.warn then pcall(mod.log.warn, mod.log, fmt, ...) end
-    -- KIM_ARENA: also on screen with DIAGNOSTICS on
+    -- gen2-aio: also on screen with DIAGNOSTICS on
     local d = rawget(mod, "_kimArenaDiag")
     if type(d) == "function" then
       local okF, text = pcall(string.format, fmt, ...)
@@ -209,7 +209,7 @@ return function(host)
         eye = c.eye, focus = c.focus,
         letterbox = { lx = ox, ly = oy, scale = fit, pw = width, ph = height } }
     end
-    -- KIM_ARENA: a scene that keeps producing nothing is given up on after
+    -- gen2-aio: a scene that keeps producing nothing is given up on after
     -- a few seconds (KIM HD takes over), with the reason on DIAGNOSTICS
     local misses = 0
     local function miss(why)
@@ -296,7 +296,7 @@ return function(host)
     if not ok or type(sel) ~= "table" then return nil end
     if sel.mode == "arena" then sel = sel.fallback end   -- gyms: painted gym
     if not (sel and sel.mode == "environment" and sel.scene) then return nil end
-    local scene = newScene({ actors = {}, label = "KIM Arena Kenney backdrop",
+    local scene = newScene({ actors = {}, label = "Gen2-AIO Kenney backdrop",
       warn = function(message) warn("%s", tostring(message)) end })
     if not scene then return nil end
     scene.battleContext = ctx
@@ -307,7 +307,7 @@ return function(host)
   end
 
 
-  local KimHd = host.load("lib/kim_arena/kim_hd_crystal.lua")
+  local KimHd = host.load("lib/gen2_aio/kim_hd_crystal.lua")
   -- KIM's authored feet positions for each painted background (1920x950).
   local KimRouter = host.load("data/hd_battle_backgrounds.lua")
   local function kimAnchors(file, image)
@@ -358,7 +358,7 @@ return function(host)
     if not ctx then return { kind = "none" } end
     local mode = B.mode()
     local made
-    -- KIM_ARENA 0.9.8: Stadium 2 arenas are gone; an old saved STADIUM
+    -- gen2-aio 0.9.8: Stadium 2 arenas are gone; an old saved STADIUM
     -- value draws KENNEY HD.
     if mode == "stadium" then mode = "kenney" end
     if not made and mode == "kenney" then

@@ -1,7 +1,7 @@
 -- US fragment79: 84166F60/841670A8/841674C0/841677C4.
 -- Family setup, simulation and authored 84168000 tube/84163380 glow meshes.
 -- Endpoint lookup and the host renderer remain separate layers.
-local f=require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_float")
+local f=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_float")
 local Beam={families={[0]=true,[5]=true,[18]=true}}
 -- 84158F00, 84158914 and 84159584, in constructor call order.
 -- The two 8-word records are combiner selectors, not texture descriptors.

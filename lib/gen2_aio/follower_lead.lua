@@ -1,4 +1,4 @@
--- KIM_ARENA 0.9.40: FOLLOWER = PARTY LEAD.
+-- gen2-aio 0.9.40: FOLLOWER = PARTY LEAD.
 --
 -- Wilds' follower remembers WHICH Pokemon you picked (by fingerprint) and
 -- keeps it through party reorders, so moving another Pokemon to the top only

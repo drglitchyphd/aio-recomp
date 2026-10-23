@@ -23,7 +23,7 @@ local function processorCount()
 end
 
 local function workerPath(root)
-  root = tostring(root or "mods/KIM_ARENA/stadium2"):gsub("/+$", "")
+  root = tostring(root or "mods/gen2-aio/stadium2"):gsub("/+$", "")
   return root .. "/workers/export_worker.lua"
 end
 

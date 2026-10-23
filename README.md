@@ -1,7 +1,7 @@
 # Gen2-AIO for Gen1Recomp
 
-This repository distributes **Gen2-AIO** (`KIM_ARENA`), the Crystal bundle.
-See [the bundle README](README_KIM_ARENA.md) for current features, release notes,
+This repository distributes **Gen2-AIO** (`gen2-aio`), the Crystal bundle.
+See [the bundle README](README_GEN2_AIO.md) for current features, release notes,
 installation and updates. The Kanto in Motion documentation below describes
 the bundled upstream component.
 

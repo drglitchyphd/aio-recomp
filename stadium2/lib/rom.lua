@@ -1,4 +1,4 @@
-local Layout = require("mods.KIM_ARENA.stadium2.lib.layout")
+local Layout = require("mods.gen2-aio.stadium2.lib.layout")
 
 local Rom = {}
 

@@ -4,7 +4,7 @@
 -- state transparent, hides only its native render, then draws a final-window
 -- Modern UI card over the live overworld through render.hud.
 
--- KIM_ARENA: Crystal's type constants as players read them: the "_TYPE"
+-- gen2-aio: Crystal's type constants as players read them: the "_TYPE"
 -- suffix dropped (PSYCHIC_TYPE exists only to differ from the move PSYCHIC),
 -- CURSE_TYPE shown as ???, and a single-type Pokemon (stored as the same
 -- type twice) shown once.
@@ -345,7 +345,7 @@ return function(mod)
     return drawVanillaIcon(self,mon,x,y,size,selected)
   end
 
-  -- KIM_ARENA: touchable rows drawn this frame (window units), for KIM_TOUCH.
+  -- gen2-aio: touchable rows drawn this frame (window units), for KIM_TOUCH.
   local function screenTaps(state, kind)
     local t = { state = state, kind = kind, cells = {},
       time = love.timer and love.timer.getTime and love.timer.getTime() or 0 }
@@ -403,7 +403,7 @@ return function(mod)
         color(colors.selected,0.96); G.rectangle("fill",listX,ry+rowH*.06,listW,rowH*.88,5,5)
         color(colors.accent,nil,true); G.rectangle("fill",listX,ry+rowH*.06,math.max(2,3*scale),rowH*.88,2,2)
       end
-      -- KIM_ARENA 0.9.46: bigger party icons (were capped at 30px*scale,
+      -- gen2-aio 0.9.46: bigger party icons (were capped at 30px*scale,
       -- tiny on a phone); now up to the row's height
       local iconSize=math.min(rowH*.94,54*scale)
       drawIcon(self,mon,listX+6*scale,ry+(rowH-iconSize)/2,iconSize,selected)
@@ -582,7 +582,7 @@ return function(mod)
     drawText("CANCEL",cf,cancelX,footerY+(footer-cf:getHeight())*.50,cancelW,"center",cancelSelected and colors.text or colors.muted)
 
     if self.submenu and type(self.submenu.items)=="table" then
-      -- KIM_ARENA: a centred modal like the Pack's (was a small box in the
+      -- gen2-aio: a centred modal like the Pack's (was a small box in the
       -- list's corner): dimmed backdrop, larger rows, the Pokemon's name.
       local count=#self.submenu.items
       local winW,winH=G.getDimensions()

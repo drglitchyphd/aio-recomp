@@ -7,7 +7,7 @@
 -- save-directory ZIP through Gen1Recomp's native file helper for extraction.
 return function(mod)
   local IS_GEN3 = tonumber(mod.generation) == 3
-  local SCREEN_ID = "KIM_ARENA:asset_manager"
+  local SCREEN_ID = "gen2-aio:asset_manager"
   local REPO = "HaseoSora/Kanto-in-Motion-Assets"
   -- The HD pack is layered: v1.0.0 is the full base, v1.1.0 adds Unown
   -- forms, and v1.2.0 adds Deoxys forms. Existing users download only the

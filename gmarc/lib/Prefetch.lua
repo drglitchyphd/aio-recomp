@@ -1,4 +1,4 @@
--- KIM_ARENA: VOXEL PRECACHE.
+-- gen2-aio: VOXEL PRECACHE.
 --
 -- gmarc keeps the current map, its rendered neighbours and the previous
 -- neighbourhood warm. This looks one step ahead through DOORS: while you stand

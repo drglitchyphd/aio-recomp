@@ -6,7 +6,7 @@ uniform vec3 localTorch1;uniform vec3 localTorch2;
 
 uniform Image localTorchMap1;uniform Image localTorchMap2;
 uniform float localTorchPower;
-]]..require("mods.KIM_ARENA.stadium2.lib.torch_projection").source..[[
+]]..require("mods.gen2-aio.stadium2.lib.torch_projection").source..[[
 float modelTorchVisibility(Image map,vec3 light,vec3 p,vec3 n){
  if(localTorchShadows<.5)return 1.;
  return torchVisibility(map,light,p,n);
@@ -28,7 +28,7 @@ function M.apply(source)
  end
  source=source:gsub('vec4 clip=mvp%*vertex_position;',
   'vTorchWorld=(modelMatrix*vertex_position).xyz;\n  vec4 clip=mvp*vertex_position;',1)
- source=source:gsub('#ifdef PIXEL',function() return '#ifdef PIXEL\n'..M.pixel..require('mods.KIM_ARENA.stadium2.lib.firefly_lighting').pixel end,1)
+ source=source:gsub('#ifdef PIXEL',function() return '#ifdef PIXEL\n'..M.pixel..require('mods.gen2-aio.stadium2.lib.firefly_lighting').pixel end,1)
  source=source:gsub('(vec3 shaded%s*=%s*combined%s*%*%s*lighting%s*%*%s*sceneTint%.rgb;)',
   '%1\n  shaded+=combined*(localTorchLight(vTorchWorld,n)+fireflyLight(vTorchWorld,n));',1)
  return source

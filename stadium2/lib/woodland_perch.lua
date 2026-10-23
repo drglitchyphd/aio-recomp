@@ -10,7 +10,7 @@ function P.position()
  if not perch then
   -- Intersect the crown above the trunk. Use the actual converted triangles,
   -- so the feet rest on the tree even if its mesh or scale changes.
-  local rows=require('mods.KIM_ARENA.stadium2.assets.kenney_nature.models')[P.model]
+  local rows=require('mods.gen2-aio.stadium2.assets.kenney_nature.models')[P.model]
   local top=-math.huge
   for i=1,#rows,3 do
    local a,b,c=rows[i],rows[i+1],rows[i+2]

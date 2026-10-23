@@ -22,9 +22,9 @@
 --   strip(dl, slot) -> dl               84169214
 -- coreSpawn receives the ROM call's registers and stack words:
 -- { fa0, fa1, a2, a3 = floats, stack = { [offset] = 32-bit word } }.
-local f32 = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_float")
-local U = require("mods.KIM_ARENA.stadium2.lib.stadium2_libultra")
-local Memory = require("mods.KIM_ARENA.stadium2.lib.stadium2_native_memory")
+local f32 = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_float")
+local U = require("mods.gen2-aio.stadium2.lib.stadium2_libultra")
+local Memory = require("mods.gen2-aio.stadium2.lib.stadium2_native_memory")
 
 local S = {}
 
@@ -46,7 +46,7 @@ S.MATERIAL = 0x84187DD0 -- D_84187DD0
 S.STALE = 0x857FEF90
 
 -- A big-endian double in plain Lua (the mod sandbox refuses ffi at run time).
-local wordsToDouble = require("mods.KIM_ARENA.stadium2.lib.stadium2_native_memory").wordsToDouble
+local wordsToDouble = require("mods.gen2-aio.stadium2.lib.stadium2_native_memory").wordsToDouble
 local function double(mem, address)
   return wordsToDouble(mem:u32(address), mem:u32(address + 4))
 end

@@ -1,7 +1,7 @@
 {
-  "id": "KIM_ARENA",
+  "id": "gen2-aio",
   "name": "Gen2-AIO",
-  "version": "0.9.49",
+  "version": "0.9.50",
   "github": "drglitchyphd/aio-recomp",
   "api": 2,
   "entry": "main.lua",
@@ -49,7 +49,8 @@
     "recomp-autosave",
     "Gen1MenuManager",
     "gen1_mod_menu",
-    "Gen1Remember"
+    "Gen1Remember",
+    "KIM_ARENA"
   ],
   "permissions": [
     "engine_internals",

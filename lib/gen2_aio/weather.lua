@@ -1,4 +1,4 @@
--- KIM_ARENA: lore-friendly weather.
+-- gen2-aio: lore-friendly weather.
 --
 -- Three sources, strongest first:
 --   1. BATTLE MOVES  -- Crystal's own battle weather (Rain Dance / Sunny Day /

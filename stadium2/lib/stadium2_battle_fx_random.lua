@@ -59,7 +59,7 @@ local function mul32(a, b)
   return (a0 * b0 + cross * U16) % U32
 end
 
-local single = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_float")
+local single = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_float")
 
 local function number(value)
   value = tonumber(value)

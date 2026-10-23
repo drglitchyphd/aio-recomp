@@ -26,7 +26,11 @@ return function(host)
     for i, a in ipairs(actions) do
       cells[i] = { x = x + (i - 1) * (size + gap), y = y, w = size, h = size, action = a }
     end
-    return { cells = cells, x = x, y = y, w = width, size = size, gap = gap, W = W, H = H }
+    local clockPx = math.max(20, math.min(W, H) * .038)
+    -- Leave room for the clock and six health markers even with one shortcut.
+    local statusW = math.max(width, math.min(W - gap * 4, clockPx * 9))
+    return { cells = cells, x = x, y = y, w = width, size = size, gap = gap, W = W, H = H,
+      clockPx = clockPx, statusW = statusW, statusX = W - statusW - gap * 2 }
   end
   local function font(size)
     size = math.max(9, math.floor(size))
@@ -91,18 +95,19 @@ return function(host)
       G.setFont(f); color(th.text)
       G.printf(r.action.label, r.x + 2, r.y + r.h * .72, r.w - 4, "center")
     end
-    local f = font(l.size * .19)
-    local h = math.max(f:getHeight() + 12, l.size * .4)
+    local f = font(l.clockPx)
+    local padding = math.max(8, l.clockPx * .3)
+    local h = f:getHeight() + padding * 2
     local y = l.y + l.size + l.gap
-    panel(l.x, y, l.w, h, th)
+    panel(l.statusX, y, l.statusW, h, th)
     local w, time = game.world, ""
     if type(w.hour) == "function" and type(w.minute) == "function" then
       time = ("%02d:%02d"):format(w:hour(), w:minute())
     end
     G.setFont(f); color(th.text)
-    G.print(time, l.x + 8, y + (h - f:getHeight()) / 2)
+    G.print(time, l.statusX + padding, y + padding)
     local party = game.save and game.save.party or {}
-    local radius = math.min(6, l.size * .065)
+    local radius = math.max(4, l.clockPx * .18)
     for i = 1, math.min(6, #party) do
       local mon = party[i]
       local hp = tonumber(mon.hp) or 0
@@ -111,7 +116,7 @@ return function(host)
       elseif hp / math.max(1, max) <= .2 then G.setColor(1, .34, .32, 1)
       elseif hp / math.max(1, max) <= .5 then G.setColor(1, .76, .27, 1)
       else G.setColor(.34, .88, .59, 1) end
-      local x = l.x + l.w - 10 - (6 - i) * (radius * 2 + 5)
+      local x = l.statusX + l.statusW - padding - radius - (6 - i) * (radius * 2 + padding * .5)
       G.circle(hp > 0 and "fill" or "line", x, y + h / 2, radius)
     end
   end

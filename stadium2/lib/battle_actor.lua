@@ -3,12 +3,12 @@
 -- This module owns only presentation state: model selection, Stadium animation
 -- playback, send-out growth, hit flash, and the terminal faint pose. Battle
 -- simulation remains entirely in the host generation's battle engine.
-local Importer = require("mods.KIM_ARENA.stadium2.lib.importer")
-local RestPose = require("mods.KIM_ARENA.stadium2.lib.battle_rest_pose")
-local Sequence = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_sequence")
-local Special = require("mods.KIM_ARENA.stadium2.lib.battle_special_moves")
-local Dispatch = require("mods.KIM_ARENA.stadium2.lib.animation_dispatch")
-local Pack = require("mods.KIM_ARENA.stadium2.lib.pack")
+local Importer = require("mods.gen2-aio.stadium2.lib.importer")
+local RestPose = require("mods.gen2-aio.stadium2.lib.battle_rest_pose")
+local Sequence = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_sequence")
+local Special = require("mods.gen2-aio.stadium2.lib.battle_special_moves")
+local Dispatch = require("mods.gen2-aio.stadium2.lib.animation_dispatch")
+local Pack = require("mods.gen2-aio.stadium2.lib.pack")
 
 local Actor = {}
 Actor.__index = Actor
@@ -157,7 +157,7 @@ end
 function Actor:startNative(kind)
   local model=self.renderer and self.renderer.model
   local profile=Dispatch.battleProfile(model and model.fxBattleProfile)
-  local Layout=require("mods.KIM_ARENA.stadium2.lib.stadium_battle_layout")
+  local Layout=require("mods.gen2-aio.stadium2.lib.stadium_battle_layout")
   local slot=Layout.slot(self.side,self.dex)
   local actor=self
   local state,err=Special.new({kind=kind,yaw=Special.facing(self.side),

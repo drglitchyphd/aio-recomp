@@ -1,4 +1,4 @@
--- KIM_ARENA 0.9.24: WILDS NPC POKEMON.
+-- gen2-aio 0.9.24: WILDS NPC POKEMON.
 --
 -- Crystal's Pokemon object events (Ilex's Farfetch'd, Azalea's Slowpoke, the
 -- Red Gyarados, Lugia, Ho-Oh, the day-care mons, the beasts, ...) are drawn

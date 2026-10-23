@@ -4,13 +4,13 @@
 -- selection, motion, attachments, materials, and drawing deliberately stay
 -- outside it.  In particular, a renderer consumes snapshots from this
 -- module; it must never reconstruct the particle list from frame zero.
-local Native = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_native")
-local NativeObjects = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_native_objects")
-local Lifecycle = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_lifecycle")
-local Material = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_material")
-local Router = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_router")
-local Motion = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_motion")
-local Random = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_random")
+local Native = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_native")
+local NativeObjects = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_native_objects")
+local Lifecycle = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_lifecycle")
+local Material = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_material")
+local Router = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_router")
+local Motion = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_motion")
+local Random = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_random")
 
 local Runtime = {}
 Runtime.__index = Runtime

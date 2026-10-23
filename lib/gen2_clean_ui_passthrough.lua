@@ -23,7 +23,7 @@ return function(mod)
     end
 
     local spec = {
-      owner = "KIM_ARENA",
+      owner = "gen2-aio",
       version = tostring(mod.version or "1.5.2"),
       contract = {
         apiVersion = 2,

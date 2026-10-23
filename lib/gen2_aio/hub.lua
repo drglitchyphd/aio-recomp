@@ -1,4 +1,4 @@
--- KIM_ARENA: the GEN2-AIO hub.
+-- gen2-aio: the GEN2-AIO hub.
 --
 -- Every component (the bundle itself, KIM, Wilds, QOL, Touch, Nuzlocke...)
 -- adds its settings to Crystal's OPTION screen through ui.options.rows. This
@@ -264,6 +264,6 @@ return function(host)
     end
   end)
 
-  if log then log("info", "KIM Arena: GEN2-AIO hub installed") end
+  if log then log("info", "Gen2-AIO: GEN2-AIO hub installed") end
   return Hub
 end

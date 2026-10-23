@@ -1,16 +1,16 @@
-local Rom = require("mods.KIM_ARENA.stadium2.lib.rom")
-local Extract = require("mods.KIM_ARENA.stadium2.lib.extract")
-local ExportPool = require("mods.KIM_ARENA.stadium2.lib.export_pool")
-local Cache = require("mods.KIM_ARENA.stadium2.lib.cache")
-local Discovery = require("mods.KIM_ARENA.stadium2.lib.discovery")
-local Palette = require("mods.KIM_ARENA.stadium2.lib.palette")
-local Handlers = require("mods.KIM_ARENA.stadium2.lib.model_handlers")
-local Pack = require("mods.KIM_ARENA.stadium2.lib.pack")
-local Renderer = require("mods.KIM_ARENA.stadium2.lib.renderer")
-local BattleFxRom = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_rom")
-local BattleFxResources = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_resources")
-local BattleFxNative = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_native")
-local BattleFxPlayer = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_player")
+local Rom = require("mods.gen2-aio.stadium2.lib.rom")
+local Extract = require("mods.gen2-aio.stadium2.lib.extract")
+local ExportPool = require("mods.gen2-aio.stadium2.lib.export_pool")
+local Cache = require("mods.gen2-aio.stadium2.lib.cache")
+local Discovery = require("mods.gen2-aio.stadium2.lib.discovery")
+local Palette = require("mods.gen2-aio.stadium2.lib.palette")
+local Handlers = require("mods.gen2-aio.stadium2.lib.model_handlers")
+local Pack = require("mods.gen2-aio.stadium2.lib.pack")
+local Renderer = require("mods.gen2-aio.stadium2.lib.renderer")
+local BattleFxRom = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_rom")
+local BattleFxResources = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_resources")
+local BattleFxNative = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_native")
+local BattleFxPlayer = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_player")
 
 local Importer = {}
 
@@ -193,7 +193,7 @@ function Importer.arenaTest()
   if modRef and modRef.options and modRef.options.get then
     local ok,value=pcall(modRef.options.get,modRef.options,'stadium2_arena_test')
     if ok and type(value)=='number' and value%1==0 and value>=0
-      and value<require('mods.KIM_ARENA.stadium2.lib.layout').STADIUM_MODEL_TABLE_RECORDS then return value end
+      and value<require('mods.gen2-aio.stadium2.lib.layout').STADIUM_MODEL_TABLE_RECORDS then return value end
   end
   return nil
 end
@@ -202,7 +202,7 @@ function Importer.environmentTest()
   if modRef and modRef.options and modRef.options.get then
     local ok,value=pcall(modRef.options.get,modRef.options,"stadium2_environment_test")
     if ok and type(value)=='string' and value~='unknown'
-      and require('mods.KIM_ARENA.stadium2.lib.battle_environment').catalog[value] then return value end
+      and require('mods.gen2-aio.stadium2.lib.battle_environment').catalog[value] then return value end
   end
   return 'automatic'
 end

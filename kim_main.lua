@@ -144,7 +144,7 @@ return function(mod)
   -- Summary/Pokedex/Clean-UI bridges live below and are deliberately guarded
   -- by IS_GEN2. Returning early here disables all of that working support.
   local IS_GEN2 = tonumber(mod.generation) == 2
-  local MOD_ID = "KIM_ARENA"
+  local MOD_ID = "gen2-aio"
 
   -- Keep the live game handle explicitly. Some mobile Gen 2 builds do not
   -- expose it as mod.game, which previously made National-Dex lookup for
@@ -535,9 +535,9 @@ return function(mod)
       { key = "gen2UiTheme", label = "UI THEME", type = "choice",
         default = "default", choices = {
           { "GEN1 MODERN", "default" },
-          { "HEARTGOLD", "kim_arena:heartgold" },
-          { "SOULSILVER", "kim_arena:soulsilver" },
-          { "JOHTO NIGHT", "kim_arena:johto_night" },
+          { "HEARTGOLD", "gen2_aio:heartgold" },
+          { "SOULSILVER", "gen2_aio:soulsilver" },
+          { "JOHTO NIGHT", "gen2_aio:johto_night" },
           { "CLASSIC MONO", "gen1_modern_ui:classic_mono" },
           { "CRIMSON", "gen1_modern_ui:crimson" },
           { "CRIMSON GLASS", "gen1_modern_ui:crimson_glass" },
@@ -548,16 +548,16 @@ return function(mod)
           { "FROST", "gen1_modern_ui:frost" },
           { "LIGHT", "gen1_modern_ui:light" },
           { "DARK", "gen1_modern_ui:dark" },
-          -- KIM_ARENA 0.9 themes
-          { "CRYSTAL", "kim_arena:crystal" },
-          { "GOLD", "kim_arena:gold" },
-          { "SILVER", "kim_arena:silver" },
-          { "POKEGEAR", "kim_arena:pokegear" },
-          { "HIGH CONTRAST", "kim_arena:high_contrast" },
-          { "TYPE (LEAD POKEMON)", "kim_arena:type" },
-          -- KIM_ARENA 0.9.37
-          { "GEN 3 (FRLG)", "kim_arena:gen3" },
-          { "CUSTOM", "kim_arena:custom" },
+          -- gen2-aio 0.9 themes
+          { "CRYSTAL", "gen2_aio:crystal" },
+          { "GOLD", "gen2_aio:gold" },
+          { "SILVER", "gen2_aio:silver" },
+          { "POKEGEAR", "gen2_aio:pokegear" },
+          { "HIGH CONTRAST", "gen2_aio:high_contrast" },
+          { "TYPE (LEAD POKEMON)", "gen2_aio:type" },
+          -- gen2-aio 0.9.37
+          { "GEN 3 (FRLG)", "gen2_aio:gen3" },
+          { "CUSTOM", "gen2_aio:custom" },
         }, description = "Choose the palette used across the Gen 2 Modern UI." },
       { key = "frameStyle", label = "UI FRAME STYLE", type = "choice",
         default = "pixel", choices = {
@@ -704,7 +704,7 @@ return function(mod)
     { key = "battleBgMode", label = "BATTLE BG MODE", type = "choice",
       default = "auto", choices = {
         { "AUTO", "auto" }, { "FULLSCREEN", "fullscreen" }, { "NATIVE FIT", "native" },
-      }, description = "How KIM fits HD battle backgrounds. AUTO uses FULLSCREEN with KIM battle sprites and NATIVE FIT with vanilla/default battle sprites. FULLSCREEN keeps the current edge-to-edge KIM arena. NATIVE FIT keeps Gen1Recomp's original 160x144 battler positions while showing the arena through a wider FR/LG-style 240x160 viewing window so more of the HD artwork remains visible." },
+      }, description = "How KIM fits HD battle backgrounds. AUTO uses FULLSCREEN with KIM battle sprites and NATIVE FIT with vanilla/default battle sprites. FULLSCREEN keeps the current edge-to-edge Gen2-AIO. NATIVE FIT keeps Gen1Recomp's original 160x144 battler positions while showing the arena through a wider FR/LG-style 240x160 viewing window so more of the HD artwork remains visible." },
     { key = "battleTrainerSprite", label = "PLAYER TRAINER", type = "choice",
       default = "red", choices = {
         { "RED", "red" },
@@ -843,7 +843,7 @@ return function(mod)
   -- Gen 2 still carries the old boolean in its schema for historical saves.
   -- Gen 1 no longer needs to expose it at all: its stored value was read above
   -- solely to choose the first default for gen1MenuSpriteSource.
-  -- KIM_ARENA 0.9: Gen 2 never reads "enabled" (only Gen 1's migration
+  -- gen2-aio 0.9: Gen 2 never reads "enabled" (only Gen 1's migration
   -- above does), so its LEGACY MENU SPRITES row did nothing and is gone.
   for _, row in ipairs(battleOptionSchema) do
     combinedKantoOptionSchema[#combinedKantoOptionSchema + 1] = row
@@ -2692,7 +2692,7 @@ return function(mod)
         local fullWhite = r > 0.95 and gr > 0.95 and b > 0.95 and a > 0.05
         if fullWhite then
           if a > 0.99 then
-            -- Native battle paper: the fullscreen KIM arena already owns the
+            -- Native battle paper: the fullscreen Gen2-AIO already owns the
             -- background, so keep the source layer transparent as before.
             local target = g.getCanvas and g.getCanvas() or nil
             if target ~= nil then clear(0, 0, 0, 0) end
@@ -7101,9 +7101,9 @@ return function(mod)
     setOption(game, row.key, choices[index][2])
   end
 
-  local SETTINGS_SCREEN = "KIM_ARENA:settings"
-  local UI_SETTINGS_SCREEN = "KIM_ARENA:ui_settings"
-  local BATTLE_SETTINGS_SCREEN = "KIM_ARENA:battle_settings"
+  local SETTINGS_SCREEN = "gen2-aio:settings"
+  local UI_SETTINGS_SCREEN = "gen2-aio:ui_settings"
+  local BATTLE_SETTINGS_SCREEN = "gen2-aio:battle_settings"
   local function buildItems()
     local items = {}
     for _, row in ipairs(optionSchema) do
@@ -7717,7 +7717,7 @@ return function(mod)
     if type(out) ~= "table" then return out end
     if submenuReady then
       return insertOpenRow(out, {
-        id = "KIM_ARENA:settings_open",
+        id = "gen2-aio:settings_open",
         label = "KANTO IN MOTION",
         text = function() return "OPEN" end,
         value = function() return "OPEN" end,

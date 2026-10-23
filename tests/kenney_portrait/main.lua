@@ -1,10 +1,10 @@
 io.stdout:setvbuf("no")
 function love.errorhandler(msg) io.stderr:write(tostring(msg).."\n"..debug.traceback().."\n"); return function() return 1 end end
 local root=love.filesystem.getSource():gsub('/tests/kenney_portrait/?$', '') .. '/'
-local prefix='mods.KIM_ARENA.stadium2.lib.'
+local prefix='mods.gen2-aio.stadium2.lib.'
 function love.load()
  table.insert(package.loaders,1,function(name)
-  local base='mods.KIM_ARENA.'; if name:sub(1,#base)==base then return assert(loadfile(root..name:sub(#base+1):gsub('%.','/')..'.lua')) end
+  local base='mods.gen2-aio.'; if name:sub(1,#base)==base then return assert(loadfile(root..name:sub(#base+1):gsub('%.','/')..'.lua')) end
  end)
  package.preload['src.mods.Runtime']=function() return {call=function(_,fallback,ctx) return fallback(ctx) end} end
  local options={stadium2_shader='stadium',stadium2_scene_resolution=50,stadium2_fx_particles=false,stadium2_visitors='off',stadium2_weather='off',stadium2_camera='free',arenaBackground='kenney'}
@@ -12,8 +12,8 @@ function love.load()
  local mod={options={get=function(_,k) return options[k] end},events={on=function(_,n,f) events[n]=f end},hooks={wrap=function() end}}
  function mod:read(path) local f=assert(io.open(root..'stadium2/'..path,'rb')); local s=f:read('*a');f:close();return s end
  for _,name in ipairs({'importer','battle_aa','battle_nature','battle_cave','battle_freshwater','battle_town','battle_ocean','scene_kit'}) do local m=require(prefix..name); if m.bind then m.bind(mod) end end
- local B=assert(loadfile(root..'lib/kim_arena/backdrop.lua'))()({mod=mod,load=function(p) return assert(loadfile(root..p))() end})
- local K=assert(loadfile(root..'lib/kim_arena/kenney_camera.lua'))()
+ local B=assert(loadfile(root..'lib/gen2_aio/backdrop.lua'))()({mod=mod,load=function(p) return assert(loadfile(root..p))() end})
+ local K=assert(loadfile(root..'lib/gen2_aio/kenney_camera.lua'))()
 
  local checks=0
  local function check(v,msg) assert(v,msg); checks=checks+1 end

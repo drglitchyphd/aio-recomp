@@ -137,7 +137,7 @@ end
 -- Actor height queries must never trigger terrain analysis: they may run
 -- while a budgeted mesh is still being prepared. Only completed authored
 -- support claims participate; ordinary furniture (support omitted) does not.
--- KIM_ARENA: support heights restored from the disk cache (MeshStore), for
+-- gen2-aio: support heights restored from the disk cache (MeshStore), for
 -- maps whose meshes came from disk and whose structures were never built.
 local persistedSupport = {}
 function Structures.supportSnapshot(map)
@@ -151,7 +151,7 @@ function Structures.supportSnapshot(map)
   for k, v in pairs(S.support or {}) do out[k] = v end
   return out
 end
--- KIM_ARENA: an already-built structure set, never building one
+-- gen2-aio: an already-built structure set, never building one
 function Structures.cached(mapId) return cache[mapId] end
 function Structures.setPersistedSupport(mapId, t)
   persistedSupport[mapId] = type(t) == "table" and t or nil
@@ -2271,7 +2271,7 @@ end
 -- `tiles` is a list of {tx, ty} forming one region (or what is left of one
 -- after object extraction); runs are column-local, heights are measured
 -- per column and reconciled per region.
--- KIM_ARENA 0.9.46: towns whose houses wear horizontally STRIPED roofs
+-- gen2-aio 0.9.46: towns whose houses wear horizontally STRIPED roofs
 -- (Violet City's tiled pagoda roofs). Their roof rows repeat every two
 -- tiles, so every column read as a 16px repeat and the region's doorway
 -- took the flat-repeat path meant for cave mouths in cliff mounds: the

@@ -36,6 +36,8 @@ def build(root, releases):
     old = json.loads(output.read_text()) if output.exists() else None
     latest = select_release(releases, manifest['id'])
     if latest is None:
+        if old and old['mods'][0]['id'] != manifest['id']:
+            return  # Keep the old identity installable until the renamed build ships.
         # Preserve the verified Initial/0.9.48 bootstrap until a vX.Y.Z release exists.
         if not old:
             raise ValueError('no published canonical release and no bootstrap index')
@@ -55,7 +57,7 @@ def build(root, releases):
                  summary='Crystal all-in-one: HD Pokemon, modern UI, voxel overworld, Kenney scenes, touch controls, followers and optional Nuzlocke rules.',
                  categories=['UI', 'ART', 'QOL', 'GAMEPLAY'], tags=['crystal', 'gen2', 'voxel', 'hd', 'touch'],
                  automatic_version_check=True, downloadURL=latest['zip']['url'],
-                 description_url=f'https://raw.githubusercontent.com/{repo}/main/README_KIM_ARENA.md',
+                 description_url=f'https://raw.githubusercontent.com/{repo}/main/README_GEN2_AIO.md',
                  latest=latest, update_check='ok')
     doc = {'schema_version': 1, 'generated_at': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
            'count': 1, 'categories': entry['categories'], 'mods': [entry]}

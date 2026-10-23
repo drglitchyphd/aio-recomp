@@ -5,7 +5,7 @@ function M.install(mod,schema,title,categories,liveSettings)
  local active=true
  local function rows(game)
   local out={}
-  -- KIM_ARENA: the host decides, per menu build, which rows are shown.
+  -- gen2-aio: the host decides, per menu build, which rows are shown.
   local hiddenFn=rawget(mod,'_kimArenaRowHidden')
   for _,s in ipairs(schema)do
    local live=liveSettings and liveSettings[s.key]

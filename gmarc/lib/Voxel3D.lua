@@ -856,7 +856,7 @@ end
 -- void transparent, which is what every rung below it wants.
 -- `slot` names which cached canvas to render into (see `slots` above);
 -- omitted is the free-roam world pass.
--- KIM_ARENA: draw a picture behind the battle, inside an open pass and
+-- gen2-aio: draw a picture behind the battle, inside an open pass and
 -- before any geometry. topOffset "exact" stretches an image rendered through
 -- this same camera 1:1 over the canvas (cards then land on its ground); a
 -- number cover-fits a flat painting, cropping that many source pixels off
@@ -870,7 +870,7 @@ function Voxel3D.backdrop(image, topOffset, shadows)
   G.setDepthMode()
   G.setColor(1, 1, 1, 1)
   if type(topOffset) == "table" then
-    -- KIM_ARENA anchored plate: placement solved by BattleScene (canvas
+    -- gen2-aio anchored plate: placement solved by BattleScene (canvas
     -- fractions); bands it leaves get the chosen fill.
     local f = topOffset
     local W, H = canvasW, canvasH
@@ -918,7 +918,7 @@ function Voxel3D.backdrop(image, topOffset, shadows)
     local dx = (canvasW - iw * scale) / 2
     G.draw(image, dx, -top * scale, 0, scale, scale)
   end
-  -- KIM_ARENA 0.9: KIM's contact shadows (canvas fractions), on the plate
+  -- gen2-aio 0.9: KIM's contact shadows (canvas fractions), on the plate
   if type(shadows) == "table" then
     local W, H = canvasW, canvasH
     for _, sh in ipairs(shadows) do

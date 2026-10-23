@@ -418,7 +418,7 @@ return function(mod)
     return true
   end
 
-  local KIM_MOD_ID = "KIM_ARENA"
+  local KIM_MOD_ID = "gen2-aio"
 
   -- Gen 3 does not run the normal mod.ui screen stack directly. Its OPTIONS
   -- screen belongs to src.ui.game3.stack, so trying to mod.ui.push() KIM's

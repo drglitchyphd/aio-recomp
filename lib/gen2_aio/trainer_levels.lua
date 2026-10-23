@@ -1,4 +1,4 @@
--- KIM_ARENA: TRAINER LEVELS (level-matched trainers).
+-- gen2-aio: TRAINER LEVELS (level-matched trainers).
 --
 -- trainer.party hands over each trainer's roster before battle; the engine
 -- recomputes every member's stats from its level right after the hook
@@ -98,7 +98,7 @@ return function(host)
     local out = next(class, member, roster)
     local ok, scaled = pcall(M.scale, out, activeGame(), class, member)
     if ok and scaled then return scaled end
-    if not ok then log("warn", "KIM Arena trainer levels: %s", tostring(scaled)) end
+    if not ok then log("warn", "Gen2-AIO trainer levels: %s", tostring(scaled)) end
     return out
   end, 50)
 

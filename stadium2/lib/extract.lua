@@ -1,13 +1,13 @@
-local Rom = require("mods.KIM_ARENA.stadium2.lib.rom")
-local Fragment = require("mods.KIM_ARENA.stadium2.lib.fragment")
-local Build = require("mods.KIM_ARENA.stadium2.lib.build")
-local Palette = require("mods.KIM_ARENA.stadium2.lib.palette")
-local Handlers = require("mods.KIM_ARENA.stadium2.lib.model_handlers")
-local Layout = require("mods.KIM_ARENA.stadium2.lib.layout")
-local AnimationRouting = require("mods.KIM_ARENA.stadium2.lib.animation_routing")
-local AnimationDispatch = require("mods.KIM_ARENA.stadium2.lib.animation_dispatch")
-local AnimationSemantics = require("mods.KIM_ARENA.stadium2.lib.animation_semantics")
-local BattleFxRom = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_rom")
+local Rom = require("mods.gen2-aio.stadium2.lib.rom")
+local Fragment = require("mods.gen2-aio.stadium2.lib.fragment")
+local Build = require("mods.gen2-aio.stadium2.lib.build")
+local Palette = require("mods.gen2-aio.stadium2.lib.palette")
+local Handlers = require("mods.gen2-aio.stadium2.lib.model_handlers")
+local Layout = require("mods.gen2-aio.stadium2.lib.layout")
+local AnimationRouting = require("mods.gen2-aio.stadium2.lib.animation_routing")
+local AnimationDispatch = require("mods.gen2-aio.stadium2.lib.animation_dispatch")
+local AnimationSemantics = require("mods.gen2-aio.stadium2.lib.animation_semantics")
+local BattleFxRom = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_rom")
 
 local Extract = {}
 Extract.BASE_COUNT = 151

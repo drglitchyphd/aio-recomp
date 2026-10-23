@@ -415,7 +415,7 @@ end
 -- the ground, and answering it through whatever angle the player happened
 -- to leave the last battle on would pick a different arena depending on
 -- where they had swung the camera an hour ago.
--- KIM_ARENA: BATTLE CAMERA LOCKED holds the solved shot exactly as `still`.
+-- gen2-aio: BATTLE CAMERA LOCKED holds the solved shot exactly as `still`.
 function BattleCam.hostLocked()
   local mod = V and V.mod
   local locked = mod and rawget(mod, "_kimArenaCameraLocked")
@@ -426,8 +426,8 @@ end
 
 function BattleCam.rig(arena, groundY, canonical)
   groundY = groundY or 0
-  -- KIM_ARENA: a locked KENNEY HD battle uses the host's solved camera
-  -- (lib/kim_arena/kenney_camera.lua); anything else keeps this rig.
+  -- gen2-aio: a locked KENNEY HD battle uses the host's solved camera
+  -- (lib/gen2_aio/kenney_camera.lua); anything else keeps this rig.
   if BattleCam.hostLocked() then
     local mod = V and V.mod
     local preset = mod and rawget(mod, "_kimArenaCameraPreset")

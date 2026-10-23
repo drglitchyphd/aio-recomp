@@ -3,9 +3,9 @@
 -- on Stadium's own memory layout; Hyper Beam's core beams are
 -- stadium2_battle_fx_beam. This module steps them at 30 Hz and reads the
 -- stream vertices back into renderer geometry.
-local Native=require('mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_textured_stream_native')
-local Memory=require('mods.KIM_ARENA.stadium2.lib.stadium2_native_memory')
-local Beam=require('mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_beam')
+local Native=require('mods.gen2-aio.stadium2.lib.stadium2_battle_fx_textured_stream_native')
+local Memory=require('mods.gen2-aio.stadium2.lib.stadium2_native_memory')
+local Beam=require('mods.gen2-aio.stadium2.lib.stadium2_battle_fx_beam')
 local Stream={}
 local POOL,DL,VERT=0x85000000,0x85200000,0x85300000
 local function signed(v)return v>=32768 and v-65536 or v end

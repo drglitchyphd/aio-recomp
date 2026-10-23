@@ -1,6 +1,6 @@
 -- US fragment79 family 2: 84157128, 84162798, 84162AC8, 84162C88.
 -- Fixed native pool; trail history advances at 30 Hz, never on host redraw.
-local f=require('mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_float')
+local f=require('mods.gen2-aio.stadium2.lib.stadium2_battle_fx_float')
 local Swift={}
 local function copy(x) if type(x)~='table' then return x end local y={} for k,v in pairs(x) do y[k]=copy(v) end return y end
 local function short(x)return (x+32768)%65536-32768 end

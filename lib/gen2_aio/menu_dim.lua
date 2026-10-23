@@ -1,4 +1,4 @@
--- KIM_ARENA: overworld menu dim.
+-- gen2-aio: overworld menu dim.
 --
 -- With any menu open OUTSIDE battle, a dark translucent sheet goes over the
 -- world behind KIM's UI. It is drawn at the very start of render.hud (the

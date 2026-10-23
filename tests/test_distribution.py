@@ -16,7 +16,7 @@ spec.loader.exec_module(packager)
 
 
 def release(version, prerelease=False, draft=False, full=True):
-    name = f'KIM_ARENA-{version}.zip'
+    name = f'gen2-aio-{version}.zip'
     assets = [{'name': f'Gen2_AiO_patch_old_to_{version}.zip', 'browser_download_url': 'https://example.com/patch.zip', 'size': 10}]
     if full:
         assets.append({'name': name, 'browser_download_url': 'https://example.com/' + name, 'size': 100})
@@ -24,19 +24,32 @@ def release(version, prerelease=False, draft=False, full=True):
 
 
 class IndexTests(unittest.TestCase):
+    def test_identity_changes_only_after_new_zip_is_available(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / 'manifest.json').write_bytes((ROOT / 'manifest.json').read_bytes())
+            path = root / 'site/data/index.json'
+            path.parent.mkdir(parents=True)
+            old = {'mods': [{'id': 'KIM_ARENA', 'latest': {'version': '0.9.49'}}]}
+            path.write_text(json.dumps(old))
+            index.build(root, [])
+            self.assertEqual(json.loads(path.read_text()), old)
+            index.build(root, [release('0.9.50')])
+            self.assertEqual(json.loads(path.read_text())['mods'][0]['id'], 'gen2-aio')
+
     def test_full_zip_selected_even_when_patch_first(self):
-        self.assertEqual(index.select_release([release('0.9.49')], 'KIM_ARENA')['zip']['name'], 'KIM_ARENA-0.9.49.zip')
+        self.assertEqual(index.select_release([release('0.9.49')], 'gen2-aio')['zip']['name'], 'gen2-aio-0.9.49.zip')
 
     def test_draft_patch_only_and_nonsemantic_releases_ignored(self):
         rows = [release('0.9.51', draft=True), release('0.9.50', full=False), release('Initial')]
-        self.assertIsNone(index.select_release(rows, 'KIM_ARENA'))
+        self.assertIsNone(index.select_release(rows, 'gen2-aio'))
 
     def test_latest_stable_preferred_over_newer_prerelease(self):
         rows = [release('0.9.51', prerelease=True), release('0.9.49'), release('0.9.50')]
-        self.assertEqual(index.select_release(rows, 'KIM_ARENA')['version'], '0.9.50')
+        self.assertEqual(index.select_release(rows, 'gen2-aio')['version'], '0.9.50')
 
     def test_prerelease_available_when_no_stable_exists(self):
-        self.assertEqual(index.select_release([release('0.9.49', prerelease=True)], 'KIM_ARENA')['version'], '0.9.49')
+        self.assertEqual(index.select_release([release('0.9.49', prerelease=True)], 'gen2-aio')['version'], '0.9.49')
 
     def test_feed_tracks_release_and_remains_unchanged_on_repeat(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -46,7 +59,7 @@ class IndexTests(unittest.TestCase):
             path = root / 'site/data/index.json'
             first = path.read_bytes()
             doc = json.loads(first)
-            self.assertEqual(doc['mods'][0]['id'], 'KIM_ARENA')
+            self.assertEqual(doc['mods'][0]['id'], 'gen2-aio')
             self.assertEqual(doc['mods'][0]['github'], 'drglitchyphd/aio-recomp')
             self.assertEqual(doc['mods'][0]['version'], '0.9.49')
             index.build(root, [release('0.9.49')])
@@ -76,7 +89,7 @@ class PackageTests(unittest.TestCase):
                 p.write_text('must not ship')
             output = Path(folder) / 'out'
             packager.build(root, output, 'v0.9.49')
-            with zipfile.ZipFile(output / 'KIM_ARENA-0.9.49.zip') as z:
+            with zipfile.ZipFile(output / 'gen2-aio-0.9.49.zip') as z:
                 names = z.namelist()
                 self.assertIn('manifest.json', names)
                 self.assertIn('touch/main.lua', names)

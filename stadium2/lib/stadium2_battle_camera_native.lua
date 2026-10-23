@@ -5,7 +5,7 @@
 --
 -- Values follow the N64: floats are IEEE single precision (every operation
 -- rounded), angles are signed 16-bit (0x10000 = one turn).
-local f32 = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_float")
+local f32 = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_float")
 local bit = require("bit")
 
 local Native = {}
@@ -53,7 +53,7 @@ function Native.load(rom, fragment79, options)
     local hi, lo = rom:byte(base + i * 2 + 1, base + i * 2 + 2)
     atan[i] = hi * 256 + lo
   end
-  local Memory = require("mods.KIM_ARENA.stadium2.lib.stadium2_native_memory")
+  local Memory = require("mods.gen2-aio.stadium2.lib.stadium2_native_memory")
   local images = { { base = MAIN_VRAM, bytes = rom:sub(MAIN_ROM + 1, MAIN_ROM + 0xA7000) } }
   if type(fragment79) == "string" then images[#images + 1] = { base = 0x84100000, bytes = fragment79 } end
   options = type(options) == "table" and options or {}
@@ -406,7 +406,7 @@ function Native:follow(gc, actor)
     elseif f32(slack * self:const(0x84188F60)) < off then rate = 0x3DA3D70A
     elseif f32(slack * 0.5) < off then rate = 0x3D75C28F end
     if rate then
-      m:setF32(ctrl + 0x60, Native.ease(m:f32(ctrl + 0x60), height, require("mods.KIM_ARENA.stadium2.lib.stadium2_native_memory").wordFloat(rate)))
+      m:setF32(ctrl + 0x60, Native.ease(m:f32(ctrl + 0x60), height, require("mods.gen2-aio.stadium2.lib.stadium2_native_memory").wordFloat(rate)))
     end
     m:setF32(gc + 0xB8, m:f32(ctrl + 0x60))
     return
@@ -417,7 +417,7 @@ function Native:follow(gc, actor)
   m:setF32(ctrl + 0x5C, eye[1]); m:setF32(gc + 0xB4, eye[1])
   m:setF32(ctrl + 0x64, eye[3]); m:setF32(gc + 0xBC, eye[3])
   m:setF32(ctrl + 0x60, Native.ease(m:f32(ctrl + 0x60), goal,
-    require("mods.KIM_ARENA.stadium2.lib.stadium2_native_memory").wordFloat(0x3E19999A)))
+    require("mods.gen2-aio.stadium2.lib.stadium2_native_memory").wordFloat(0x3E19999A)))
   m:setF32(gc + 0xB8, m:f32(ctrl + 0x60))
 end
 
@@ -428,7 +428,7 @@ Native.POSE_SHOTS = 0x84183944   -- D_84183944 (14): pose around the target
 -- around `center`; height kept at 10 or more.
 function Native:towardPose(gc, ctrl, center)
   local m = self.mem
-  local Memory = require("mods.KIM_ARENA.stadium2.lib.stadium2_native_memory")
+  local Memory = require("mods.gen2-aio.stadium2.lib.stadium2_native_memory")
   local fraction
   if not self:inList(m:u16(ctrl + 0x98), Native.JUMP_SHOTS, 0xC) then
     m:setF32(ctrl + 0x44, Native.ease(m:f32(ctrl + 0x44), m:f32(ctrl + 0x4C), m:f32(ctrl + 0x48)))
@@ -486,7 +486,7 @@ end
 -- 84110B2C(gc, actor): the hit jolt (controller 0 only).
 function Native:jolt(gc)
   local m = self.mem
-  local Memory = require("mods.KIM_ARENA.stadium2.lib.stadium2_native_memory")
+  local Memory = require("mods.gen2-aio.stadium2.lib.stadium2_native_memory")
   local ctrl = self:controllerFor(gc)
   m:setU32(Native.CURRENT, ctrl)
   if m:u32(Native.CONTROLLER1) == ctrl then return end
@@ -505,7 +505,7 @@ end
 -- 84110718(gc, actor): program 0's per-tick handler.
 function Native:program0Tick(gc, actor)
   local m = self.mem
-  local Memory = require("mods.KIM_ARENA.stadium2.lib.stadium2_native_memory")
+  local Memory = require("mods.gen2-aio.stadium2.lib.stadium2_native_memory")
   local ctrl = self:controllerFor(gc)
   m:setU32(Native.CURRENT, ctrl)
   m:setF32(gc + 0x2C, Native.ease(m:f32(gc + 0x2C), m:f32(ctrl + 0x88), Memory.wordFloat(0x3D4CCCCD)))
@@ -540,7 +540,7 @@ end
 -- An IEEE-754 double from its high and low words, in plain Lua (the game's
 -- mod sandbox refuses the ffi library while the game runs; Lua numbers are
 -- doubles, so this is exact).
-Native.wordsToDouble = require("mods.KIM_ARENA.stadium2.lib.stadium2_native_memory").wordsToDouble
+Native.wordsToDouble = require("mods.gen2-aio.stadium2.lib.stadium2_native_memory").wordsToDouble
 
 -- A big-endian double constant from the ROM.
 function Native:const64(address)
@@ -592,7 +592,7 @@ end
 -- the pose around the target unless the actor's kind faces sideways.
 function Native:program13Tick(gc, actor)
   local m = self.mem
-  local Memory = require("mods.KIM_ARENA.stadium2.lib.stadium2_native_memory")
+  local Memory = require("mods.gen2-aio.stadium2.lib.stadium2_native_memory")
   m:setU32(Native.CURRENT, self:controllerFor(gc))
   local ctrl = m:u32(Native.CURRENT)
   m:setF32(gc + 0x2C, Native.ease(m:f32(gc + 0x2C), m:f32(ctrl + 0x88), Memory.wordFloat(0x3D4CCCCD)))
@@ -606,7 +606,7 @@ end
 -- the look point than +0x80 x D_84188E50 (compared in double precision).
 function Native:riseToMarker(gc, actor)
   local m = self.mem
-  local Memory = require("mods.KIM_ARENA.stadium2.lib.stadium2_native_memory")
+  local Memory = require("mods.gen2-aio.stadium2.lib.stadium2_native_memory")
   m:setU32(Native.CURRENT, self:controllerFor(gc))
   local point = self:markerPoint(actor, m:u32(Native.CURRENT))
   local ctrl = m:u32(Native.CURRENT)
@@ -639,7 +639,7 @@ end
 -- height while it is below it.
 function Native:eyeRise(gc)
   local m = self.mem
-  local Memory = require("mods.KIM_ARENA.stadium2.lib.stadium2_native_memory")
+  local Memory = require("mods.gen2-aio.stadium2.lib.stadium2_native_memory")
   if m:f32(gc + 0xB8) <= m:f32(gc + 0xAC) then return end
   m:setF32(gc + 0xAC, Native.ease(m:f32(gc + 0xAC), m:f32(gc + 0xB8), Memory.wordFloat(0x3CA3D70A)))
 end
@@ -901,7 +901,7 @@ end
 -- eases to 0.15 at 0.03 and the pose distance is +0x40 x D_84188E30.
 function Native:towardPoseSlow(gc, ctrl, center)
   local m = self.mem
-  local Memory = require("mods.KIM_ARENA.stadium2.lib.stadium2_native_memory")
+  local Memory = require("mods.gen2-aio.stadium2.lib.stadium2_native_memory")
   m:setF32(ctrl + 0x44, Native.ease(m:f32(ctrl + 0x44), Memory.wordFloat(0x3E19999A), Memory.wordFloat(0x3CF5C28F)))
   local goal = self:placeEye(center, f32(m:f32(ctrl + 0x40) * self:const(0x84188E30)),
     m:s16(ctrl + 0x3C), m:s16(ctrl + 0x3E))
@@ -938,7 +938,7 @@ end
 -- pose at the actor's own facing, then 8410B60C around the target.
 function Native:program11Tick(gc, actor)
   local m = self.mem
-  local Memory = require("mods.KIM_ARENA.stadium2.lib.stadium2_native_memory")
+  local Memory = require("mods.gen2-aio.stadium2.lib.stadium2_native_memory")
   m:setU32(Native.CURRENT, self:controllerFor(gc))
   local ctrl = m:u32(Native.CURRENT)
   m:setF32(gc + 0x2C, Native.ease(m:f32(gc + 0x2C), m:f32(ctrl + 0x88), Memory.wordFloat(0x3D4CCCCD)))
@@ -1855,7 +1855,7 @@ end
 -- way toward the pose at `distance` from the look point.
 function Native:introBlend(gc, actor, distance, height, fraction, pitch)
   local m = self.mem
-  local Memory = require("mods.KIM_ARENA.stadium2.lib.stadium2_native_memory")
+  local Memory = require("mods.gen2-aio.stadium2.lib.stadium2_native_memory")
   local ctrl = self:controllerFor(gc)
   m:setU32(Native.CURRENT, ctrl)
   if fraction == 0 then return self:introPath(gc, actor) end
@@ -1875,7 +1875,7 @@ end
 -- 0), from it on the blend (80, 30, 0.5, pitch 0x1C71).
 function Native:introStep(actor, ctrl, turnAt)
   local m = self.mem
-  local Memory = require("mods.KIM_ARENA.stadium2.lib.stadium2_native_memory")
+  local Memory = require("mods.gen2-aio.stadium2.lib.stadium2_native_memory")
   m:setU16(ctrl + 0x98, 0)
   local frame = m:s16(m:u32(Native.PLAYER) + 0x7E8)
   if frame == 1 then
@@ -1998,7 +1998,7 @@ end
 -- 0, 0), from it (75, 30, 0.5, 0x1C71).
 function Native:openingFoeStep(actor, ctrl, turnAt)
   local m = self.mem
-  local Memory = require("mods.KIM_ARENA.stadium2.lib.stadium2_native_memory")
+  local Memory = require("mods.gen2-aio.stadium2.lib.stadium2_native_memory")
   m:setU16(ctrl + 0x98, 0)
   local frame = m:s16(m:u32(Native.PLAYER) + 0x7E8)
   if frame == 1 then
@@ -2276,7 +2276,7 @@ end
 -- = target; the secondary pose from the eye to it (80037120).
 function Native:overShoulder(gc, actor)
   local m = self.mem
-  local Memory = require("mods.KIM_ARENA.stadium2.lib.stadium2_native_memory")
+  local Memory = require("mods.gen2-aio.stadium2.lib.stadium2_native_memory")
   local other = actor == m:u32(Native.PLAYER) and m:u32(Native.ENEMY) or m:u32(Native.PLAYER)
   local ctrl = self:controllerFor(gc)
   m:setU32(Native.CURRENT, ctrl)
@@ -2334,7 +2334,7 @@ end
 -- ends and the slot empties.
 function Native:program14Tick(gc)
   local m = self.mem
-  local Memory = require("mods.KIM_ARENA.stadium2.lib.stadium2_native_memory")
+  local Memory = require("mods.gen2-aio.stadium2.lib.stadium2_native_memory")
   local ctrl = self:controllerFor(gc)
   m:setU32(Native.CURRENT, ctrl)
   m:setF32(ctrl + 0x44, Native.ease(m:f32(ctrl + 0x44), Memory.wordFloat(0x3E99999A), Memory.wordFloat(0x3BA3D70A)))
@@ -2403,7 +2403,7 @@ end
 -- 8410FABC(gc, actor): program 24's tick: the FOV eases to 45 at 0.02, then
 -- 8410E73C.
 function Native:program24Tick(gc, actor)
-  local Memory = require("mods.KIM_ARENA.stadium2.lib.stadium2_native_memory")
+  local Memory = require("mods.gen2-aio.stadium2.lib.stadium2_native_memory")
   self.mem:setU32(Native.CURRENT, self:controllerFor(gc))
   self.mem:setF32(gc + 0x2C, Native.ease(self.mem:f32(gc + 0x2C), 45, Memory.wordFloat(0x3CA3D70A)))
   self:poseAroundLook(gc, actor)
@@ -2519,7 +2519,7 @@ end
 -- the actor's facing; 8410B60C around the target.
 function Native:program27Tick(gc, actor)
   local m = self.mem
-  local Memory = require("mods.KIM_ARENA.stadium2.lib.stadium2_native_memory")
+  local Memory = require("mods.gen2-aio.stadium2.lib.stadium2_native_memory")
   m:setU32(Native.CURRENT, self:controllerFor(gc))
   local ctrl = m:u32(Native.CURRENT)
   m:setF32(gc + 0x2C, Native.ease(m:f32(gc + 0x2C), m:f32(ctrl + 0x88), Memory.wordFloat(0x3D4CCCCD)))
@@ -2585,7 +2585,7 @@ end
 -- point (+0x44 easing to 0.15 at 0.03).
 function Native:sendOutPose(gc, distance, height, rate, pitchStep)
   local m = self.mem
-  local Memory = require("mods.KIM_ARENA.stadium2.lib.stadium2_native_memory")
+  local Memory = require("mods.gen2-aio.stadium2.lib.stadium2_native_memory")
   m:setU32(Native.CURRENT, self:controllerFor(gc))
   local ctrl = m:u32(Native.CURRENT)
   self:stepToS16(ctrl + 0x3C, -0xE38, pitchStep)
@@ -2662,7 +2662,7 @@ end
 -- `center`; it stays at height 5 or more.
 function Native:towardPoseRising(gc, ctrl, center)
   local m = self.mem
-  local Memory = require("mods.KIM_ARENA.stadium2.lib.stadium2_native_memory")
+  local Memory = require("mods.gen2-aio.stadium2.lib.stadium2_native_memory")
   self:stepToS16(ctrl + 0x3C, 0xAAA, 0x64)
   m:setF32(ctrl + 0x44, Native.ease(m:f32(ctrl + 0x44), Memory.wordFloat(0x3E4CCCCD), Memory.wordFloat(0x3D75C28F)))
   local goal = self:placeEye(center, m:f32(ctrl + 0x40), m:s16(ctrl + 0x3C), m:s16(ctrl + 0x3E))
@@ -2675,7 +2675,7 @@ end
 -- 84110910(gc, actor): program 26's tick: FOV ease, follow, 8410C840.
 function Native:program26Tick(gc, actor)
   local m = self.mem
-  local Memory = require("mods.KIM_ARENA.stadium2.lib.stadium2_native_memory")
+  local Memory = require("mods.gen2-aio.stadium2.lib.stadium2_native_memory")
   m:setU32(Native.CURRENT, self:controllerFor(gc))
   local ctrl = m:u32(Native.CURRENT)
   m:setF32(gc + 0x2C, Native.ease(m:f32(gc + 0x2C), m:f32(ctrl + 0x88), Memory.wordFloat(0x3D4CCCCD)))

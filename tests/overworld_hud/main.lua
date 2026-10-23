@@ -8,8 +8,8 @@ function love.load()
  local mod = {exports={}, hooks={wrap=function(_,n,f,p) hooks[n]=hooks[n] or {}; hooks[n][p]=f end}}
  mod._kimArenaOpt = function(k,d) if opts[k]~=nil then return opts[k] end; return d end
  mod._kimArenaHub = {page=function() top={}; return top end}
- local q = assert(loadfile(root..'lib/kim_arena/quick_menu.lua'))()({mod=mod})
- local hud = assert(loadfile(root..'lib/kim_arena/overworld_hud.lua'))()({mod=mod,diag=function(k,e) error(k..': '..e) end})
+ local q = assert(loadfile(root..'lib/gen2_aio/quick_menu.lua'))()({mod=mod})
+ local hud = assert(loadfile(root..'lib/gen2_aio/overworld_hud.lua'))()({mod=mod,diag=function(k,e) error(k..': '..e) end})
  local game = {phase='play', data={items={BICYCLE={pocket='KEY_ITEM',index=1},OLD_ROD={pocket='KEY_ITEM',index=2}}},
  save={inventory={BICYCLE=1,OLD_ROD=1},party={{hp=50,maxHp=50},{hp=15,maxHp=50},{hp=0,maxHp=50}}},
  world={player={},acceptsMenuInput=function() return true end,registerItem=function(_,id) registered=id end,
@@ -47,6 +47,8 @@ function love.load()
  for _,d in ipairs({{1080,2520},{2184,1968},{1280,720},{360,640}}) do
   dims=d
   local l=hud.layout(game)
+  check(l.clockPx>=20 and l.clockPx>=math.min(d[1],d[2])*.038,'clock readable at each screen size')
+  check(l.statusX>=0 and l.statusX+l.statusW<=d[1],'status panel fits viewport')
   for _,r in ipairs(l.cells) do check(r.x>=0 and r.x+r.w<=d[1] and r.y+r.h<=d[2],'buttons fit viewport') end
   local c=love.graphics.newCanvas(d[1],d[2]); love.graphics.setCanvas(c); love.graphics.clear(.12,.20,.18,1)
   hud.draw(game); love.graphics.setCanvas()

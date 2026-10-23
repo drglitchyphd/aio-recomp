@@ -1,9 +1,9 @@
-local Fireflies=require('mods.KIM_ARENA.stadium2.lib.battle_fireflies')
-local Instances=require('mods.KIM_ARENA.stadium2.lib.scenery_instances')
-local Chunks=require('mods.KIM_ARENA.stadium2.lib.scenery_chunks')
+local Fireflies=require('mods.gen2-aio.stadium2.lib.battle_fireflies')
+local Instances=require('mods.gen2-aio.stadium2.lib.scenery_instances')
+local Chunks=require('mods.gen2-aio.stadium2.lib.scenery_chunks')
 -- A cached woodland lake: one scenery mesh, one animated water surface.
-local Nature=require('mods.KIM_ARENA.stadium2.lib.battle_nature')
-local Mat=require('mods.KIM_ARENA.stadium2.lib.renderer')
+local Nature=require('mods.gen2-aio.stadium2.lib.battle_nature')
+local Mat=require('mods.gen2-aio.stadium2.lib.renderer')
 local Lake={}
 local mesh,water,shader,waterShader,paint,modRef,shadowShader
 local FORMAT={{'VertexPosition','float',3},{'SurfaceNormal','float',3},{'SurfaceColor','float',3},{'SurfaceMaterial','float',1}}
@@ -21,7 +21,7 @@ float shadow(){
  vec4 d=Texel(sunMap,sunPosition.xy);return .64+.36*step(sunPosition.z-.003,d.r+d.g/255.);
 }
 ]]
-local LAND=COMMON..require("mods.KIM_ARENA.stadium2.lib.firefly_lighting").pixel..[[
+local LAND=COMMON..require("mods.gen2-aio.stadium2.lib.firefly_lighting").pixel..[[
 uniform Image paint;
 vec3 tile(vec2 p,vec2 quadrant){return Texel(paint,quadrant*.5+vec2(.008)+abs(fract(p*.5)*2.-1.)*.484).rgb;}
 vec4 effect(vec4 c,Image t,vec2 uv,vec2 px){
@@ -39,7 +39,7 @@ vec4 effect(vec4 c,Image t,vec2 uv,vec2 px){
 }
 #endif
 ]]
-local WATER=COMMON..require("mods.KIM_ARENA.stadium2.lib.firefly_lighting").pixel..[[
+local WATER=COMMON..require("mods.gen2-aio.stadium2.lib.firefly_lighting").pixel..[[
 uniform float time;
 vec4 effect(vec4 c,Image t,vec2 uv,vec2 px){
  vec2 p=world.xz;
@@ -75,7 +75,7 @@ Lake.frame=Nature.frame
 Lake.lighting=Nature.lighting
 Lake.sky=Nature.sky
 function Lake.vertices()
- local models=require('mods.KIM_ARENA.stadium2.assets.kenney_nature.models')
+ local models=require('mods.gen2-aio.stadium2.assets.kenney_nature.models')
  local rows={}
  local function v(x,y,z,nx,ny,nz,c,m) rows[#rows+1]={x,y,z,nx,ny,nz,c[1],c[2],c[3],m} end
  local function hash(i) return (math.sin(i*127.1+311.7)*43758.5453)%1 end
@@ -135,7 +135,7 @@ function Lake.vertices()
   local s,t={q[1]*1.12,-1.3,z+(q[3]-z)*1.12},{r[1]*1.12,-1.3,z+(r[3]-z)*1.12}
   for _,point in ipairs({q,r,t,q,t,s}) do v(point[1],point[2],point[3],0,1,0,{.48,.47,.34},3) end
  end end
- require("mods.KIM_ARENA.stadium2.lib.visitor_navigation").build("freshwater",rows)
+ require("mods.gen2-aio.stadium2.lib.visitor_navigation").build("freshwater",rows)
  Lake.triangles=#rows/3;return rows
 end
 local function ensure(g)
@@ -151,7 +151,7 @@ local function ensure(g)
  end
  if not paint then
   local path='assets/kenney_nature/watercolor-materials.png'
-  local data=modRef and love.filesystem.newFileData(assert(modRef:read(path)),'watercolor-materials.png') or 'mods/KIM_ARENA/stadium2/'..path
+  local data=modRef and love.filesystem.newFileData(assert(modRef:read(path)),'watercolor-materials.png') or 'mods/gen2-aio/stadium2/'..path
   paint=g.newImage(data,{mipmaps=true});paint:setFilter('linear','linear',4);paint:setMipmapFilter('linear')
  end
 end
@@ -187,7 +187,7 @@ function Lake.draw(g,frame,env,shadow)
 end
 function Lake.endBattle() Fireflies.reset() end
 function Lake.release()
- require("mods.KIM_ARENA.stadium2.lib.visitor_navigation").clear("freshwater")
+ require("mods.gen2-aio.stadium2.lib.visitor_navigation").clear("freshwater")
  Fireflies.release()
  for _,r in pairs({mesh,water,shader,waterShader,paint,shadowShader}) do r:release() end
  mesh,water,shader,waterShader,paint,shadowShader=nil,nil,nil,nil,nil,nil

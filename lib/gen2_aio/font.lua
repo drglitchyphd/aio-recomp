@@ -1,4 +1,4 @@
--- KIM_ARENA: Pixel Operator for KIM's Modern UI (HUD cards, battle panel,
+-- gen2-aio: Pixel Operator for KIM's Modern UI (HUD cards, battle panel,
 -- party / pack / summary / Pokedex screens, dialogue, touch labels).
 --
 -- Pixel Operator by Jayvee Enaguas (HarvettFox96), CC0 1.0

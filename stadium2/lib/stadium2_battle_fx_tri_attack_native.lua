@@ -12,8 +12,8 @@
 --   alloc(bytes) -> address                         80006DEC
 --   sparks(group, dl) -> dl                         8416A050 (the camera-
 --                                                    facing spark submit)
-local f32 = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_float")
-local U = require("mods.KIM_ARENA.stadium2.lib.stadium2_libultra")
+local f32 = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_float")
+local U = require("mods.gen2-aio.stadium2.lib.stadium2_libultra")
 
 local T = {}
 
@@ -29,7 +29,7 @@ T.RING_WIDTH = 0x8418761C            -- D_8418761C (3 floats)
 T.RING_RED, T.RING_GREEN, T.RING_BLUE = 0x84187610, 0x84187614, 0x84187618
 
 -- A big-endian double in plain Lua (the mod sandbox refuses ffi at run time).
-local wordsToDouble = require("mods.KIM_ARENA.stadium2.lib.stadium2_native_memory").wordsToDouble
+local wordsToDouble = require("mods.gen2-aio.stadium2.lib.stadium2_native_memory").wordsToDouble
 local function double(mem, address)
   return wordsToDouble(mem:u32(address), mem:u32(address + 4))
 end

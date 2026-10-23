@@ -1,11 +1,11 @@
-local Chunks=require('mods.KIM_ARENA.stadium2.lib.scenery_chunks')
-local Instances=require('mods.KIM_ARENA.stadium2.lib.scenery_instances')
+local Chunks=require('mods.gen2-aio.stadium2.lib.scenery_chunks')
+local Instances=require('mods.gen2-aio.stadium2.lib.scenery_instances')
 -- A cached open-sea battle: both battlers ride log rafts on a painted sea,
 -- a palm island lies off to the side with a pier and dunes, and small islets
 -- and sea stacks dot the horizon. Materials share the woodland watercolor
 -- atlas so every scene reads as one painted world. Kenney Pirate Kit /
 -- Watercraft Pack meshes (CC0), see assets/kenney_ocean/README.md.
-local Nature=require('mods.KIM_ARENA.stadium2.lib.battle_nature')
+local Nature=require('mods.gen2-aio.stadium2.lib.battle_nature')
 local Ocean={}
 local mesh,sea,shader,seaShader,paint,sky,skyMesh,skyShader,modRef,shadowShader
 local FORMAT={{'VertexPosition','float',3},{'SurfaceNormal','float',3},{'SurfaceColor','float',3},{'SurfaceMaterial','float',1}}
@@ -178,7 +178,7 @@ function Ocean.lighting(env)
 end
 
 local function image(g,path,name)
- local data=modRef and love.filesystem.newFileData(assert(modRef:read(path)),name) or 'mods/KIM_ARENA/stadium2/'..path
+ local data=modRef and love.filesystem.newFileData(assert(modRef:read(path)),name) or 'mods/gen2-aio/stadium2/'..path
  return g.newImage(data,{mipmaps=true})
 end
 
@@ -266,8 +266,8 @@ local function pigmentFor(p,variation)
 end
 
 function Ocean.vertices()
- local models=require('mods.KIM_ARENA.stadium2.assets.kenney_ocean.models')
- local plants=require('mods.KIM_ARENA.stadium2.assets.kenney_nature.models')
+ local models=require('mods.gen2-aio.stadium2.assets.kenney_ocean.models')
+ local plants=require('mods.gen2-aio.stadium2.assets.kenney_nature.models')
  local rows={}
  local function v(x,y,z,nx,ny,nz,c,m) rows[#rows+1]={x,y,z,nx,ny,nz,c[1],c[2],c[3],m} end
  local function hash(i) return (math.sin(i*127.1+311.7)*43758.5453)%1 end
@@ -469,7 +469,7 @@ function Ocean.vertices()
  -- Boats on the horizon.
  place('boat-sail',-330,-560,12,.9,{y=-1.4})
  place('boat-fishing',-600,-150,10,2.2,{y=-1.4})
- require("mods.KIM_ARENA.stadium2.lib.visitor_navigation").build("ocean",rows)
+ require("mods.gen2-aio.stadium2.lib.visitor_navigation").build("ocean",rows)
  Ocean.triangles=#rows/3;return rows,ground
 end
 
@@ -527,7 +527,7 @@ function Ocean.draw(g,frame,env,shadow)
 end
 function Ocean.endBattle() end
 function Ocean.release()
- require("mods.KIM_ARENA.stadium2.lib.visitor_navigation").clear("ocean")
+ require("mods.gen2-aio.stadium2.lib.visitor_navigation").clear("ocean")
  for _,r in pairs({mesh,sea,shader,seaShader,paint,sky,skyMesh,skyShader,shadowShader}) do if r and r.release then r:release() end end
  mesh,sea,shader,seaShader,paint,sky,skyMesh,skyShader,shadowShader=nil,nil,nil,nil,nil,nil,nil,nil,nil
 end

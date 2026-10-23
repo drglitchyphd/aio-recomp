@@ -2,19 +2,19 @@
 -- Families 23/26/27 use the shared ROM ribbon kernel. Other direct callees
 -- remain explicit resolver contracts with unsupported-phase diagnostics.
 local Lifecycle = {}
-local Ribbon = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_ribbon")
-local WaveGrid = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_wave_grid")
-local TerrainGrid = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_terrain_grid")
-local Radial = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_radial")
-local TriAttack = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_tri_attack")
-local TexturedStream = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_textured_stream")
-local Stochastic = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_stochastic")
-local Swift = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_swift")
-local Needle = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_needle")
-local Spike = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_spike_cannon")
-local Beam = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_beam")
-local FourStream = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_four_stream")
-local Random = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_random")
+local Ribbon = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_ribbon")
+local WaveGrid = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_wave_grid")
+local TerrainGrid = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_terrain_grid")
+local Radial = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_radial")
+local TriAttack = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_tri_attack")
+local TexturedStream = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_textured_stream")
+local Stochastic = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_stochastic")
+local Swift = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_swift")
+local Needle = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_needle")
+local Spike = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_spike_cannon")
+local Beam = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_beam")
+local FourStream = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_four_stream")
+local Random = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_random")
 
 local INIT_BASE = 0x84183700
 local UPDATE_BASE = 0x84183778
@@ -893,7 +893,7 @@ function Manager:terrainHeightAt(x, z)
   for _, instance in pairs(self.instances or {}) do
     local grid = instance.terrainGrid
     if grid and grid.mem then
-      local Native = require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_terrain_grid_native")
+      local Native = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_terrain_grid_native")
       local ok, height, slope = pcall(Native.heightAt, grid.mem, x, z)
       if ok and height then return height, slope end
     end

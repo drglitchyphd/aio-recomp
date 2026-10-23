@@ -1,4 +1,4 @@
--- KIM_ARENA 0.9.46: QUICK MENU, AREA DEX, KEY ITEM WHEEL and info cards.
+-- gen2-aio 0.9.46: QUICK MENU, AREA DEX, KEY ITEM WHEEL and info cards.
 --
 -- QUICK MENU (hold START on the overworld with touch, or START -> QUICK):
 --   POKeGEAR, FLY (the real Fly map; badge / outdoor / party checks are the

@@ -1,9 +1,9 @@
 -- US fragment79 8415F0D0/8415F9A0 and 841614E0/84161DAC.
 -- Persistent simulation, authored grid geometry and camera-facing placement.
-local f=require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_float")
+local f=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_float")
 local Grid={families={[9]=true,[10]=true,[11]=true}}
-local normals=require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_grid_normals")
-local Random=require("mods.KIM_ARENA.stadium2.lib.stadium2_battle_fx_random")
+local normals=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_grid_normals")
+local Random=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_random")
 local function disturb(s,x,y)
   for row=0,15 do for col=0,15 do
     local dx,dy=x-col,y-row

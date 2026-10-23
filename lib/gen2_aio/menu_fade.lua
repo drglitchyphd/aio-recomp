@@ -1,4 +1,4 @@
--- KIM_ARENA: MENU TRANSITIONS.
+-- gen2-aio: MENU TRANSITIONS.
 --
 -- The engine recreates Crystal's FadeToMenu / ExitMenu (src/ui/gen2/
 -- MenuFade.lua): opening or leaving the party, pack, Pokedex, trainer card,

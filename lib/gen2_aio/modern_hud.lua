@@ -1,4 +1,4 @@
--- KIM_ARENA modern battle HUD for Gold/Silver/Crystal.
+-- gen2-aio modern battle HUD for Gold/Silver/Crystal.
 --
 -- Kanto in Motion's Gen 2 Modern UI redraws only the lower battle panel; the
 -- name / level / HP / EXP boxes stay Crystal's tile HUD. This module replaces
@@ -363,7 +363,7 @@ return function(host)
     end
     local playerY = math.max(enemyBottom, bottom - playerH)
     local playerX = px + pw - cardW - margin
-    -- KIM_ARENA: where the cards sit, for the locked KENNEY HD camera to
+    -- gen2-aio: where the cards sit, for the locked KENNEY HD camera to
     -- keep the Pokemon clear of them (window units)
     mod._kimArenaHudRects = {
       W = winW, H = winH, state = state,
@@ -403,7 +403,7 @@ return function(host)
           -- Never leave a battle without a HUD: give it back to the native one.
           M.failed = true
           if mod.log and mod.log.warn then
-            pcall(mod.log.warn, mod.log, "KIM Arena modern HUD disabled: %s", tostring(err))
+            pcall(mod.log.warn, mod.log, "Gen2-AIO modern HUD disabled: %s", tostring(err))
           end
         end
       end

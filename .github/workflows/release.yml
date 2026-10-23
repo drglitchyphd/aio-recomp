@@ -46,7 +46,7 @@ jobs:
                       older.append(release)
               except ValueError:
                   pass
-          selected = select_release(older, 'KIM_ARENA')
+          selected = select_release(older, json.load(open('manifest.json'))['id'])
           if not selected:
               release = next((r for r in releases if r['tag_name'] == 'Initial'), None)
               asset = next((a for a in (release or {}).get('assets', []) if a['name'] == 'Gen2_AiO_0948.zip'), None)

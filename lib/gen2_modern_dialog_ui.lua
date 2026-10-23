@@ -13,7 +13,7 @@
 -- themed final-window Modern UI used by the rest of v1.5.3.
 return function(mod)
   local G = love.graphics
-  -- KIM_ARENA 0.9.8: generic tap targets (see gen2_modern_core_menus KimTap)
+  -- gen2-aio 0.9.8: generic tap targets (see gen2_modern_core_menus KimTap)
   local DTap={}
   function DTap.begin(s)
     DTap.buf={state=s,kind="generic",generic=true,mode="list",cells={},phase=s and s.phase,
@@ -838,7 +838,7 @@ return function(mod)
     end
   end
 
-  -- KIM_ARENA 0.9.47: naming keyboard rebuilt as key caps sized to the screen
+  -- gen2-aio 0.9.47: naming keyboard rebuilt as key caps sized to the screen
   -- (the old grid stretched tiny letters over the whole panel), a proper
   -- entry field with one slot per character, and a panel only as tall as
   -- its content.

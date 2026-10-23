@@ -1,7 +1,7 @@
 -- Ice cave: a frozen cavern. A glassy, snow-dusted floor, icicles hanging
 -- from the vault, frozen pillars and glowing crystal clusters that throw
 -- cold light. Painted with the shared watercolor kit.
-local Kit=require('mods.KIM_ARENA.stadium2.lib.scene_kit')
+local Kit=require('mods.gen2-aio.stadium2.lib.scene_kit')
 
 local function height(x,z)
  local r=math.sqrt(x*x+z*z)

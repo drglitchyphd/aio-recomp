@@ -1,5 +1,5 @@
-local Nav=require('mods.KIM_ARENA.stadium2.lib.visitor_navigation')
-local Catalog=require('mods.KIM_ARENA.stadium2.lib.visitor_catalog')
+local Nav=require('mods.gen2-aio.stadium2.lib.visitor_navigation')
+local Catalog=require('mods.gen2-aio.stadium2.lib.visitor_catalog')
 local B={}
 local slots={-24,24}
 local turns={0,.6,-.6,1.2,-1.2,2,-2,math.pi}
