@@ -35,8 +35,10 @@ There is no overlay patch for this identity transition.
 
 For maintainers: commit all runtime folders (including the restored release
 assets), the index, tools and `.github/workflows` before releasing. Update
-`manifest.json` and these notes, then publish a GitHub release with a matching
-tag, e.g. **v0.9.50**. **Package mod release** builds and attaches
+`manifest.json` and these notes (a `## X.Y.Z changes` section). Merging that
+version bump into `main` runs **Auto release on version bump**, which publishes
+the matching tag (e.g. **v0.9.52**) with that section as its notes; publishing a
+release by hand on GitHub still works too. **Package mod release** builds and attaches
 `gen2-aio-0.9.50.zip`, a patch when the previous release has the same ID, and checksums;
 then **Refresh mod index** commits the new listing to the default branch. The
 index also refreshes daily and can be run manually from Actions. Workflows need

@@ -8,6 +8,12 @@ on:
         description: Existing release tag matching manifest version (e.g. v0.9.49)
         required: true
         type: string
+  workflow_call:
+    inputs:
+      tag:
+        description: Existing release tag matching manifest version
+        required: true
+        type: string
 permissions:
   contents: write
 concurrency:
