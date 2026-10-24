@@ -25,7 +25,7 @@ function love.load()
  local function cell(id) for _,r in ipairs(hud.layout(game).cells) do if r.action.id==id then return r end end end
  local function tap(id) local r=cell(id); send('pressed',r.x+4,r.y+4); send('released',r.x+4,r.y+4) end
  local function step() hooks['input.step'][5](function() end,game,1/60) end
- check(#hud.layout(game).cells==5,'five available shortcuts')
+ check(#hud.layout(game).cells==4,'four available shortcuts')
  local original=hud.layout(game)
  for i=1,12 do
   game.world.player.moving=i%2==1
@@ -47,7 +47,8 @@ function love.load()
  tap('gear'); check(gear=='pokegear','gear opens native menu'); top=nil
  tap('bike'); check(registered=='BICYCLE','bike uses native register path')
  tap('dex'); check(top.kimAreaDex,'area opens actual area dex'); top=nil
- tap('quick'); check(top~=nil,'quick opens hub page'); top=nil
+ check(not cell('quick'),'no QUICK button (hold START opens the QUICK MENU)')
+ check(q.openQuick~=nil,'QUICK MENU still reachable')
  local r=cell('gear'); gear=nil
  send('pressed',r.x+4,r.y+4); send('moved',0,0); send('released',r.x+4,r.y+4)
  check(gear==nil,'drag cancels action')

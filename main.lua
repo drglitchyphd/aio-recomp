@@ -375,6 +375,10 @@ return function(mod)
     -- sprites with the row still reading 4X).
     return tonumber(opt("arenaCardDetail", 4)) or 4
   end
+  -- 0.9.56: ENEMY PKMN SIZE scales the far card in gmarc's 3D battles.
+  voxel._kimArenaEnemyScale = function()
+    return (tonumber(opt("arenaEnemySize", 100)) or 100) / 100
+  end
   local hiddenRows = gmarcEngine and GM_ART or BA_ART
   voxel.options = {
     define = function(_, schema)
@@ -695,7 +699,7 @@ return function(mod)
       help = "Hold START on the overworld (touch) for POKEGEAR, FLY, AREA DEX, DAY-CARE, TODAY's "
         .. "events and KEY ITEMS. A quick tap of START still opens the START menu." },
     { key = "overworldHud", label = "OVERWORLD HUD", type = "toggle", default = true,
-      help = "Show tappable QUICK, POKEGEAR, AREA DEX, BIKE and KEY ITEMS icons, the game clock "
+      help = "Show tappable POKEGEAR, AREA DEX, BIKE and KEY ITEMS icons, the game clock "
         .. "and party health on the overworld. Hidden during dialogue, menus and battles." },
     { key = "quickInStart", label = "QUICK IN START MENU", type = "toggle", default = true,
       help = "Also list QUICK in the START menu, so the QUICK MENU works with any controller." },
@@ -807,6 +811,12 @@ return function(mod)
       choices = { { "1X", 1 }, { "2X", 2 }, { "3X", 3 }, { "4X", 4 } },
       help = "How sharply KIM's HD Pokemon are captured for gmarc's 3D battles. "
         .. "Lower is lighter on phones." },
+    { key = "arenaEnemySize", label = "ENEMY PKMN SIZE", type = "choice", default = 100,
+      choices = { { "80%", 80 }, { "90%", 90 }, { "100%", 100 }, { "110%", 110 },
+        { "120%", 120 }, { "130%", 130 }, { "140%", 140 }, { "150%", 150 },
+        { "160%", 160 }, { "180%", 180 }, { "200%", 200 } },
+      help = "Size of the opponent's Pokemon in 3D battles, grown in place on its spot. "
+        .. "Pair with PLAYER PKMN SIZE to balance the two sides." },
     { key = "arenaBackground", label = "BATTLE BACKGROUND", type = "choice", default = "kim_hd",
       choices = { { "DEFAULT (WHITE)", "white" }, { "KIM HD", "kim_hd" },
         { "KENNEY HD", "kenney" }, { "VOXEL WORLD", "voxel" } },

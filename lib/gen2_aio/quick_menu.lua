@@ -728,10 +728,8 @@ return function(host)
 
   -- Shared by the overworld HUD; retain the game's availability and item paths.
   function M.hudActions(game)
+    -- 0.9.56: no QUICK button -- holding START already opens the QUICK MENU
     local actions = {}
-    if opt("quickMenu", true) ~= false then
-      actions[#actions + 1] = { id = "quick", label = "QUICK", run = M.openQuick }
-    end
     if hasPokegear(game) then
       actions[#actions + 1] = { id = "gear", label = "GEAR", run = openPokegear }
     end
