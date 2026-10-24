@@ -1097,7 +1097,11 @@ return function(mod)
           cardW*.29,"right",c.text)
         yy=yy+48*scale
       end
-    elseif tostring(state.phase):match("^ask") or tostring(state.phase)=="stop-learning" then
+    elseif (tostring(state.phase):match("^ask") or tostring(state.phase)=="stop-learning")
+        and (tonumber(state.messageTimer) or 0)<=0 then
+      -- gen2-aio 0.9.54: like BattleState.drawBottom, the YES/NO box (and its tap
+      -- cells) waits for the prompt's A; drawn early, that first A looked
+      -- like a tap that did nothing
       local cw=260*scale
       local ch=112*scale
       local cx=x+w-cw-18*scale

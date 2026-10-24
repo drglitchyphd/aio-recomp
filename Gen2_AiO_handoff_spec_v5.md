@@ -1,10 +1,35 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.53)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.54)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Previous spec: `Gen2_AiO_handoff_spec_v2.md` (0.9.7). This file covers 0.9.8 → 0.9.24
 (0.9.24 section below; everything else as of 0.9.23).
+
+## 0.9.54 — voxel doors/roofs/tree shadows, multi-hit anims, QoL Toggles relaunch
+
+- VoxelScene doorClamp (render-only): door cells are solid in the 3D model;
+  the drawn feet stop at the doorway face (Structures.solidDoorwayAt).
+- ChunkMesher roofCorners/edgeHeights: each roofed cell fills a skirt down to
+  its neighbour's edge (Crystal Sprout Tower uses the detector path; the
+  authored johto_sprout_tower template only matches Gold tile ids).
+- Buildings.shadowSkirt: border-tree templates get shadow-only side faces
+  (shade -1) under the canopy; Voxel3D discards vShade < 0, ShadowMap casts.
+- lib/gen2_aio/multi_hit_anims.lua: wraps Battle:hitOnce; later hits of the
+  same moveEvent queue {kind="message", moveAnim=...} (the Magnitude shape).
+- qoltoggles: the process-wide Game._qolTogglesInstalled early return skipped
+  the entry after an Android in-process relaunch (exit -> launcher -> Play);
+  now keyed on mod.events. Settings go through Runtime._qolTogglesLive.get,
+  repointed each session (bundle sets all-off when the component is off).
+  Turn-away/palette/toast/keep-money registrations run every session. Still
+  broken on Crystal: BULK COINS, QUICK SHIP (name matching; ROM objects have
+  no names). ANIM SKIP unverified.
+- touch/main.lua: a tap beside a party/pack/START popup is A again (0.9.47's
+  missTap = "b" removed; generic "sub" screens still ignore misses).
+  gen2_modern_dialog_ui drawBattleSpecial: ask-*/stop-learning YES/NO waits
+  for messageTimer <= 0 like BattleState.drawBottom.
+- Follower = party slot 1 live update: done (user confirmed).
+- gmarc/lib changed: voxel disk cache rebuilds once.
 
 ## 0.9.53 — HUD six slots at shortcut width, dialogue box fits text
 
@@ -490,7 +515,7 @@ DECLINED: PC QoL, next-goal hint, photo mode, accessibility.
 
 ## Backlog (user, after 0.9.37) — not started
 
-1. Follower = party slot 1 must update live (now only on reload).
+1. ~~Follower = party slot 1 must update live~~ done.
 2. First load: build voxels before showing anything (no 2D → 3D pop).
 3. Performance / PowerVR (Pixel 10 Pro XL): cache battle card captures (recapture only on pic
    change), fewer full-screen passes (DOF/AA), GPU name in diag + PowerVR defaults, optional 3D
@@ -608,8 +633,7 @@ render, VoidFloor relief (`/tmp/vr`). All passed at 0.9.23; full compile check p
    Snorlax/Lapras/Onix are real Pokemon on some maps but stay native as 32px dolls).
 2. **Native-UI screens:** Pokégear phone **call** screen (dialogue already KIM), Nuzlocke
    TRACKER and RULES screens, Wilds' own settings menu (ListMenu), Pokédex list taps.
-3. **Shadow gap under short trees** — gmarc tree hull likely open at the bottom (shadow-map
-   only); fix in gmarc tree/hull code.
+3. ~~Shadow gap under short trees~~ done in 0.9.54 (shadow skirt; verify on phone).
 4. **KENNEY HD on the outer (narrow) screen** — portrait-camera fix in 0.9.49;
    verify on the Fold. Use `battle 3d`, `battle bg`, and `kenney surface` diagnostics.
 5. VOXEL EDGE: gmarc tree copies only when `Structures` is in memory (not after a disk-cache

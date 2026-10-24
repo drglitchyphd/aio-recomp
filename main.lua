@@ -966,6 +966,13 @@ return function(mod)
       end
       diagSet("qol toggles", ("%d switches"):format(#schema))
     end
+  else
+    -- QoL Toggles' engine wraps outlive a session (Android relaunches in the
+    -- same Lua state); with the component off they must read every toggle
+    -- as off rather than the previous session's settings.
+    local okR, Runtime = pcall(require, "src.mods.Runtime")
+    local live = okR and type(Runtime) == "table" and rawget(Runtime, "_qolTogglesLive")
+    if type(live) == "table" then live.get = function() return false end end
   end
 
   -- KIM Touch (touch/): Dragon Quest-style touch controls.
@@ -1054,6 +1061,13 @@ return function(mod)
   if type(steadyFactory) == "function" then
     local okS, err = pcall(steadyFactory, { mod = mod, diag = diagSet })
     if not okS then log("warn", "Gen2-AIO: steady hits: %s", tostring(err)) end
+  end
+
+  -- Multi-hit moves animate every hit, as on the cart (engine seam).
+  local multiHitFactory = loadOwn("lib/gen2_aio/multi_hit_anims.lua")
+  if type(multiHitFactory) == "function" then
+    local okH, err = pcall(multiHitFactory, { mod = mod, diag = diagSet })
+    if not okH then log("warn", "Gen2-AIO: multi-hit anims: %s", tostring(err)) end
   end
 
   -- Pixel Operator for KIM's Modern UI.

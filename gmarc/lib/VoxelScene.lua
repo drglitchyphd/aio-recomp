@@ -200,6 +200,47 @@ VoxelScene.YAW = YAW
 -- needs the same answer about what height "the floor" is there
 VoxelScene.groundAt = groundAt
 
+-- gen2-aio 0.9.54: a door cell is walkable to the engine but SOLID in 3D:
+-- the building's model (or the door fold) fills it, its face at the cell's
+-- open edge. Walking the feet past that face stood the camera-facing card
+-- inside the wall, so it projected up the door art ("steps above the door").
+-- The drawn feet stop at the doorway's face instead; the warp's fade does
+-- the rest. Render-only: the entity's real px/py are untouched.
+local OPEN = { {0, 1}, {-1, 0}, {1, 0}, {0, -1} }
+local function doorClamp(map, e, px, py)
+  if not (map and map.isDoorTileCell and e.cellX) then return px, py end
+  local dcx, dcy, ocx, ocy
+  if map:isDoorTileCell(e.cellX, e.cellY) then
+    dcx, dcy = e.cellX, e.cellY
+    if e.moving and e.targetX then ocx, ocy = e.targetX, e.targetY end
+  elseif e.moving and e.targetX and map:isDoorTileCell(e.targetX, e.targetY) then
+    dcx, dcy, ocx, ocy = e.targetX, e.targetY, e.cellX, e.cellY
+  else
+    return px, py
+  end
+  if not V.require("Structures").solidDoorwayAt(map, dcx * 2, dcy * 2 + 1) then
+    return px, py
+  end
+  if not ocx or (ocx == dcx and ocy == dcy) then
+    ocx = nil
+    for _, d in ipairs(OPEN) do      -- standing in it: the open side
+      local nx, ny = dcx + d[1], dcy + d[2]
+      if map.isWalkableCell and map:isWalkableCell(nx, ny)
+         and not map:isDoorTileCell(nx, ny) then
+        ocx, ocy = nx, ny; break
+      end
+    end
+    if not ocx then return px, py end
+  end
+  local sx, sy = ocx - dcx, ocy - dcy
+  -- feet are (px+8, py+8); the face is the door cell's edge on the open side
+  if sy > 0 then py = math.max(py, dcy * 16 + 8)
+  elseif sy < 0 then py = math.min(py, dcy * 16 - 8)
+  elseif sx > 0 then px = math.max(px, dcx * 16 + 8)
+  elseif sx < 0 then px = math.min(px, dcx * 16 - 8) end
+  return px, py
+end
+
 -- Camera-ward pull distance for billboards (and the grass rows, which
 -- must keep their relative depth to feet): just enough that a leaned-back
 -- slab clears the wall it leans over. The lean flattens toward top-down,
@@ -306,7 +347,8 @@ end
 function VoxelScene.entityHeadPoint(state, entity)
   local pose=V.require("Gen2").poseFor(entity,state.map,entity==state.player)
   local _,px,vy=pose()
-  local m=billboardMatrix(px,entity.py,
+  local cpx,cpy=doorClamp(state.map,entity,px,entity.py)
+  local m=billboardMatrix(cpx,cpy,
     groundAt(state.map,entity.cellX,entity.cellY)+(entity.py-vy),false)
   return m[1]*8+m[2]*16+m[4], m[5]*8+m[6]*16+m[8],
     m[9]*8+m[10]*16+m[12]
@@ -558,8 +600,9 @@ local function posesOf(state, spriteColors)
     if not (state.flyAnim and e == state.player) then
       local pose = V.require("Gen2").poseFor(e, state.map, e == state.player)
       local sprite, vx, vy, facing, phase, flip = pose()
+      local cpx, cpy = doorClamp(state.map, e, vx, e.py)
       posed[#posed + 1] = {
-        sprite = sprite, px = vx, py = e.py,
+        sprite = sprite, px = cpx, py = cpy,
         facing = facing, phase = phase, flip = flip,
         gh = groundAt(state.map, e.cellX, e.cellY),
         lift = e.py - vy, colors = colors,

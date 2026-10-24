@@ -1374,6 +1374,62 @@ local function emit(m, sp, atlasW, atlasH)
   return quads
 end
 
+-- A tree's SHADOW SKIRT: the air under its canopy, filled for the sun only.
+--
+-- The native trees stand their crowns on a thin stalk -- `johto_tree` on a
+-- 4x4 trunk for its bottom seven voxels, `johto_small_tree` on a 1x2 foot
+-- and a 6-to-8-wide waist -- so the sun shines straight under every canopy.
+-- The model looks right from the camera, which never sees under it, but its
+-- shadow starts where the canopy's underside projects: two voxels out per
+-- voxel of stalk at the morning sun (K up to 2), one at noon. A lit strip
+-- opens between each tree's foot and its shadow, a row of short trees
+-- behind a tall row throws its shadow as a separate blob, and the trees
+-- read as floating -- which the drawing never was: the 2D tile is a solid
+-- blob down to the ground.
+--
+-- So every canopy column gets a plug from the ground up to its lowest
+-- voxel, emitted as side faces only (the canopy's own underside is its
+-- lid) and flagged shadow-only by a NEGATIVE shade: the scene shader
+-- discards those fragments (Voxel3D), the sun pass never reads shade and
+-- records them like any other caster. The UV is a texel the canopy itself
+-- wears, so the sun pass's alpha discard keeps them too. A column already
+-- reaching the ground (the trunk) adds nothing.
+local SHADOW_ONLY = -1
+local function shadowSkirt(quads, m)
+  if not (m and m.cells and quads[1] and quads[1].uv) then return quads end
+  local function key(x, z) return (z + 512) * 2048 + x + 512 end
+  local low, cols = {}, {}
+  for _, c in ipairs(m.cells) do
+    local k = key(c.x, c.z)
+    local y = low[k]
+    if not y then cols[#cols + 1] = { c.x, c.z } end
+    if not y or c.y < y then low[k] = c.y end
+  end
+  local uv = quads[1].uv
+  for _, c in ipairs(cols) do
+    local x, z = c[1], c[2]
+    local g = low[key(x, z)]
+    if g > 0 then
+      -- each side shows from the neighbour's own plug top (0 where the
+      -- neighbour is open air or reaches the ground) up to this one's
+      local function side(nx, nz, c1, c2)
+        local gn = low[key(nx, nz)] or 0
+        if gn < g then
+          quads[#quads + 1] = { { c1[1], gn, c1[2] }, { c2[1], gn, c2[2] },
+                                { c2[1], g, c2[2] }, { c1[1], g, c1[2] },
+                                uv = uv, shade = SHADOW_ONLY }
+        end
+      end
+      side(x + 1, z, { x + 1, z }, { x + 1, z + 1 })
+      side(x - 1, z, { x, z + 1 }, { x, z })
+      side(x, z + 1, { x + 1, z + 1 }, { x, z + 1 })
+      side(x, z - 1, { x, z }, { x + 1, z })
+    end
+  end
+  return quads
+end
+Buildings.shadowSkirt = shadowSkirt
+
 -- ------------------------------------------------------------- placement --
 
 -- Does the template's tile grid sit at (tx, ty)?
@@ -1473,7 +1529,11 @@ function Buildings.build(S, map, data, perRow)
                 else
                   local sp = read(t, data, perRow)
                   local pr = not t.surfaces and measure(sp, t) or nil
-                  models[key] = emit(model(sp, pr, t), sp, atlasW, atlasH)
+                  local m = model(sp, pr, t)
+                  models[key] = emit(m, sp, atlasW, atlasH)
+                  if BorderTreeLOD.eligible(t) then
+                    shadowSkirt(models[key], m)
+                  end
                 end
               end
               built = models[key]
@@ -1485,7 +1545,8 @@ function Buildings.build(S, map, data, perRow)
                 if not models[key] then
                   local sp=read(t,data,perRow)
                   local pr=not t.surfaces and measure(sp,t) or nil
-                  local coarse=BorderTreeLOD.scale(emit(BorderTreeLOD.model(model(sp,pr,t)),sp,atlasW,atlasH))
+                  local cm=BorderTreeLOD.model(model(sp,pr,t))
+                  local coarse=BorderTreeLOD.scale(shadowSkirt(emit(cm,sp,atlasW,atlasH),cm))
                   -- Simple sprites can already merge more efficiently at
                   -- full detail. Never trade them for a larger coarse mesh.
                   models[key]=#coarse<#built and coarse or built

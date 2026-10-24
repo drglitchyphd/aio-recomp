@@ -351,6 +351,47 @@ local function runGeometry(map, bodyOnly, masks, sink, waterSink, instances)
     return s and s.h or 0
   end
 
+  -- A roofed volume cell's gable: its four corner heights (sw, se, ne, nw),
+  -- plus the row offset and ridge they were cut from; nil for a cell with
+  -- no sloped roof. Shared by the top face and the slot fill beside it.
+  local function roofCorners(tx, ty)
+    local k = keyOf(tx, ty)
+    local run = S.runs[k]
+    if S.skip[k] or not (run and run.rise > 0) then return nil end
+    local mid = run.extent / 2
+    local function gableH(d)     -- d = rows north of the south eave
+      local t = d <= mid and d / mid or (run.extent - d) / (run.extent - mid)
+      return run.h + run.rise * math.max(0, math.min(1, t))
+    end
+    local d0 = run.front - ty                -- rows from the south edge
+    local hS, hN = gableH(d0), gableH(d0 + 1)
+    local swY, seY, neY, nwY = hS, hS, hN, hN
+    if heightAt(tx - 1, ty) < run.h then     -- west flank: hip
+      swY = math.max(run.h, hS - 8)
+      nwY = math.max(run.h, hN - 8)
+    end
+    if heightAt(tx + 1, ty) < run.h then     -- east flank: hip
+      seY = math.max(run.h, hS - 8)
+      neY = math.max(run.h, hN - 8)
+    end
+    return swY, seY, neY, nwY, d0, mid
+  end
+
+  -- The top edge a cell shows along side d (SIDES' codes), as the heights
+  -- at that side's two ends: W/E south then north, S/N west then east.
+  local function edgeHeights(tx, ty, d)
+    local sw, se, ne, nw = roofCorners(tx, ty)
+    if not sw then
+      local h = heightAt(tx, ty)
+      return h, h
+    end
+    if d == 2 then return sw, nw end
+    if d == 1 then return se, ne end
+    if d == 5 then return sw, se end
+    return nw, ne
+  end
+  local OPPOSITE = { [1] = 2, [2] = 1, [5] = 6, [6] = 5 }
+
   -- one atlas-rect UV, optionally cropped to art rows [vTop, vBot] of 8
   local function uvRect(tile, vTop, vBot)
     local ax = (tile % perRow) * 8
@@ -608,32 +649,43 @@ local function runGeometry(map, bodyOnly, masks, sink, waterSink, instances)
         -- degree corners. Flat-topped volumes wear their top rows;
         -- everything else its own art.
         if run and run.rise > 0 then
-          local mid = run.extent / 2
-          local function gableH(d)     -- d = rows north of the south eave
-            local t = d <= mid and d / mid or (run.extent - d) / (run.extent - mid)
-            return run.h + run.rise * math.max(0, math.min(1, t))
-          end
-          local d0 = run.front - ty                -- rows from the south edge
-          local hS = gableH(d0)
-          local hN = gableH(d0 + 1)
+          local swY, seY, neY, nwY, d0, mid = roofCorners(tx, ty)
           -- art by proximity to the ridge, mirrored over the back
           local rel = 1 - math.abs(d0 + 0.5 - mid) / math.max(mid, 0.5)
           local idx = math.min(run.roofRows - 1,
                                math.floor((1 - rel) * run.roofRows))
           local roofTile = map:tileAt(tx, run.north + idx)
-          local swY, seY, neY, nwY = hS, hS, hN, hN
-          if heightAt(tx - 1, ty) < run.h then     -- west flank: hip
-            swY = math.max(run.h, hS - 8)
-            nwY = math.max(run.h, hN - 8)
-          end
-          if heightAt(tx + 1, ty) < run.h then     -- east flank: hip
-            seY = math.max(run.h, hS - 8)
-            neY = math.max(run.h, hN - 8)
-          end
           local u0, u1, v0, v1 = uvRect(roofTile, 0, 8)
           push({ { x0, swY, z0 + 8 }, { x0 + 8, seY, z0 + 8 },
                  { x0 + 8, neY, z0 }, { x0, nwY, z0 } },
                { { u0, v1 }, { u1, v1 }, { u1, v0 }, { u0, v0 } }, 0.95)
+          -- Close the slot between this slope and a LOWER neighbouring top.
+          -- Each column cuts its gable from its own run and the side bands
+          -- below stop at the facade height h, so two roofed columns of
+          -- different extents (Sprout Tower's corner columns end two rows
+          -- short on their cliff-tile base) -- or a hip that drops only 8
+          -- under a taller ridge -- leave the shared edge open above h, and
+          -- whatever stands behind shows through the roof. Each cell fills
+          -- from its own edge down to the neighbour's (never below h: the
+          -- bands own that); where two edges cross, each fills its half.
+          for _, side in ipairs(SIDES) do
+            local d = side[3]
+            local a, b = edgeHeights(tx, ty, d)
+            local na, nb = edgeHeights(tx + side[1], ty + side[2], OPPOSITE[d])
+            local ba = math.max(math.min(a, na), run.h)
+            local bb = math.max(math.min(b, nb), run.h)
+            if a > ba + 0.01 or b > bb + 0.01 then
+              local px, pz, qx, qz           -- the side's ends, a then b
+              if d == 2 then px, pz, qx, qz = x0, z0 + 8, x0, z0
+              elseif d == 1 then px, pz, qx, qz = x0 + 8, z0 + 8, x0 + 8, z0
+              elseif d == 5 then px, pz, qx, qz = x0, z0 + 8, x0 + 8, z0 + 8
+              else px, pz, qx, qz = x0, z0, x0 + 8, z0 end
+              push({ { px, ba, pz }, { qx, bb, qz },
+                     { qx, b, qz }, { px, a, pz } },
+                   { { u0, v1 }, { u1, v1 }, { u1, v0 }, { u0, v0 } },
+                   Voxel3D.FACE_SHADE[d])
+            end
+          end
         elseif run then
           local m = math.min(2, run.extent)
           local topTile = map:tileAt(tx, run.north + ((ty - run.north) % m))
