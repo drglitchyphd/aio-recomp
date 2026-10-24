@@ -14,6 +14,14 @@ return function(host)
   local function contains(r, x, y)
     return x >= r.x and x <= r.x + r.w and y >= r.y and y <= r.y + r.h
   end
+  local function font(size)
+    size = math.max(9, math.floor(size))
+    if not fonts[size] then
+      local f = rawget(mod, "_kimArenaFont")
+      fonts[size] = f and f(size) or G.newFont(size)
+    end
+    return fonts[size]
+  end
   function M.layout(game)
     if not enabled(game) then return nil end
     local W, H = G.getDimensions()
@@ -27,18 +35,19 @@ return function(host)
       cells[i] = { x = x + (i - 1) * (size + gap), y = y, w = size, h = size, action = a }
     end
     local clockPx = math.max(20, math.min(W, H) * .038)
-    -- Leave room for the clock and six health markers even with one shortcut.
-    local statusW = math.max(width, math.min(W - gap * 4, clockPx * 9))
+    -- Size the status strip to its content: the clock followed directly by one
+    -- health marker per party member, right-aligned under the shortcuts.
+    local padding = math.max(8, clockPx * .3)
+    local radius = math.max(4, clockPx * .18)
+    local step = radius * 2 + padding * .5
+    local party = game.save and game.save.party or {}
+    local count = math.min(6, #party)
+    local clockW = font(clockPx):getWidth("00:00")
+    local statusW = padding * 2 + clockW + (count > 0 and padding + count * step - padding * .5 or 0)
+    statusW = math.min(W - gap * 4, statusW)
     return { cells = cells, x = x, y = y, w = width, size = size, gap = gap, W = W, H = H,
-      clockPx = clockPx, statusW = statusW, statusX = W - statusW - gap * 2 }
-  end
-  local function font(size)
-    size = math.max(9, math.floor(size))
-    if not fonts[size] then
-      local f = rawget(mod, "_kimArenaFont")
-      fonts[size] = f and f(size) or G.newFont(size)
-    end
-    return fonts[size]
+      clockPx = clockPx, padding = padding, radius = radius, step = step, clockW = clockW,
+      statusW = statusW, statusX = W - statusW - gap * 2 }
   end
   local function color(c, alpha) G.setColor(c[1], c[2], c[3], alpha or c[4] or 1) end
   local function theme()
@@ -96,7 +105,7 @@ return function(host)
       G.printf(r.action.label, r.x + 2, r.y + r.h * .72, r.w - 4, "center")
     end
     local f = font(l.clockPx)
-    local padding = math.max(8, l.clockPx * .3)
+    local padding = l.padding
     local h = f:getHeight() + padding * 2
     local y = l.y + l.size + l.gap
     panel(l.statusX, y, l.statusW, h, th)
@@ -107,7 +116,8 @@ return function(host)
     G.setFont(f); color(th.text)
     G.print(time, l.statusX + padding, y + padding)
     local party = game.save and game.save.party or {}
-    local radius = math.max(4, l.clockPx * .18)
+    local radius = l.radius
+    local dotsX = l.statusX + padding + math.max(l.clockW, f:getWidth(time)) + padding + radius
     for i = 1, math.min(6, #party) do
       local mon = party[i]
       local hp = tonumber(mon.hp) or 0
@@ -116,7 +126,7 @@ return function(host)
       elseif hp / math.max(1, max) <= .2 then G.setColor(1, .34, .32, 1)
       elseif hp / math.max(1, max) <= .5 then G.setColor(1, .76, .27, 1)
       else G.setColor(.34, .88, .59, 1) end
-      local x = l.statusX + l.statusW - padding - radius - (6 - i) * (radius * 2 + padding * .5)
+      local x = dotsX + (i - 1) * l.step
       G.circle(hp > 0 and "fill" or "line", x, y + h / 2, radius)
     end
   end

@@ -453,13 +453,15 @@ return function(mod)
   end
 
   -- 0.9.45 HOLD TO REPEAT: in a menu, a joystick direction held past
-  -- 0.35 s keeps stepping (about 11 rows a second) instead of one row per push.
+  -- REPEAT_DELAY keeps stepping instead of one row per push. gen2-aio 0.9.52:
+  -- slowed from 0.35 s / 11 rows a second, which overshot rows on the Fold.
+  local REPEAT_DELAY, REPEAT_INTERVAL = 0.5, 0.18
   local function repeatDirs(game)
     if topState(game) == nil then return end   -- overworld walking holds natively
     for _, g in pairs(pointers) do
       if g.kind == "move" and g.dir and g.token and g.dirSince then
         local t = now()
-        if t - g.dirSince > 0.35 and t - (g.lastRep or 0) > 0.09 then
+        if t - g.dirSince > REPEAT_DELAY and t - (g.lastRep or 0) > REPEAT_INTERVAL then
           release(g.token)
           g.token = press(game, g.dir)
           g.lastRep = t

@@ -2061,6 +2061,10 @@ return function(mod)
     local h=math.min(610*requestedScale,sh*.86)
     if layoutStyle()=="full" then w=sw*.94; h=sh*.92 end
     local scale=math.min(w/980,h/610)
+    -- gen2-aio 0.9.52: on a tall narrow screen the width limits the scale but
+    -- the height did not shrink with it, so the prompt panel stretched down
+    -- most of the Fold cover screen. Keep the authored proportions.
+    if layoutStyle()~="full" then w=980*scale; h=610*scale end
     local x=sx+(sw-w)/2; local y=sy+(sh-h)/2
     panel(x,y,w,h,c,.97)
 
@@ -2139,7 +2143,7 @@ return function(mod)
     -- prompt panel, matching the v23 mock: aligned to the prompt's right
     -- edge, but no longer inside the YES/NO box or the prompt body.
     text(status,small,
-      x+48*scale,promptY+promptH-2*scale,
+      x+48*scale,promptY+promptH+6*scale,
       w-96*scale,"right",c.accent)
   end
 

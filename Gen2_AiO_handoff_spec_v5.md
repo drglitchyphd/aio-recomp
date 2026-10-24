@@ -1,10 +1,26 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.51)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.52)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Previous spec: `Gen2_AiO_handoff_spec_v2.md` (0.9.7). This file covers 0.9.8 → 0.9.24
 (0.9.24 section below; everything else as of 0.9.23).
+
+## 0.9.52 — HUD status width, dialogue reflow, joystick repeat, save panel
+
+- overworld_hud: M.layout sizes the status strip to clock width (measured
+  "00:00") plus one marker step per party member; markers follow the clock
+  left to right. Layout exposes padding/radius/step/clockW. Harness checks it.
+- gen2_modern_dialog_ui: reflowTextBoxLines joins the TextBox's visible lines
+  (same shown window as textBoxLines) and greedy-wraps them to the box's inner
+  width with font:getWidth; wrapping uses complete line text and is then cut
+  at the typed byte count, so words do not jump rows mid-typewriter. Last two
+  wrapped rows are shown. Falls back to textBoxLines if measuring fails.
+- touch/main.lua repeatDirs: REPEAT_DELAY 0.5 s, REPEAT_INTERVAL 0.18 s.
+- gen2_modern_core_menus drawSave: outside layoutStyle "full", w/h are reset to
+  980x610 * scale, so a width-limited scale no longer leaves an over-tall panel.
+  Status label moved below the prompt panel.
+- No gmarc/cache change; normal same-ID update.
 
 ## 0.9.51 — walking HUD flicker / first same-ID update
 
@@ -417,7 +433,7 @@ variable-geometry adapter sizes the card. **No gmarc change → no disk-cache re
   show → kimOpt now reads `mod._kimArenaOpt` (host opt, rawset in main.lua right after `opt`).
 - touch/main.lua: SWIPE on cell/screencell gestures (sx/sy recorded; axis lock; step = row h·0.9
   or w·0.54; finger up → "down" taps; swipe never taps A); HOLD-TO-REPEAT `repeatDirs` (menu
-  only = stack top non-nil; 0.35 s delay, 0.09 s rate; re-press the held direction). Harness lp:
+  only = stack top non-nil; 0.35 s delay, 0.09 s rate, 0.5 s / 0.18 s from 0.9.52; re-press the held direction). Harness lp:
   swipe → down,down.
 - time_of_day.lua: CYCLES { cycle = 1800, cycle60 = 3600 }; option choices CYCLE 30 / CYCLE 60.
 - NOT done yet (next): Pokégear quick HUD button (idea: long-press START opens Pokégear; engine
