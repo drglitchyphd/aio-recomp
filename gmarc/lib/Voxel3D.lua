@@ -252,6 +252,10 @@ local SHADER = [[
     // blending keeps those texels out of the depth buffer, so a model never
     // carves a transparent hole out of whatever stands behind it
     if (p.a < 0.5) discard;
+    // a NEGATIVE shade marks geometry only the sun may see -- the skirt
+    // under a tree's canopy (Buildings' shadowSkirt) casts into the
+    // shadow map, whose shader never reads shade, and is never drawn here
+    if (vShade < 0.0) discard;
     // the hour's tint multiplies like the sun terms do: it is LIGHT, the
     // same warm or moonlit cast on every surface, not a palette swap
     vec3 rgb = p.rgb * vShade * sunlight(vSun) * dayTint;
