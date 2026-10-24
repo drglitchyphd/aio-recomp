@@ -966,6 +966,13 @@ return function(mod)
       end
       diagSet("qol toggles", ("%d switches"):format(#schema))
     end
+  else
+    -- QoL Toggles' engine wraps outlive a session (Android relaunches in the
+    -- same Lua state); with the component off they must read every toggle
+    -- as off rather than the previous session's settings.
+    local okR, Runtime = pcall(require, "src.mods.Runtime")
+    local live = okR and type(Runtime) == "table" and rawget(Runtime, "_qolTogglesLive")
+    if type(live) == "table" then live.get = function() return false end end
   end
 
   -- KIM Touch (touch/): Dragon Quest-style touch controls.

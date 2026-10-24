@@ -667,7 +667,7 @@ return function(mod)
     return false
   end
 
-  local function get(key)
+  local function sessionGet(key)
     local value = publicOption(key)
     if value ~= nil then return value end
     local saved = loadStoredSettings()
@@ -678,6 +678,18 @@ return function(mod)
     if value ~= nil then return value end
     return mod.exports.defaultFor(key)
   end
+
+  -- gen2-aio 0.9.54: engine modules (src.world.gen2.*, Prize, TextBox, ...)
+  -- outlive a session. Android's exit -> launcher -> Play reloads mods in the
+  -- SAME Lua state, so the once-per-process wraps below (guarded by flags on
+  -- those modules) were still calling session 1's get, which read session
+  -- 1's settings. Every get goes through this process-wide table, which each
+  -- session repoints at its own settings; LIVE also carries the little state
+  -- those wraps share with per-session code.
+  local LIVE = Runtime._qolTogglesLive or {}
+  Runtime._qolTogglesLive = LIVE
+  LIVE.get, LIVE.exports = sessionGet, mod.exports
+  local function get(key) return LIVE.get(key) end
 
   -- BADGELESS FLY: the engine keeps the destination list separate from the
   -- badge/field-move eligibility gate.  Give the native picker a temporary
@@ -1063,6 +1075,12 @@ return function(mod)
   -- the boot where no menu is involved)
   mod.events:on("game.ready", function()
     mod.exports.applyModernTypes()
+  end)
+  -- the settings hub writes options directly (never set()), so follow it
+  mod.events:on("mod.options_changed", function(ev)
+    if ev == nil or ev.key == nil or ev.key == "modern_types" then
+      mod.exports.applyModernTypes()
+    end
   end)
 
   local function knows(mon, id)
@@ -2954,10 +2972,16 @@ return function(mod)
     return skipped
   end
 
-  -- one wrap per session; hot reload re-runs entry chunks.  The guards hang
-  -- off the Game module (the shared singleton on Gen 1); a test that loads
-  -- the mod twice in one process must clear them between loads.
-  if Game._qolTogglesInstalled then return end
+  -- one install per session. gen2-aio 0.9.54: this used to be a single
+  -- process-wide flag on the Game module, which outlives a session -- after
+  -- Android's exit -> launcher -> Play (same Lua state) everything below
+  -- was skipped, so every event listener and hook here died with the old
+  -- session's bus (QUICK NURSE, TURN AWAY and most other toggles). The
+  -- module wraps below carry their own per-module guards and read settings
+  -- through LIVE, so only a second run against the SAME mod object is
+  -- skipped now.
+  if Game._qolTogglesEvents == mod.events then return end
+  Game._qolTogglesEvents = mod.events
   Game._qolTogglesInstalled = true
 
   -- test seam: clear every per-session install guard so a second loadMod in
@@ -4001,27 +4025,26 @@ return function(mod)
   mod.events:on("game.ready", function()
     if GEN2 then
       local World2 = require("src.world.gen2.World")
-      if World2._qolTogglesTurnAwayInstalled then return end
       local vanillaMachine = World2.startHealMachineAnim
       if not vanillaMachine then return end
-      World2._qolTogglesTurnAwayInstalled = true
-      local lastMachine = nil
-      World2.startHealMachineAnim = function(self, animType, onDone)
-        lastMachine = { world = self, type = animType }
-        return vanillaMachine(self, animType, onDone)
+      if not World2._qolTogglesTurnAwayInstalled then
+        World2._qolTogglesTurnAwayInstalled = true
+        World2.startHealMachineAnim = function(self, animType, onDone)
+          LIVE.lastMachine = { world = self, type = animType }
+          return vanillaMachine(self, animType, onDone)
+        end
       end
+      -- the event bus is rebuilt every session: subscribe every time
       mod.events:on("script.started", function()
-        lastMachine = nil
+        LIVE.lastMachine = nil
       end)
       mod.events:on("script.ended", function(ev)
-        local ctx = ev and ev.ctx
+        local ctx, hit = ev and ev.ctx, LIVE.lastMachine
+        LIVE.lastMachine = nil
         if not (ev and ev.completed and ctx and ctx.kind ~= "callback")
-           or not lastMachine or lastMachine.type ~= 0 then
-          lastMachine = nil
+           or not hit or hit.type ~= 0 then
           return
         end
-        local hit = lastMachine
-        lastMachine = nil
         if get("turn_away_nurse") then
           mod.exports.turnAround(hit.world and hit.world.player)
         end
@@ -4065,6 +4088,9 @@ return function(mod)
           World2.interactBody = function(self)
             if get("quick_nurse") then
               local npc = mod.exports.nurseAt(self)
+              -- the heal machine does not make the world busy: another A
+              -- press restarted the animation and dropped its onDone
+              if npc and self.healAnim then return true end
               if npc then
                 if self.vm then
                   self.vm.lastTalked = (npc.def and npc.def.index or 0) + 1
@@ -4280,17 +4306,19 @@ return function(mod)
           end
           return vanillaApplyPalettes(self)
         end
-        mod.hooks:wrap("map.palette", function(next, daytime, map, ctx)
-          if get("lights_on") and (daytime == "DARK"
-              or (ctx and (ctx.pinned == "PALETTE_DARK" or ctx.pinned == "DARK" or ctx.pinned == 4))
-              or (map and map.def and (map.def.palette == "PALETTE_DARK" or map.def.palette == "DARK" or map.def.palette == 4))
-              or (map and map.id and (tostring(map.id):find("DARK_CAVE") or tostring(map.id):find("ROCK_TUNNEL") or tostring(map.id):find("WHIRL_ISLAND") or tostring(map.id):find("MT_SILVER")))
-              or (ctx and ctx.environment == "CAVE" and daytime == "DARK")) then
-            return "NITE"
-          end
-          return next(daytime, map, ctx)
-        end)
       end
+
+      -- hooks are rebuilt every session, so this one sits outside the guard
+      mod.hooks:wrap("map.palette", function(next, daytime, map, ctx)
+        if get("lights_on") and (daytime == "DARK"
+            or (ctx and (ctx.pinned == "PALETTE_DARK" or ctx.pinned == "DARK" or ctx.pinned == 4))
+            or (map and map.def and (map.def.palette == "PALETTE_DARK" or map.def.palette == "DARK" or map.def.palette == 4))
+            or (map and map.id and (tostring(map.id):find("DARK_CAVE") or tostring(map.id):find("ROCK_TUNNEL") or tostring(map.id):find("WHIRL_ISLAND") or tostring(map.id):find("MT_SILVER")))
+            or (ctx and ctx.environment == "CAVE" and daytime == "DARK")) then
+          return "NITE"
+        end
+        return next(daytime, map, ctx)
+      end)
 
       -- AUTO-REPEL: refill BEFORE vanilla decrements, so the wear-off box
       -- never fires when there is a repel to take over.  Gold's step calls
@@ -4303,7 +4331,7 @@ return function(mod)
           if get("auto_repel") and save and save.repelSteps == 1 then
             local now = (love and love.timer and love.timer.getTime)
                         and love.timer.getTime() or os.clock()
-            mod.exports.refillForStep(save, Game.data, now)
+            LIVE.exports.refillForStep(save, Game.data, now)
           end
           return vanillaRepelStep(save)
         end
@@ -4313,8 +4341,7 @@ return function(mod)
       -- render.hud hook fires over the composed frame in screen space on
       -- both generations (Game2.lua:1218), so the banner draws there with
       -- the same GB-pixel canvas translated/scaled from the viewport.
-      if not World2._qolTogglesToastInstalled then
-        World2._qolTogglesToastInstalled = true
+      do
         mod.hooks:wrap("render.hud", function(next, game, viewport)
           local r1, r2 = next(game, viewport)
           local now = (love and love.timer and love.timer.getTime)
@@ -4351,14 +4378,30 @@ return function(mod)
       -- loss) and World:whiteOut (poison); battle.ended fires before those
       -- closures halve, so the snapshot lands there.  The poison blackout is
       -- snapshotted in the StepEvents.poisonStep wrap above.
-      if not World2._qolTogglesKeepMoneyInstalled then
-        World2._qolTogglesKeepMoneyInstalled = true
+      do   -- events are rebuilt every session: subscribe every time
         mod.events:on("battle.ended", function(ev)
           if get("keep_money") and ev and ev.battle and ev.result == "lose"
               and Game.save then
             mod.exports.snapshotMoney(Game.save)
           end
         end)
+      end
+
+      -- INSTANT FISH (Gen 2): Gold's bite-chance roll returns "nibble"
+      -- before the shared fishing hook sees a candidate list, so re-roll
+      -- the cast itself. Bounded, since a map with no fish only nibbles.
+      if not World2._qolTogglesInstantFishInstalled
+          and type(World2.rollFishing) == "function" then
+        World2._qolTogglesInstantFishInstalled = true
+        local vanillaRoll = World2.rollFishing
+        World2.rollFishing = function(self, rod)
+          local r, wild = vanillaRoll(self, rod)
+          for _ = 1, 16 do
+            if r ~= "nibble" or not get("instant_fish") then break end
+            r, wild = vanillaRoll(self, rod)
+          end
+          return r, wild
+        end
       end
 
       -- AUTO CUT: Gold's Player:tryMove returns a single "blocked" string
@@ -4561,10 +4604,10 @@ return function(mod)
   -- and the gift's own constructor (another mod's before_give handler, say)
   -- would consume it instead -- vanishingly unlikely, and the fresh gift
   -- sits at full HP at its new max either way.
-  local giftDVsPending = false
+  LIVE.giftDVsPending = false
   if not GEN2 then
     mod.events:on("pokemon.before_give", function()
-      if get("perfect_dvs") then giftDVsPending = true end
+      if get("perfect_dvs") then LIVE.giftDVsPending = true end
     end)
     local Pokemon = require("src.pokemon.Pokemon")
     if not Pokemon._qolTogglesGiftDVsInstalled then
@@ -4572,8 +4615,8 @@ return function(mod)
       local vanillaNew = Pokemon.new
       Pokemon.new = function(data, species, level, rng)
         local mon = vanillaNew(data, species, level, rng)
-        if giftDVsPending then
-          giftDVsPending = false
+        if LIVE.giftDVsPending then
+          LIVE.giftDVsPending = false
           mod.exports.perfectDVs(mon, data)
           mon.hp = (mon.stats and mon.stats.hp) or mon.hp
         end
@@ -4583,10 +4626,10 @@ return function(mod)
   else
     mod.hooks:wrap("script.command", function(next, ctx, name, args, cmd)
       if name == "givepoke" and get("perfect_dvs") then
-        giftDVsPending = true
+        LIVE.giftDVsPending = true
       end
       local result = next(ctx, name, args, cmd)
-      giftDVsPending = false
+      LIVE.giftDVsPending = false
       return result
     end)
     local Mon = require("src.battle.gen2.Mon")
@@ -4596,8 +4639,8 @@ return function(mod)
         local vanillaNew = Mon.new
         Mon.new = function(data, species, level, opts)
           local mon = vanillaNew(data, species, level, opts)
-          if giftDVsPending then
-            giftDVsPending = false
+          if LIVE.giftDVsPending then
+            LIVE.giftDVsPending = false
             mod.exports.perfectDVs(mon, data)
             mon.hp = mon.maxHp or mon.hp
           end
@@ -4622,7 +4665,8 @@ return function(mod)
       local states = stack and stack.states
       for i = #(states or {}), 1, -1 do
         local s = states[i]
-        if s and s.battle == ev.battle and s.phase == "menu" then
+        -- the screen is already "resolving" when the turn ends
+        if s and s.battle == ev.battle then
           screen = s
           break
         end
