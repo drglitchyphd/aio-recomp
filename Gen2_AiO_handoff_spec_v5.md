@@ -1,10 +1,23 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.52)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.53)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Previous spec: `Gen2_AiO_handoff_spec_v2.md` (0.9.7). This file covers 0.9.8 → 0.9.24
 (0.9.24 section below; everything else as of 0.9.23).
+
+## 0.9.53 — HUD six slots at shortcut width, dialogue box fits text
+
+- overworld_hud: status strip width = shortcut row width, right edges aligned.
+  Six slots spread over the space after the clock (step = room / 6, radius
+  <= clockPx * .3); on a narrow row slots tighten, then the strip widens.
+  Empty slot = hollow muted ring; fainted = solid grey. Harness checks width,
+  alignment and that clock + six slots fit.
+- gen2_modern_dialog_ui: reflowTextBoxLines removed. Engine TextBox pages are
+  18-column lines and each A press reveals one or two, so reflowing put a
+  whole page on one row. dialogWidth() = max(width of 18 "0"s, widest line in
+  all pages) + padding, capped at the old 90%/1500*scale, cached on the box.
+  Lines are drawn as the engine broke them (textBoxLines).
 
 ## 0.9.52 — HUD status width, dialogue reflow, joystick repeat, save panel
 

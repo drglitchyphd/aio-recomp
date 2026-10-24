@@ -35,15 +35,24 @@ return function(host)
       cells[i] = { x = x + (i - 1) * (size + gap), y = y, w = size, h = size, action = a }
     end
     local clockPx = math.max(20, math.min(W, H) * .038)
-    -- Size the status strip to its content: the clock followed directly by one
-    -- health marker per party member, right-aligned under the shortcuts.
+    -- The status strip matches the shortcut row's width: clock on the left and
+    -- six party slots on the right (empty slots drawn hollow).
     local padding = math.max(8, clockPx * .3)
     local radius = math.max(4, clockPx * .18)
     local step = radius * 2 + padding * .5
-    local party = game.save and game.save.party or {}
-    local count = math.min(6, #party)
     local clockW = font(clockPx):getWidth("00:00")
-    local statusW = padding * 2 + clockW + (count > 0 and padding + count * step - padding * .5 or 0)
+    local statusW = width
+    local room = (statusW - padding * 3 - clockW + padding * .5) / 6
+    if room < step then
+      -- Narrow row: tighten the slots first, then widen the strip if needed.
+      step = math.max(room, 10)
+      radius = math.min(radius, step * .36)
+      statusW = math.max(statusW, padding * 3 + clockW + 6 * step - padding * .5)
+    else
+      -- Wide row: spread the slots over the space after the clock.
+      step = room
+      radius = math.min(clockPx * .3, step * .36)
+    end
     statusW = math.min(W - gap * 4, statusW)
     return { cells = cells, x = x, y = y, w = width, size = size, gap = gap, W = W, H = H,
       clockPx = clockPx, padding = padding, radius = radius, step = step, clockW = clockW,
@@ -117,17 +126,25 @@ return function(host)
     G.print(time, l.statusX + padding, y + padding)
     local party = game.save and game.save.party or {}
     local radius = l.radius
-    local dotsX = l.statusX + padding + math.max(l.clockW, f:getWidth(time)) + padding + radius
-    for i = 1, math.min(6, #party) do
+    -- Slots are right-aligned; the last slot's edge sits one padding inside.
+    local dotsX = l.statusX + l.statusW - padding - radius - 5 * l.step
+    for i = 1, 6 do
       local mon = party[i]
-      local hp = tonumber(mon.hp) or 0
-      local max = tonumber(mon.maxHp or (mon.stats and mon.stats.hp)) or math.max(1, hp)
-      if hp <= 0 then G.setColor(.50, .52, .56, 1)
-      elseif hp / math.max(1, max) <= .2 then G.setColor(1, .34, .32, 1)
-      elseif hp / math.max(1, max) <= .5 then G.setColor(1, .76, .27, 1)
-      else G.setColor(.34, .88, .59, 1) end
       local x = dotsX + (i - 1) * l.step
-      G.circle(hp > 0 and "fill" or "line", x, y + h / 2, radius)
+      if not mon then
+        color(th.muted or th.text, .55)
+        G.setLineWidth(math.max(1.5, radius * .25))
+        G.circle("line", x, y + h / 2, radius - .5)
+      else
+        local hp = tonumber(mon.hp) or 0
+        local max = tonumber(mon.maxHp or (mon.stats and mon.stats.hp)) or math.max(1, hp)
+        -- Fainted is a solid grey dot so it is not mistaken for an empty slot.
+        if hp <= 0 then G.setColor(.42, .44, .48, 1)
+        elseif hp / math.max(1, max) <= .2 then G.setColor(1, .34, .32, 1)
+        elseif hp / math.max(1, max) <= .5 then G.setColor(1, .76, .27, 1)
+        else G.setColor(.34, .88, .59, 1) end
+        G.circle("fill", x, y + h / 2, radius)
+      end
     end
   end
   mod.hooks:wrap("render.hud", function(nextFn, game, viewport)
