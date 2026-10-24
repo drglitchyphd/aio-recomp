@@ -3,8 +3,112 @@
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
-Previous spec: `Gen2_AiO_handoff_spec_v2.md` (0.9.7). This file covers 0.9.8 → 0.9.24
-(0.9.24 section below; everything else as of 0.9.23).
+Older sections below run newest-first back to 0.9.8; the spec before that is
+`Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## START HERE — handoff after 0.9.56 (2026-10-24)
+
+### How the project works now
+- Release = merge a `manifest.json` version bump into `main`.
+  `.github/workflows/auto-release.yml` creates `vX.Y.Z` (notes = README's
+  `## X.Y.Z changes` section) and calls `release.yml` (now also
+  `workflow_call`), which builds the full ZIP, the same-ID overlay patch and
+  SHA256SUMS, then `mod-index.yml` updates `site/data/index.json` on main.
+  A hand-published release still works. Doc-only merges don't release.
+- Every merge to main reaches players. Bump version + README notes in the
+  same PR. Any `gmarc/lib` change rebuilds every saved voxel map once
+  (main.lua build-id fingerprint) — say so in the notes.
+- Engine reference: `git clone --depth 1 --branch v0.3.95
+  https://github.com/bryanthaboi/gen1recomp.git` (read-only; no ROM here,
+  so nothing runs in the real engine).
+- Android exits to the launcher and re-runs mods in the SAME Lua state.
+  Engine modules (src.world.gen2.*, Battle, PartyMenu...) keep wrappers and
+  flags from the previous session; the event bus and hooks are rebuilt.
+  Guard module wraps per module, register events/hooks every session, and read
+  settings through something repointed each session (see qoltoggles LIVE).
+- Tests (run from repo root):
+  `xvfb-run -a love tests/overworld_hud` (75 checks),
+  `xvfb-run -a love tests/held_item_menu` (GIVE/TAKE overlay render),
+  `luajit tests/qoltoggles_relaunch.lua` (simulated relaunch, nurse toggles),
+  `luajit tests/touch_taps.lua` (touch/main.lua taps → A/B),
+  `luajit tests/multi_hit_anims.lua`, `python3 -m unittest tests/test_distribution.py`.
+  `apt-get install love luajit` if missing.
+- Nothing from 0.9.52–0.9.56 is device-verified except where the user
+  reported back (below).
+
+### Open bugs (user-reported, latest first)
+1. **QUICK NURSE and TURN AWAY (NURSE) still don't work on device**, even
+   after 0.9.54's relaunch fix (qoltoggles/main.lua: LIVE table ~L680, early
+   return replaced ~L2978, turn-away ~L4020, installQuickNurse ~L4080). The
+   stub harness passes, so the real path differs. Next step: add `diag` lines
+   (bundle `diagSet`) at interactBody wrap entry, nurseAt result (sprite /
+   scriptKey of the faced NPC), startHealMachineAnim type and script.ended
+   ctx, then ask the user for the DIAGNOSTICS screen. Suspects: the A press
+   from KIM Touch / Gen1Wild "easy interactions" reaching the nurse without
+   World:interactBody (qol/modules/QualityOfLife/qol_feature_easy_interactions.lua
+   ~L853, wilds control_engine ~L4462, Gen1Rematch gen2.lua ~L318 wrap it —
+   check order/return values); the hub toggle key (`qt_quick_nurse`) not the
+   one `get` reads; Crystal nurse object fields differing from
+   SPRITE_NURSE / PokecenterNurseScript; GoldFreeMove resetting facing.
+2. **Outer screen: HUD buttons sit too low** ("high button height is still
+   pretty low"). overworld_hud.lua M.layout `y = max(gap*2, H*.10)`; on
+   1080x2520 the row is ~250 px down. Make it higher on tall screens (respect
+   the safe area / ••• button at top right). Confirm with the user.
+3. **Outer screen: Poké Mart text overlaps** (screenshots in the 0.9.56 chat):
+   item name and price collide ("ESCAPE ROPE¥550", "PARLYZ HEAL¥200"), the
+   description title wraps into the description, and the welcome text's
+   wrapped lines overlap ("may I / help you"). gen2_modern_dialog_ui.lua
+   `drawMart` (~L440) and martMessageLines: fixed widths and single-line
+   heights on a narrow panel. Fit/ellipsize names, right-align prices in their
+   own column, measure wrapped heights (font:getWrap) for title, description
+   and messages.
+
+### Requested features / work (not started)
+4. **Area Dex: add HEADBUTT and ROCK SMASH Pokémon** (quick_menu.lua
+   AreaDex ~L420-600 lists grass/surf/fish from `w.encounters`). Find the
+   engine's tree-mon / rock-smash tables (src/world/gen2 encounters / Headbutt
+   / TreeMons) and add those sections.
+5. **Settings overhaul.** Audit every option (bundle main.lua schema, KIM
+   kim_main.lua, gmarc, qol, qoltoggles, wilds, nuzlocke, touch) for
+   conflicts, no-ops and orphans (e.g. Battle Art / PotatoVoxel rows such as
+   POTATO MOBILE ENEMY SIZE, 3D PKMN SIZE that only apply to engines no longer
+   bundled; QoL Toggles BULK COINS / QUICK SHIP don't work on Crystal; ANIM
+   SKIP unverified). Remove orphans, merge duplicates, recategorize the hub
+   (lib/gen2_aio/hub.lua RULES) into pages that make sense. **Ask the user
+   when a category or removal is unclear.**
+6. **Setting explanations:** long-press or SELECT on any settings row shows
+   its help text; write help for rows that have none.
+7. **In-game overworld HUD editor:** choose, order and toggle HUD buttons.
+   Candidate buttons: GEAR, AREA DEX, BIKE, ITEMS, POKéDEX, QUICK HEAL
+   (auto-use healing items the most efficient way to heal the party), FLY
+   outdoors / DIG or ESCAPE ROPE indoors, and QUICK (removed in 0.9.56 because
+   hold START opens it). quick_menu.lua M.hudActions is the action list.
+8. **Quick sell at marts:** one action that sells items with no other use
+   (NUGGET, BIG NUGGET, TINYMUSHROOM, BIG MUSHROOM, PEARL, BIG PEARL,
+   STARDUST, STAR PIECE, SLOWPOKETAIL, BRICK PIECE... — check Crystal's item
+   list for which exist and have no use).
+9. **"Party lead" light-mode theme** (theme_picker.lua / gen2_modern_style
+   themes): a light theme tinted from the party lead.
+10. **Persistent voxel precache prompt** on game start: offer to pre-build
+    every map into the disk cache (gmarc Prefetch.lua / MeshStore.lua,
+    VOXEL PRECACHE / VOXEL DISK CACHE options) with progress and cancel.
+11. **New-game wizard:** short preset flow on NEW GAME: Nuzlocke OFF by
+    default, theme choice, and the other play-style choices (e.g. difficulty
+    / trainer levels, QoL presets, touch layout, voxel on/off). Ask the user
+    which presets they want.
+12. **Convert leftover native-UI screens** to the modern UI: Nuzlocke
+    TRACKER (and its rules/setup screens), Pokégear call screen, Wilds' own
+    menu, title SETUP. Ask for screenshots.
+
+### Done this session (0.9.52–0.9.56), for verification on device
+HUD six-slot clock panel at button width (confirmed visually pending);
+dialogue box sized to text; joystick hold-repeat 0.5 s / 0.18 s; save panel
+proportions; voxel door clamp; Sprout Tower roof slots; tree shadow skirt;
+multi-hit animations; QoL Toggles relaunch fix (nurse toggles still broken —
+bug 1); tap-anywhere A beside popups and on battle YES/NO; modern GIVE/TAKE;
+ENEMY PKMN SIZE; HUD QUICK button removed. Nuzlocke caps: Falkner 9, then
+16/20/25/30/35/31(Pryce)/40 — user may want Pryce raised to 35 (offered).
+
 
 ## 0.9.56 — ENEMY PKMN SIZE, no HUD QUICK
 
