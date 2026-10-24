@@ -69,6 +69,8 @@ function love.load()
   local l=hud.layout(game)
   check(l.clockPx>=20 and l.clockPx>=math.min(d[1],d[2])*.038,'clock readable at each screen size')
   check(l.statusX>=0 and l.statusX+l.statusW<=d[1],'status panel fits viewport')
+  local slack=l.statusW-(l.padding*3+l.clockW+#game.save.party*l.step-l.padding*.5)
+  check(math.abs(slack)<1,'status panel hugs clock and party markers (no gap)')
   for _,r in ipairs(l.cells) do check(r.x>=0 and r.x+r.w<=d[1] and r.y+r.h<=d[2],'buttons fit viewport') end
   local c=love.graphics.newCanvas(d[1],d[2]); love.graphics.setCanvas(c); love.graphics.clear(.12,.20,.18,1)
   hud.draw(game); love.graphics.setCanvas()
