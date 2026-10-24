@@ -1,0 +1,53 @@
+name: Auto release on version bump
+# Publishes vX.Y.Z when main carries a manifest.json version with no release
+# yet, then packages it and refreshes the index. A release created with the
+# workflow token does not fire `release: published`, so packaging is called
+# directly here; a release published by hand still uses release.yml's trigger.
+on:
+  push:
+    branches: [main]
+    paths:
+      - manifest.json
+      - .github/workflows/auto-release.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: auto-release
+  cancel-in-progress: false
+jobs:
+  create:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create release for manifest version if missing
+        id: release
+        run: |
+          version=$(python3 -c 'import json; print(json.load(open("manifest.json"))["version"])')
+          tag="v$version"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "$tag already released; nothing to do"
+            exit 0
+          fi
+          # Release notes: the "## X.Y.Z changes" section of README_GEN2_AIO.md.
+          VERSION="$version" python3 - <<'PY' > /tmp/notes.md
+          import os, re
+          text = open('README_GEN2_AIO.md', encoding='utf-8').read()
+          m = re.search(r'^## ' + re.escape(os.environ['VERSION']) + r' changes\n(.*?)(?=^## |\Z)', text, re.M | re.S)
+          print(m.group(1).strip() if m else 'See README_GEN2_AIO.md.')
+          PY
+          gh release create "$tag" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "Gen2-AIO $version" --notes-file /tmp/notes.md
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+  package:
+    needs: create
+    if: needs.create.outputs.tag != ''
+    uses: ./.github/workflows/release.yml
+    with:
+      tag: ${{ needs.create.outputs.tag }}
+    permissions:
+      contents: write
