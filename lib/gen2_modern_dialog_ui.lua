@@ -226,63 +226,6 @@ return function(mod)
     return out
   end
 
-  -- gen2-aio 0.9.52: the engine pre-breaks pages at the Game Boy's 18-column
-  -- width, which filled only the left half of the wide modern box. Join the
-  -- visible lines and re-wrap them to the box. Wrapping uses the complete line
-  -- text, so a word never jumps to the next row while it is being typed.
-  local function reflowTextBoxLines(box, font, width)
-    local page = box.pages and box.pages[box.pageIndex]
-    if type(page) ~= "table" or not (font and width and width > 0) then
-      return textBoxLines(box)
-    end
-    local shownCount = math.max(1, #(box.shown or {}))
-    local last = tonumber(box.lineIndex) or 1
-    local first = math.max(1, last - shownCount + 1)
-    local parts = {}
-    for i = first, math.min(#page, last) do
-      local line = tostring(page[i] or ""):gsub("^%s+", ""):gsub("%s+$", "")
-      if line ~= "" then parts[#parts + 1] = line end
-    end
-    if #parts == 0 then return {""} end
-    local full = table.concat(parts, " ")
-    -- The current line is the last part; only its typed prefix is revealed.
-    local current = parts[#parts]
-    local lastRaw = tostring(page[math.min(#page, last)] or "")
-    local revealed = #full
-    if last <= #page and lastRaw:gsub("^%s+", ""):gsub("%s+$", "") == current then
-      local lead = #(lastRaw:match("^%s*"))
-      local visible = splitVisibleLine(lastRaw, box.charIndex)
-      revealed = #full - #current + math.max(0, math.min(#current, #visible - lead))
-    end
-    local function measure(text)
-      local ok, w = pcall(font.getWidth, font, text)
-      return ok and w or nil
-    end
-    local rows, rowStart, rowEnd = {}, nil, nil
-    for wordStart, wordEnd in full:gmatch("()%S+()") do
-      if not rowStart then
-        rowStart, rowEnd = wordStart, wordEnd - 1
-      else
-        local w = measure(full:sub(rowStart, wordEnd - 1))
-        if not w then return textBoxLines(box) end
-        if w > width then
-          rows[#rows + 1] = { rowStart, rowEnd }
-          rowStart = wordStart
-        end
-        rowEnd = wordEnd - 1
-      end
-    end
-    if rowStart then rows[#rows + 1] = { rowStart, rowEnd } end
-    local out = {}
-    for _, r in ipairs(rows) do
-      if r[1] > revealed then break end
-      out[#out + 1] = full:sub(r[1], math.min(r[2], revealed))
-    end
-    if #out == 0 then out[1] = "" end
-    while #out > 2 do table.remove(out, 1) end
-    return out
-  end
-
   local function resolveLabel(value)
     if okStrings and Strings then
       local ok, s = pcall(Strings, value)
@@ -310,6 +253,24 @@ return function(mod)
     end
   end
 
+  -- gen2-aio 0.9.53: size the box to the game's own 18-column lines (both
+  -- rows filled) instead of 90% of the screen, which left the right half
+  -- empty. Measured once per message so the box does not resize per page.
+  local function dialogWidth(box, font, padX, maxW)
+    local key = font:getHeight()
+    if box._aioDialogW and box._aioDialogKey == key then return box._aioDialogW end
+    local w = font:getWidth(("0"):rep(18))
+    for _, page in ipairs(type(box.pages) == "table" and box.pages or {}) do
+      for _, line in ipairs(type(page) == "table" and page or {}) do
+        local ok, lw = pcall(font.getWidth, font, tostring(line))
+        if ok and lw > w then w = lw end
+      end
+    end
+    w = math.min(maxW, w + padX * 2)
+    box._aioDialogW, box._aioDialogKey = w, key
+    return w
+  end
+
   local function drawDialogBox(box, choice)
     local c = theme()
     local sx, sy, sw, sh = playfield()
@@ -317,7 +278,8 @@ return function(mod)
     local body = fontFor(28 * scale)
     local small = fontFor(18 * scale)
 
-    local w = math.min(sw * .90, 1500 * scale)
+    local padX = 28 * scale
+    local w = dialogWidth(box, body, padX, math.min(sw * .90, 1500 * scale))
     local lineH = body:getHeight()
     local h = math.max(150 * scale, lineH * 2 + 56 * scale)
     local x = sx + (sw - w) / 2
@@ -325,9 +287,8 @@ return function(mod)
 
     panel(x,y,w,h,c,.97)
 
-    local padX = 28 * scale
     local padY = 20 * scale
-    local lines = reflowTextBoxLines(box, body, w - padX * 2)
+    local lines = textBoxLines(box)
     for i,line in ipairs(lines) do
       drawText(line, body, x + padX,
         y + padY + (i - 1) * (lineH + 8 * scale),
