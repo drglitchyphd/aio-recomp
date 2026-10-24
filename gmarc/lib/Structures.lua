@@ -176,6 +176,20 @@ function Structures.authoredSupportAt(map, tx, ty)
   return nil
 end
 
+-- gen2-aio 0.9.54: is this tile a doorway the 3D world built SOLID (a door
+-- folded into a facade, or claimed by an authored building model)? Read from
+-- the finished cache only -- never triggers analysis from an actor query.
+-- cutFloor claims (wells, descending ladders) leave S.ground nil: open.
+function Structures.solidDoorwayAt(map, tx, ty)
+  local S = map and cache[map.id]
+  if not S then return false end
+  local k = keyOf(tx, ty)
+  if S.doorFold and S.doorFold[k] then return true end
+  local s = S.shapeAt and S.shapeAt[k]
+  return s ~= nil and s.class == "building" and S.skip[k] == true
+         and S.ground[k] ~= nil
+end
+
 function Structures.forMap(map)
   local S = cache[map.id]
   if S then return S end
