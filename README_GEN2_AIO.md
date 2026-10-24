@@ -67,6 +67,11 @@ a separate submission.
   strip under the canopy, so trees no longer look like they float.
 - Multi-hit moves (Barrage, Double Kick, Fury Attack, ...) play their
   animation on every hit, as on the cartridge.
+- Touch: tapping open space is A again while a POKéMON / PACK / START popup
+  is open (it used to act as B and close the popup); use the B button to
+  back out. The battle "switch Pokémon?" YES/NO now appears once its
+  question has been read, as on the cartridge, so the first tap is no longer
+  swallowed.
 - QoL Toggles keep working after returning to the launcher and pressing Play
   again (Android). Before, QUICK NURSE, TURN AWAY (NURSE) and most other
   toggles stopped working or kept the first session's settings.

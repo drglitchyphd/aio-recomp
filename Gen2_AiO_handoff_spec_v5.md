@@ -24,6 +24,10 @@ Previous spec: `Gen2_AiO_handoff_spec_v2.md` (0.9.7). This file covers 0.9.8 →
   Turn-away/palette/toast/keep-money registrations run every session. Still
   broken on Crystal: BULK COINS, QUICK SHIP (name matching; ROM objects have
   no names). ANIM SKIP unverified.
+- touch/main.lua: a tap beside a party/pack/START popup is A again (0.9.47's
+  missTap = "b" removed; generic "sub" screens still ignore misses).
+  gen2_modern_dialog_ui drawBattleSpecial: ask-*/stop-learning YES/NO waits
+  for messageTimer <= 0 like BattleState.drawBottom.
 - Follower = party slot 1 live update: done (user confirmed).
 - gmarc/lib changed: voxel disk cache rebuilds once.
 

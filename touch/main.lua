@@ -601,8 +601,12 @@ return function(mod)
         -- highlighted); a tap beside a popup menu now closes it (B), as on a
         -- phone. Generic "sub" screens (the naming keyboard, where B deletes)
         -- ignore the miss.
+        -- gen2-aio 0.9.54: a miss beside a Party / Pack / START popup is A
+        -- again (tap anywhere = A; B is the side button). Only generic "sub"
+        -- screens (the naming keyboard) still ignore the miss.
         local g = { kind = "move", ox = x, oy = y, x = x, y = y, t0 = now(),
-          dragged = false, battleMenu = false, missTap = (not st.generic) and "b" or false }
+          dragged = false, battleMenu = false, missTap = nil }
+        if st.generic then g.missTap = false end
         pointers[ev.id] = g
         ring = g
         return
