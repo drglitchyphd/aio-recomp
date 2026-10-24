@@ -1,10 +1,19 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.55)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.56)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Previous spec: `Gen2_AiO_handoff_spec_v2.md` (0.9.7). This file covers 0.9.8 → 0.9.24
 (0.9.24 section below; everything else as of 0.9.23).
+
+## 0.9.56 — ENEMY PKMN SIZE, no HUD QUICK
+
+- BattleScene.monMatrix takes a size factor; monCards asks the host's
+  _kimArenaEnemyScale (option arenaEnemySize, default 100, BATTLE page) for
+  the enemy card. Scales about the feet anchor; sun shadow uses the same
+  model. KIM plate contact shadows are not rescaled.
+- quick_menu.hudActions: QUICK removed (hold START = QUICK MENU). HUD harness
+  expects four shortcuts.
 
 ## 0.9.55 — modern GIVE / TAKE
 

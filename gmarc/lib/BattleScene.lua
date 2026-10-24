@@ -171,8 +171,8 @@ end
 -- one is a BACK view -- the player seen from behind, already turned to face
 -- up the field -- so it arrives pointing the right way and mirroring it would
 -- turn it around to face the camera it is standing in front of.
-local function monMatrix(tex, x, groundY, z, mirror)
-  local k = BattleBillboard.FULL_W / BattleBillboard.FULL_PIC
+local function monMatrix(tex, x, groundY, z, mirror, size)
+  local k = BattleBillboard.FULL_W / BattleBillboard.FULL_PIC * (size or 1)
   local w = BattleScene.GB_W * k
   local h = BattleScene.GB_H * k
   local ox = -((tex.ax / BattleScene.GB_W) - 0.5) * w
@@ -182,6 +182,17 @@ local function monMatrix(tex, x, groundY, z, mirror)
   if mirror then card = Mat4.mul(Mat4.scale(-1, 1, 1), card) end
   return Mat4.mul(Mat4.mul(Mat4.translate(x, groundY, z), Mat4.rotateY(yaw)),
                   card)
+end
+
+-- gen2-aio 0.9.56: ENEMY PKMN SIZE. The host's multiplier for the far
+-- card; the card scales about its feet anchor, so it grows in place. The sun
+-- pass draws the same model, so its shadow follows.
+local function sideSize(side)
+  local fn = side == "enemy" and V.mod and rawget(V.mod, "_kimArenaEnemyScale")
+  if type(fn) ~= "function" then return 1 end
+  local ok, v = pcall(fn)
+  v = ok and tonumber(v) or 1
+  return math.max(0.5, math.min(2, v))
 end
 
 -- Every mon that has something to show this frame, as (texture, matrix).
@@ -195,7 +206,7 @@ local function monCards(arena, groundY, textures)
       local mirror = (side == "player") and not tex.trainer and not tex.back
       out[#out + 1] = { tex = tex.canvas,
                         model = monMatrix(tex, cell[1], groundY, cell[2],
-                                          mirror) }
+                                          mirror, sideSize(side)) }
     end
   end
   return out
