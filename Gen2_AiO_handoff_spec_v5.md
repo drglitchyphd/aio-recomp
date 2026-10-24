@@ -1,10 +1,18 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.54)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.55)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Previous spec: `Gen2_AiO_handoff_spec_v2.md` (0.9.7). This file covers 0.9.8 → 0.9.24
 (0.9.24 section below; everything else as of 0.9.23).
+
+## 0.9.55 — modern GIVE / TAKE
+
+- gen2_modern_party_ui: engine Gen2HeldItemMenu (party ITEM) was unstyled.
+  render_visible hides it; render.hud (top = HeldItemMenu, not busy) draws the
+  party below via drawParty, then GIVE/TAKE popup (SWITCH/STATS look) or the
+  message/confirm text box + YES/NO from Typer.text; generic tap cells with
+  select + button "a". drawParty records lastLayout for overlays.
 
 ## 0.9.54 — voxel doors/roofs/tree shadows, multi-hit anims, QoL Toggles relaunch
 

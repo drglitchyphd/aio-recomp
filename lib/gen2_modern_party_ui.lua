@@ -357,6 +357,7 @@ return function(mod)
     if t then t.cells[#t.cells + 1] = { kind = kind, index = index, x = x, y = y, w = w, h = h } end
   end
 
+  local lastLayout=nil
   local function drawParty(self)
     screenTaps(self, "party")
     local colors=theme()
@@ -385,6 +386,7 @@ return function(mod)
     local x=sx+(sw-pw)/2; local y=sy+(sh-ph)/2
     panel(x,y,pw,ph,colors,0.92)
     local titleFont, bodyFont, smallFont = fontFor(34*scale), fontFor(26*scale), fontFor(19*scale)
+    lastLayout={x=x,y=y,pw=pw,ph=ph,scale=scale,colors=colors,bodyFont=bodyFont}
     local pad=math.max(10,16*scale)
     local header=math.max(50*scale,titleFont:getHeight()+18*scale)
     local footer=math.max(44*scale,smallFont:getHeight()+18*scale)
@@ -605,6 +607,101 @@ return function(mod)
     end
   end
 
+  -- gen2-aio 0.9.54: the party's ITEM -> GIVE / TAKE screen (engine
+  -- Gen2HeldItemMenu, pushed over the party list) drew the Game Boy box over
+  -- a hidden party. Keep the modern party underneath and draw GIVE / TAKE as
+  -- the same centred popup as SWITCH / STATS, its lines and YES / NO in the
+  -- modern text box, with generic tap cells for KIM Touch.
+  local okHeld, HeldItemMenu = pcall(require, "src.ui.gen2.HeldItemMenu")
+  local okTyper, Typer = pcall(require, "src.ui.gen2.Typer")
+  local function isHeld(state)
+    return okHeld and type(state)=="table" and getmetatable(state)==HeldItemMenu
+  end
+  local function partyBelow(game, held)
+    local states=game and game.stack and game.stack.states
+    if type(states)~="table" then return nil end
+    for i=#states,1,-1 do
+      if states[i]==held then
+        for j=i-1,1,-1 do
+          if type(states[j])=="table" and getmetatable(states[j])==PartyMenu then return states[j] end
+        end
+        return nil
+      end
+    end
+    return nil
+  end
+  local function heldTaps(held)
+    local t={ state=held, kind="generic", generic=true, mode="list", cells={},
+      time=love.timer and love.timer.getTime and love.timer.getTime() or 0 }
+    mod._kimScreenTapTargets=t
+    return t
+  end
+  local function heldLines(held, box)
+    if not box then return {} end
+    local pageText=box.pages and box.pages[box.page]
+    if okTyper and type(Typer.text)=="function" then
+      local ok,lines=pcall(Typer.text,held,pageText)
+      if ok and type(lines)=="table" then return lines end
+    end
+    return type(pageText)=="table" and pageText or { tostring(pageText or "") }
+  end
+  local function drawHeld(held, party)
+    if party then pcall(drawParty, party) end
+    local l=lastLayout
+    if not l then return end
+    local colors,scale,bodyFont=l.colors,l.scale,l.bodyFont
+    local taps=heldTaps(held)
+    local winW,winH=G.getDimensions()
+    local box=held.message or held.confirm
+    if box then
+      -- the modern text box along the bottom of the party panel
+      local lineH=bodyFont:getHeight()+8*scale
+      local bw=l.pw*.94; local bh=lineH*2+28*scale
+      local bx=l.x+(l.pw-bw)*.5; local by=l.y+l.ph-bh-12*scale
+      panel(bx,by,bw,bh,colors,0.98)
+      for i,line in ipairs(heldLines(held,box)) do
+        if i>2 then break end
+        drawText(tostring(line),bodyFont,bx+20*scale,by+14*scale+(i-1)*lineH,bw-40*scale,"left",colors.text)
+      end
+      local typing=okTyper and type(Typer.typing)=="function" and Typer.typing(held)
+      if held.confirm and not typing and held.confirm.page>=#(held.confirm.pages or {}) then
+        local row=math.max(46*scale,bodyFont:getHeight()+18*scale)
+        local cw=math.min(l.pw*.40,260*scale); local ch=row*2+16*scale
+        local cx=bx+bw-cw; local cy=by-ch-10*scale
+        panel(cx,cy,cw,ch,colors,0.98)
+        for i,label in ipairs({"YES","NO"}) do
+          local yy=cy+8*scale+(i-1)*row
+          local on=held.confirm.choice==i
+          if on then color(colors.selected); G.rectangle("fill",cx+7*scale,yy+2*scale,cw-14*scale,row-4*scale,4,4) end
+          taps.cells[#taps.cells+1]={kind="row",index=i,x=cx+7*scale,y=yy+2*scale,w=cw-14*scale,h=row-4*scale,
+            select=function(st) if st.confirm then st.confirm.choice=i end end,button="a"}
+          drawText(label,bodyFont,cx+20*scale,yy+(row-bodyFont:getHeight())*.5,cw-40*scale,"left",on and colors.text or colors.muted)
+        end
+      end
+      return
+    end
+    -- GIVE / TAKE: the SWITCH / STATS popup's look
+    color({0,0,0,1},.35); G.rectangle("fill",0,0,winW,winH)
+    local labels={"GIVE","TAKE"}
+    local row=math.max(46*scale,bodyFont:getHeight()+18*scale)
+    local mon=type(held.mon)=="function" and held:mon() or nil
+    local title=mon and (mon.nickname or mon.name) or nil
+    local titleH=title and (bodyFont:getHeight()+14*scale) or 0
+    local mw=math.min(l.pw*.86,420*scale); local mh=#labels*row+titleH+22*scale
+    local mx=l.x+(l.pw-mw)*.5; local my=l.y+(l.ph-mh)*.5
+    panel(mx,my,mw,mh,colors,0.98)
+    if title then drawText(tostring(title),bodyFont,mx+18*scale,my+10*scale,mw-36*scale,"left",colors.text) end
+    for i,label in ipairs(labels) do
+      local yy=my+11*scale+titleH+(i-1)*row
+      local on=held.index==i
+      if on then color(colors.selected); G.rectangle("fill",mx+7*scale,yy+2*scale,mw-14*scale,row-4*scale,4,4) end
+      taps.cells[#taps.cells+1]={kind="row",index=i,x=mx+7*scale,y=yy+2*scale,w=mw-14*scale,h=row-4*scale,
+        select=function(st) st.index=i end,button="a"}
+      local sf=fittedFont(30*scale,label,mw-40*scale,row*.62)
+      drawText(label,sf,mx+20*scale,yy+(row-sf:getHeight())*.5,mw-40*scale,"left",on and colors.text or colors.muted)
+    end
+  end
+
   local upstreamNew=PartyMenu.new
   PartyMenu.new=function(game,opts)
     local self=upstreamNew(game,opts)
@@ -630,7 +727,7 @@ return function(mod)
 
   if mod.hooks and type(mod.hooks.wrap)=="function" then
     mod.hooks:wrap("screen.render_visible",function(nextFn,state)
-      if enabled() and hideOriginal() and isParty(state) then return false end
+      if enabled() and hideOriginal() and (isParty(state) or isHeld(state)) then return false end
       return nextFn(state)
     end,100000)
 
@@ -640,6 +737,8 @@ return function(mod)
       local top=game and game.stack and type(game.stack.top)=="function" and game.stack:top()
       if enabled() and isParty(top) then
         G.push("all"); G.origin(); pcall(drawParty,top); G.pop()
+      elseif enabled() and hideOriginal() and isHeld(top) and not top.busy then
+        G.push("all"); G.origin(); pcall(drawHeld,top,partyBelow(game,top)); G.pop()
       end
       return unpack(result)
     end,100000)
