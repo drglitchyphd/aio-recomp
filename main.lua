@@ -1063,6 +1063,13 @@ return function(mod)
     if not okS then log("warn", "Gen2-AIO: steady hits: %s", tostring(err)) end
   end
 
+  -- Multi-hit moves animate every hit, as on the cart (engine seam).
+  local multiHitFactory = loadOwn("lib/gen2_aio/multi_hit_anims.lua")
+  if type(multiHitFactory) == "function" then
+    local okH, err = pcall(multiHitFactory, { mod = mod, diag = diagSet })
+    if not okH then log("warn", "Gen2-AIO: multi-hit anims: %s", tostring(err)) end
+  end
+
   -- Pixel Operator for KIM's Modern UI.
   local fontFactory = loadOwn("lib/gen2_aio/font.lua")
   if type(fontFactory) == "function" then
