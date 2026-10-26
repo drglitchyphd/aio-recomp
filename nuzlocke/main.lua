@@ -3739,13 +3739,9 @@ return function(mod)
   end
 
   local function nextGscCapInfo(save, scope)
-      local progress = gscProgress(save)
-      for _, stage in ipairs(VersionCompat.gscStages) do
-          local allowed = stage.phase == "GYM" or (stage.phase == "E4" and scope >= 2)
-              or (stage.phase == "CHAMP" and scope >= 3) or (stage.phase == "POST" and scope >= 4)
-          if allowed and progress[stage.name] ~= true then return stage.cap, stage.name end
-          if not allowed and progress[stage.name] ~= true then return 100, "MAX" end
-      end
+      local GscCaps = require("mods.gen2-aio.lib.gen2_aio.gsc_caps")
+      local cap, name = GscCaps.next(VersionCompat.gscStages, save, gscProgress(save), scope)
+      if cap then return cap, name end
       if scope >= 4 then
           local cap, name = postgameCapInfo(save)
           if cap then return math.max(81, cap), name end
@@ -4508,6 +4504,38 @@ return function(mod)
                       setConfigValue(key, not cur, self.preGame)
                   end
               end
+          end
+
+          function self:_aioModernData()
+              local rows = {}
+              for i,item in ipairs(flatItemList) do
+                  local index=i
+                  local value=""
+                  if not item.isHeader then
+                      local key=item.rule.key
+                      local val=getConfigValue(key,self.preGame)
+                      if item.isLockeTypeControl then value=LockePreset.labels[tonumber(val) or 0] or "CUSTOM"
+                      elseif item.isRecoveryControl then
+                          local legacy=trackerLog().__LEGACY__; value=tostring(type(legacy)=="table" and #legacy or 0)
+                      elseif item.isSetupSave or item.isInGameSave then
+                          local flash=item.isSetupSave and self.setupSaveFlash or self.inGameSaveFlash
+                          value=(flash or 0)>0 and "SAVED" or ((flash or 0)<0 and "ERROR" or "SAVE")
+                      elseif key=="level_cap_scope" then value=({[0]="NONE","GYMS","E4","CHAMP","POST"})[tonumber(val) or 0]
+                      elseif key=="dupes_mode" then value=({[0]="OFF","SPECIES","FAMILY"})[tonumber(val) or 0]
+                      elseif item.rule.numeric then value=tostring(val or item.rule.min or 0)
+                      else value=val and "ON" or "OFF" end
+                  end
+                  rows[#rows+1]={label=item.name or (item.rule and item.rule.name),value=value,header=item.isHeader,
+                      select=not item.isHeader and function(st)
+                          if not st.editingNumber then st.cursor=index;st.descScroll=0 end
+                      end or nil}
+              end
+              local item=flatItemList[self.cursor]
+              local help=item and item.rule and item.rule.desc or "Choose a rule."
+              if self.editingNumber then help="Editing digit "..tostring(self.digitIndex)..". LEFT/RIGHT choose digit; UP/DOWN change it. A confirms. "..help end
+              return {title=self.preGame and "NUZLOCKE SETUP" or "NUZLOCKE RULES",rows=rows,selected=self.cursor,
+                  help=help,footer=getConfigValue("rules_locked",self.preGame) and "LOCKED   A CHOOSE   B BACK" or "A CHOOSE   SELECT HELP   B BACK",
+                  buttons={{button="left"},{button="up"},{button="down"},{button="right"},{button="select"},{button="b"}}}
           end
 
           function self:draw()
@@ -5809,6 +5837,23 @@ return function(mod)
               else
                   self.arrowTime = 0
               end
+          end
+
+          function self:_aioModernData()
+              syncCurrentArea(self.game)
+              local source=self.tab==1 and getTrackerLogRows() or getTrackerMapRows(self.game)
+              local rows={}
+              for _,row in ipairs(source) do
+                  local caught=row.catch
+                  local area=self.tab==1 and ((row.area=="__LEGACY__") and "LEGACY" or routeName(row.area)) or row.area.name
+                  rows[#rows+1]={label=area,value=caught and ((caught.isShiny and "*" or "")..tostring(caught.species or "???")) or "..."}
+              end
+              if #rows==0 then rows[1]={label="No encounters recorded"} end
+              local cap,name=nextLevelCapInfo(self.game and self.game.save)
+              local guide=mod.save:get("area_guide_enabled",true)==true
+              return {title=self.tab==1 and "ENCOUNTER TRACKER / LOG" or "ENCOUNTER TRACKER / MAP",rows=rows,start=self.scroll+1,
+                  help="LEVEL CAP: "..tostring(cap).." / "..tostring(name),footer=guide and "UP/DOWN SCROLL   A PAGE   B BACK" or "UP/DOWN SCROLL   B BACK",
+                  buttons=guide and {{button="up"},{button="down"},{button="a"},{button="b"}} or {{button="up"},{button="down"},{button="b"}}}
           end
 
           function self:draw()

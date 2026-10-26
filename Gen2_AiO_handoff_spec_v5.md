@@ -1,4 +1,4 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.56)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.57)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
@@ -6,7 +6,49 @@ Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: 
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
 
-## START HERE — handoff after 0.9.56 (2026-10-24)
+## START HERE — prepared 0.9.57 (2026-10-26)
+
+Local changes address the six priorities from the review of GitHub issue #8
+and the previous handoff. Not yet published or device-verified. Use
+`DEVICE_CHECKLIST_0.9.57.md` for the acceptance pass; do not close #8 until
+the phone results are in.
+
+- `lib/gen2_aio/gsc_caps.lua`: reads per-badge `save.player.badges` and
+  `kantoBadges` (ROM bit order differs from gym order). Copies event records;
+  does not overwrite save badges or persist inferred gym wins. Badge tables
+  override stale gym events. Missing badge stores retain event compatibility.
+  Hall of Fame count/entered recovers the League; Red still uses a win event.
+  The cap floor is the strongest completed Johto gym, keeping Jasmine ->
+  Pryce at 35. This feeds the existing shared nextLevelCapInfo path.
+- Mart text/price layout is responsive; HUD respects safe-area top;
+  hd_ball captures its own sprite separately for GoldBattle's 3D effect card
+  and BattleScene draws it at its projected center with equal screen scales.
+- Nurse interception covers World.interact and interactBody. LIVE owns the
+  current exports/settings/diagnostic sink. Quick heals hold the busy gate;
+  native turn-away matches the heal VM and ignores nested callback scripts.
+  Diagnostics: `nurse install`, `target`, `interact`, `machine`, `ended`, `quick`.
+- Area Dex reads encounters.trees / rocks / treeSets and uses the engine's
+  treeSetUsable (GS dead city/unused tables remain excluded). Rock encounters
+  use only common rows. Percentages exclude per-attempt gates.
+- modern_pages presents providers on Nuzlocke config/setup/tracker and Wilds
+  settings lists. Native update methods remain authoritative. modern_trade
+  presents NPC trades with Typer-aware YES/NO and the original movie timeline;
+  modern_caller covers caller ID. Core menus draw phone submenu/call text.
+- ChunkMesher visible-frame budget reduced to 4/1.5 ms; covered budget stays
+  30 ms. `voxel queue` reports pending/last/peak/overruns; `voxel build` reports
+  map/slot/cold-vs-disk/elapsed time. No claim of measured Android improvement
+  yet. Because gmarc/lib changed, the cache fingerprint changes once.
+- Added gsc_caps, area_dex, hd_ball and ui_regressions tests; strengthened
+  qoltoggles_relaunch with assertions. Existing screenshot tests accept
+  AIO_TEST_OUTPUT (or use TEMP / /tmp), so they run on Windows and Linux.
+- Local tools and pinned engine source are under ignored `.work/`. The release
+  allowlist excludes them and tests. Re-run the tests listed below plus
+  `luajit tests/gsc_caps.lua`, `luajit tests/hd_ball.lua`,
+  `AIO_ENGINE=/path/to/gen1recomp luajit tests/area_dex.lua`, and
+  `love tests/ui_regressions` (Xvfb when needed). The area test uses the actual
+  engine Encounter and GameVersion modules; it needs no ROM.
+
+## Previous handoff after 0.9.56 (2026-10-24)
 
 ### How the project works now
 - Release = merge a `manifest.json` version bump into `main`.

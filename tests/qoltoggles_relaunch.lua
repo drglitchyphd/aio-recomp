@@ -15,6 +15,7 @@ local function emit(n, p) for _, f in ipairs(listeners[n] or {}) do local ok, e 
 local World2 = {}
 World2.__index = World2
 function World2:interactBody() self.vanillaCalled = true; return "vanilla" end
+function World2:interact() self.facadeCalled=true; return "facade" end
 function World2:startHealMachineAnim(t, cb) self.anim = {t=t, cb=cb} end
 function World2:busy() return false end
 function World2:facingObjectCell() return 5, 3 end
@@ -83,3 +84,28 @@ print("S2 quick nurse ON:", w5:interactBody(), w5.vanillaCalled)
 w5.healAnim = {}  -- machine running
 local first = w5.anim
 print("S2 A mid-anim ignored:", w5:interactBody(), w5.anim == first)
+assert(w.player.facing=="down" and w2.player.facing=="down")
+assert(w3.vanillaCalled and w4.player.facing=="down")
+assert(w5.anim==first and w5._aioQuickNurse and w5:busy())
+w5.anim.cb()
+assert(not w5._aioQuickNurse and not w5:busy())
+local w6=setmetatable({player={facing="up"},map={},vm={},
+  nurse={def={sprite="SPRITE_NURSE",index=1}}},World2)
+assert(w6:interact()==true and not w6.facadeCalled,"nurse must run before a facade consumes A")
+w6.anim.cb()
+opts2.qt_quick_nurse=false
+assert(w6:interact()=="facade","OFF preserves the facade chain")
+w6.player.facing="up"
+emit("script.started",{ctx={kind="script",vm=w6.vm}})
+w6:startHealMachineAnim("0",function()end)
+emit("script.started",{ctx={kind="callback",vm=w6.vm}})
+emit("script.ended",{completed=true,ctx={kind="callback",vm=w6.vm}})
+assert(w6.player.facing=="up","nested callback must not consume turn-away")
+emit("script.ended",{completed=true,ctx={kind="script",vm={}}})
+assert(w6.player.facing=="up","another world's script must not consume turn-away")
+emit("script.ended",{completed=true,ctx={kind="script",vm=w6.vm}})
+assert(w6.player.facing=="down")
+w6.player.facing="up";w6:startHealMachineAnim(1,function()end)
+emit("script.ended",{completed=true,ctx={kind="script",vm=w6.vm}})
+assert(w6.player.facing=="up","Elm's machine must not turn the player")
+print("Nurse: relaunch, facade interception, busy lock, nested callbacks and VM ownership PASS")

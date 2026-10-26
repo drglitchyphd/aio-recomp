@@ -843,6 +843,32 @@ function BattleScene.render(state, arena, textures, token)
     local er = BattleScene.toGB(vp, arena.enemy[1] + half, groundY,
                                 arena.enemy[2], lx, ly, s, pw, ph)
     if not (pl and pr and el and er) then return end
+    -- Keep the HD ball circular after the effect card's projection. The
+    -- center follows the original OAM path; only its silhouette is uniform.
+    local ball=textures and textures.ball
+    if ball then
+      local model=BattleScene.fxCard(arena,groundY,textures.anchors)
+      if model then
+        local function point(gx,gy)
+          local u,v=gx/BattleScene.GB_W-.5,1-gy/BattleScene.GB_H
+          return BattleScene.toGB(vp,model[1]*u+model[2]*v+model[4],
+            model[5]*u+model[6]*v+model[8],model[9]*u+model[10]*v+model[12],0,0,1,pw,ph)
+        end
+        local bx,by=point(ball.x,ball.y)
+        local xx,xy=point(ball.x+1,ball.y)
+        local yx,yy=point(ball.x,ball.y+1)
+        if bx and xx and yx then
+          local pixels=ball.size*math.min(math.sqrt((xx-bx)^2+(xy-by)^2),math.sqrt((yx-bx)^2+(yy-by)^2))
+          local G=love.graphics
+          local previous=G.getCanvas()
+          G.push('all');G.setCanvas(canvas);G.origin();G.setShader();G.setScissor();G.setDepthMode()
+          G.setBlendMode('alpha');G.setColor(1,1,1,1)
+          G.draw(ball.image,ball.quad,bx,by,0,pixels/18,pixels/18,9,9)
+          G.pop()
+          G.setCanvas(previous)
+        end
+      end
+    end
     out = {
       canvas = canvas,
       player = { pmx, pmy },

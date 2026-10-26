@@ -430,11 +430,24 @@ return function(mod)
       local page=src.pages[src.page or 1]
       local out={}
       for _,line in ipairs(page or {}) do out[#out+1]=tostring(line or "") end
+      if okTyper and Typer.text then return Typer.text(mart, page) end
       return out
     end
     local out={}
     for _,line in ipairs(mart.topLines or {}) do out[#out+1]=tostring(line or "") end
     return out
+  end
+
+  local function wrappedHeight(text, font, width)
+    local _, lines = font:getWrap(tostring(text or ""),math.max(1,width))
+    return math.max(1,#lines)*font:getHeight()*font:getLineHeight()
+  end
+  local function wrappedLines(lines, font, x, y, width, c, gap)
+    for _,line in ipairs(lines) do
+      drawText(line,font,x,y,width,"left",c)
+      y=y+wrappedHeight(line,font,width)+(gap or 0)
+    end
+    return y
   end
 
   local function drawMart(mart)
@@ -446,15 +459,16 @@ return function(mod)
     local small=fontFor(17*scale)
     local priceFont=fontFor(22*scale)
     local moneyFont=fontFor(23*scale)
-    local w=math.min(sw*.82,1220*scale)
-    local h=math.min(sh*.82,720*scale)
+    local w=math.min(sw*.94,1220*scale)
+    local narrow=w<650*scale
+    local h=math.min(sh*.88,(narrow and 1000 or 720)*scale)
     local x=sx+(sw-w)/2
     local y=sy+(sh-h)/2
     panel(x,y,w,h,c,.97)
 
-    drawText("POKé MART",big,x+22*scale,y+14*scale,w*.45,"left",c.text)
-    drawText(("MONEY  ¥%d"):format(type(mart.money)=="function" and mart:money() or 0),
-      moneyFont,x+w*.52,y+18*scale,w*.43,"right",c.accent)
+    drawFittedText("POKé MART",30*scale,x+22*scale,y+14*scale,w*.45-22*scale,"left",c.text)
+    drawFittedText(("MONEY  ¥%d"):format(type(mart.money)=="function" and mart:money() or 0),
+      23*scale,x+w*.52,y+18*scale,w*.43-12*scale,"right",c.accent)
 
     local phase=tostring(mart.phase or "top")
     local contentY=y+65*scale
@@ -478,19 +492,19 @@ return function(mod)
           phase=="top" and i==(mart.topIndex or 1) and c.text or c.muted)
       end
       local lines=martMessageLines(mart)
-      panel(x+w*.41,contentY,w*.54,contentH*.60,c,.72)
-      for i,line in ipairs(lines) do
-        drawText(line,body,x+w*.44,contentY+22*scale+(i-1)*(body:getHeight()+8*scale),
-          w*.48,"left",c.text)
-      end
+      local mh=44*scale
+      for _,line in ipairs(lines) do mh=mh+wrappedHeight(line,body,w*.48)+8*scale end
+      panel(x+w*.41,contentY,w*.54,math.max(contentH*.60,mh),c,.72)
+      wrappedLines(lines,body,x+w*.44,contentY+22*scale,w*.48,c.text,8*scale)
     elseif phase=="sell" and mart.pack then
       local pack=mart.pack
       local rows=pack.rows or {}
       local idx=tonumber(pack.index) or 1
       local scroll=tonumber(pack.scroll) or 0
       local visible=7
-      local listW=w*.55
-      local rowH=contentH/visible
+      local listW=narrow and w or w*.55
+      local listH=narrow and math.min(contentH*.55,visible*math.max(42*scale,body:getHeight()+16*scale)) or contentH
+      local rowH=listH/visible
       for slot=1,visible do
         local i=scroll+slot
         local row=rows[i]
@@ -504,23 +518,26 @@ return function(mod)
         if i==idx then
           color(c.selected); G.rectangle("fill",x+22*scale,barY,listW-36*scale,barH,6,6)
         end
-        drawText(row.name or row.id or "ITEM",body,x+38*scale,
+        drawFittedText(row.name or row.id or "ITEM",23*scale,x+38*scale,
           centeredTextY(barY,barH,body),listW*.62,"left",
           i==idx and c.text or c.muted)
         drawText("x"..tostring(row.count or 0),priceFont,x+listW*.69,
           centeredTextY(barY,barH,priceFont),listW*.21,"right",
           i==idx and c.text or c.muted)
       end
-      drawText("SELL",big,x+listW,contentY,w-listW-30*scale,"center",c.accent)
-      drawText("Choose an item to sell.",body,x+listW+18*scale,
-        contentY+80*scale,w-listW-40*scale,"left",c.muted)
+      local rx=narrow and x+22*scale or x+listW+18*scale
+      local ry=narrow and contentY+listH+12*scale or contentY
+      local rw=narrow and w-44*scale or w-listW-40*scale
+      drawText("SELL",big,rx,ry,rw,"center",c.accent)
+      drawText("Choose an item to sell.",body,rx,ry+60*scale,rw,"left",c.muted)
     else
       local entries=mart.entries or {}
       local idx=tonumber(mart.index) or 1
       local scroll=tonumber(mart.scroll) or 0
-      local listW=w*.55
+      local listW=narrow and w or w*.55
       local visible=6
-      local rowH=contentH/visible
+      local listH=narrow and math.min(contentH*.48,visible*math.max(42*scale,body:getHeight()+16*scale)) or contentH
+      local rowH=listH/visible
       for slot=1,visible do
         local i=scroll+slot
         local entry=entries[i]
@@ -535,20 +552,27 @@ return function(mod)
           color(c.selected); G.rectangle("fill",x+22*scale,barY,listW-36*scale,barH,6,6)
         end
         local label=entry and entry.name or "CANCEL"
-        drawText(label,body,x+38*scale,
-          centeredTextY(barY,barH,body),listW*.62,"left",
+        local price=("¥%d"):format(entry and entry.price or 0)
+        local priceW=entry and priceFont:getWidth(price) or 0
+        local right=x+listW-18*scale
+        local nameW=math.max(1,right-priceW-12*scale-(x+38*scale))
+        drawFittedText(label,23*scale,x+38*scale,
+          centeredTextY(barY,barH,body),nameW,"left",
           i==idx and c.text or c.muted)
         if entry then
-          drawText(("¥%d"):format(entry.price or 0),priceFont,x+listW*.67,
-            centeredTextY(barY,barH,priceFont),listW*.22,"right",
+          drawText(price,priceFont,right-priceW,
+            centeredTextY(barY,barH,priceFont),priceW,"right",
             i==idx and c.text or c.muted)
         end
       end
 
       local selected=type(mart.selected)=="function" and mart:selected() or nil
-      local rx=x+listW+18*scale
-      local rw=w-listW-42*scale
-      drawText(selected and selected.name or "POKé MART",big,rx,contentY+8*scale,rw,"left",c.text)
+      local rx=narrow and x+22*scale or x+listW+18*scale
+      local rw=narrow and w-44*scale or w-listW-42*scale
+      local title=selected and selected.name or "POKé MART"
+      local titleY=(narrow and contentY+listH+12*scale or contentY)+8*scale
+      drawText(title,big,rx,titleY,rw,"left",c.text)
+      local descY=titleY+wrappedHeight(title,big,rw)+16*scale
       local desc=type(mart.description)=="function" and mart:description() or nil
       if type(desc)=="table" then desc=table.concat(desc," ") end
       if type(desc)=="string" then
@@ -558,7 +582,7 @@ return function(mod)
         -- showing "<NEXT>" to the player.
         desc=desc:gsub("<NEXT>","\n")
       end
-      drawText(desc or "Choose an item.",body,rx,contentY+70*scale,rw,"left",c.muted)
+      drawText(desc or "Choose an item.",body,rx,descY,rw,"left",c.muted)
 
       if phase=="buyQuantity" or phase=="sellQuantity" then
         local total=0
@@ -570,28 +594,27 @@ return function(mod)
             total=MartMenu.sellPrice(item.price,mart.qty)
           end
         end
-        panel(rx,contentY+190*scale,rw,100*scale,c,.86)
+        local qtyY=math.max(titleY+150*scale,
+          descY+wrappedHeight(desc or "Choose an item.",body,rw)+16*scale)
+        panel(rx,qtyY,rw,100*scale,c,.86)
         -- tap the left half of the box for -1, the right half for +1
-        DTap.add(rx,contentY+190*scale,rw*.5,100*scale,nil,"down")
-        DTap.add(rx+rw*.5,contentY+190*scale,rw*.5,100*scale,nil,"up")
-        drawText(("QTY   %d"):format(mart.qty or 1),body,
-          rx+18*scale,contentY+210*scale,rw*.42,"left",c.text)
-        drawText(("TOTAL   ¥%d"):format(total),body,
-          rx+rw*.44,contentY+210*scale,rw*.50,"right",c.accent)
+        DTap.add(rx,qtyY,rw*.5,100*scale,nil,"down")
+        DTap.add(rx+rw*.5,qtyY,rw*.5,100*scale,nil,"up")
+        drawFittedText(("QTY   %d"):format(mart.qty or 1),23*scale,
+          rx+12*scale,qtyY+12*scale,rw-24*scale,"left",c.text)
+        drawFittedText(("TOTAL   ¥%d"):format(total),23*scale,
+          rx+12*scale,qtyY+54*scale,rw-24*scale,"left",c.accent)
       end
     end
 
     if mart.message or mart.confirm then
       local lines=martMessageLines(mart)
-      local dh=math.max(140*scale,body:getHeight()*2+46*scale)
+      local textH=0
+      for _,line in ipairs(lines) do textH=textH+wrappedHeight(line,body,w-84*scale)+8*scale end
+      local dh=math.max(140*scale,textH+40*scale)
       local dy=y+h-dh-18*scale
       panel(x+18*scale,dy,w-36*scale,dh,c,.99)
-      for i,line in ipairs(lines) do
-        if i>2 then break end
-        drawText(line,body,x+42*scale,
-          dy+20*scale+(i-1)*(body:getHeight()+8*scale),
-          w-84*scale,"left",c.text)
-      end
+      wrappedLines(lines,body,x+42*scale,dy+20*scale,w-84*scale,c.text,8*scale)
       if mart.confirm and type(mart.yesNoVisible)=="function" and mart:yesNoVisible() then
         local cw=250*scale; local ch=104*scale
         local cx=x+w-cw-32*scale; local cy=dy-ch-10*scale

@@ -29,7 +29,14 @@ return function(host)
     local gap = math.max(4, math.min(W, H) * .008)
     local size = math.min(80, math.max(44, math.min(W, H) * .075), (W * .75) / math.max(1, #actions) - gap)
     local width = #actions * (size + gap) - gap
-    local x, y = W - width - gap * 2, math.max(gap * 2, H * .10)
+    local safeTop = 0
+    if love.window and type(love.window.getSafeArea) == "function" then
+      local _, top = love.window.getSafeArea()
+      safeTop = tonumber(top) or 0
+    end
+    -- Keep clear of the launcher's top-right menu without tying placement
+    -- to tall-screen height (10% was 252px down on the Fold cover).
+    local x, y = W - width - gap * 2, safeTop + math.max(gap * 2, math.min(W,H) * .055)
     local cells = {}
     for i, a in ipairs(actions) do
       cells[i] = { x = x + (i - 1) * (size + gap), y = y, w = size, h = size, action = a }
