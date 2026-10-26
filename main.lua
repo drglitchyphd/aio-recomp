@@ -1088,6 +1088,12 @@ return function(mod)
   end
 
   -- Per-screen overworld ZOOM (outer / inner screen of a Fold).
+  local pagesFactory = loadOwn("lib/gen2_aio/modern_pages.lua")
+  if type(pagesFactory) == "function" then pagesFactory({ mod = mod }) end
+  local tradeFactory = loadOwn("lib/gen2_aio/modern_trade.lua")
+  if type(tradeFactory) == "function" then tradeFactory({ mod = mod }) end
+  local callerFactory = loadOwn("lib/gen2_aio/modern_caller.lua")
+  if type(callerFactory) == "function" then callerFactory({ mod = mod }) end
   local zoomFactory = loadOwn("lib/gen2_aio/screen_zoom.lua")
   if type(zoomFactory) == "function" then
     local okZ, err = pcall(zoomFactory, { mod = mod })

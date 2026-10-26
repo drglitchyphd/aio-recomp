@@ -2000,6 +2000,29 @@ return function(mod)
       text(tostring(id):upper(),big,x+pad,cy,w-pad*2,"center",c.text)
     end
 
+    -- Call/submenu state keeps its native input handling; draw its own text
+    -- and choices over the phone list rather than leaving an invisible menu.
+    if s.call then
+      local msg=tostring(s.call.text or "Calling...")
+      local _,wrapped=body:getWrap(msg,w-pad*4)
+      local ch=math.max(body:getHeight()*3,#wrapped*body:getHeight()+pad*2)
+      panel(x+pad,y+h-footerH-ch-pad,w-pad*2,ch,c,.99)
+      text(msg,body,x+pad*2,y+h-footerH-ch,w-pad*4,"left",c.text)
+    elseif s.phoneSubmenu then
+      local definition=Pokegear.PHONE_SUBMENUS and Pokegear.PHONE_SUBMENUS[s.phoneSubmenu]
+      if definition then
+        local rh=math.max(44*scale,body:getHeight()+16*scale)
+        local cw=math.min(w-pad*2,360*scale)
+        local cx,cy=x+w-cw-pad,y+h-footerH-rh*#definition.entries-pad*2
+        panel(cx,cy,cw,rh*#definition.entries+pad,c,.99)
+        for i,label in ipairs(definition.entries) do
+          local yy=cy+pad/2+(i-1)*rh
+          if i==(s.phoneSubmenuCursor or 0)+1 then color(c.selected);G.rectangle("fill",cx+pad/2,yy,cw-pad,rh-2,4,4) end
+          text(label,body,cx+pad,yy+(rh-body:getHeight())/2,cw-pad*2,"left",c.text)
+          KimTap.add(cx,yy,cw,rh,function(st) st.phoneSubmenuCursor=i-1 end,"a")
+        end
+      end
+    end
     local fy=y+h-footerH
     color(c.divider,nil,true); G.rectangle("fill",x+pad,fy,w-pad*2,1)
     local footerText=(s.action=="fly") and "B RETURN    < > REGION" or "B RETURN    < > CARD"
@@ -3291,7 +3314,10 @@ return function(mod)
         end
         local tapKinds={titlemenu=true,centerpc=true,pc=true,genericmenu=true,save=true,options=true,gear=true,boxpc=true,modoptions=true,kimsettings=true}
         if tapKinds[kind] then KimTap.begin(top) end
-        G.push("all"); G.origin(); pcall(renderers[kind],top); G.pop()
+        G.push("all"); G.origin()
+        local drawn,why=pcall(renderers[kind],top)
+        G.pop()
+        if not drawn and type(mod._kimArenaDiag)=="function" then mod._kimArenaDiag("modern menu",tostring(why)) end
         if tapKinds[kind] then KimTap.finish() end
       end
       return unpack(result)

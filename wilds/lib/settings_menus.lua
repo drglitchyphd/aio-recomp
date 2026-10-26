@@ -55,6 +55,22 @@ local function optSet(mod, key, value)
   return false
 end
 
+local function modernMenu(menu,title,items)
+  if not menu then return menu end
+  function menu:_aioModernData()
+    local rows={}
+    for i,item in ipairs(items) do
+      local index=i
+      rows[#rows+1]={label=item.label,value=item.right,
+        select=function(st) st.index=index end}
+    end
+    return {title=title,rows=rows,selected=self.index or 1,
+      help="A chooses or cycles a setting. LEFT/RIGHT change stepper values.",
+      buttons={{button="left"},{button="up"},{button="down"},{button="right"},{button="b"}}}
+  end
+  return menu
+end
+
 function SettingsMenus.new(mod, logic, follower, ambient)
   local self = setmetatable({}, SettingsMenus)
   self.mod = mod
@@ -147,7 +163,7 @@ function SettingsMenus:_openChoice(game, title, choices, current, apply)
     }
   end
   items[#items + 1] = { label = "CANCEL", value = nil }
-  return mod.ui.ListMenu.new(game, title, items, {
+  return modernMenu(mod.ui.ListMenu.new(game, title, items, {
     onChoose = function(item, menu)
       -- Keep 0 / false: only nil means CANCEL.
       if item and item.value ~= nil then
@@ -156,7 +172,7 @@ function SettingsMenus:_openChoice(game, title, choices, current, apply)
       end
       if menu and menu.close then menu:close() end
     end,
-  })
+  }),title,items)
 end
 
 --- Create a ListMenu where stepper rows cycle values on left/right arrow keys.
@@ -179,6 +195,7 @@ function SettingsMenus:_makeStepperMenu(game, title, items, mod)
       end
     end,
   })
+  modernMenu(menu,title,items)
 
   if not (menu and type(menu.update) == "function") then
     return menu

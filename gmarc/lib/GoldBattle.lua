@@ -165,7 +165,13 @@ function B.render(s,winW,winH)
  end
  if s.anim and s.animView or s.expBurst then
   textures.fx=capture(e,'fx',function()
-   if s.anim and s.animView then s.animView:drawObjects(s.anim,s.battle)end
+   if s.anim and s.animView then
+    s.anim._aioCaptureBall=true
+    local okBall,errBall=pcall(s.animView.drawObjects,s.animView,s.anim,s.battle)
+    s.anim._aioCaptureBall=nil
+    if not okBall then error(errBall,0)end
+    textures.ball=s.anim._aioHdBall
+   end
    if s.expBurst then s:drawExpBurst()end
   end)
  end

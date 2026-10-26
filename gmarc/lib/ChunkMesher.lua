@@ -1163,6 +1163,11 @@ local function abandonJob(job)
   if job.upload then releaseMesh(job.upload);job.upload=nil end
 end
 local function finishJob(job, ok, err)
+  local d=V.mod and rawget(V.mod,"_kimArenaDiag")
+  if d and job.started then
+    d("voxel build",("%s %s: %s, %.0f ms elapsed"):format(tostring(job.id),job.slot,
+      ok and (job.cacheHit and "disk" or "cold") or "FAILED",(clock()-job.started)*1000))
+  end
   abandonJob(job)
   jobIndex[jobKey(job.id, job.slot)] = nil
   for i, j in ipairs(jobs) do
@@ -1370,6 +1375,7 @@ end
 -- job was queued under -- invalidate/evict bump it to cancel in-flight
 -- work whose inputs went stale.
 local function runJob(job)
+  job.started=clock()
   local map = job.map
   local c = entry(job.id)
   -- gen2-aio: restore from the disk cache when this exact build exists
@@ -1386,6 +1392,7 @@ local function runJob(job)
         local okR, mesh, water = pcall(restore, blob, map, c, job)
         pcall(blob.release, blob)
         if okR and mesh then
+          job.cacheHit=true
           if (gen[job.id] or 0) ~= job.gen then
             releaseMesh(mesh)
             if water and water.release then pcall(water.release, water) end
@@ -1482,11 +1489,11 @@ end
 -- popping in one frame later. `covered` says the world pass is hidden
 -- this frame (a warp's fade, a menu): nothing visible can hitch, so the
 -- slice opens up and a door fade swallows most of a destination build.
-local URGENT_SLICE = 0.012
-local IDLE_SLICE = 0.005
+local URGENT_SLICE = 0.004
+local IDLE_SLICE = 0.0015
 local COVERED_SLICE = 0.030
 
-function ChunkMesher.pump(covered)
+local function pump(covered)
   if #jobs == 0 then return end
   local pick = jobs[1]
   for _, j in ipairs(jobs) do
@@ -1521,6 +1528,18 @@ function ChunkMesher.pump(covered)
       end
     end
   end
+end
+
+local pumpPeak, pumpOverruns = 0, 0
+function ChunkMesher.pump(covered)
+  if #jobs==0 then return end
+  local started=clock()
+  pump(covered)
+  local ms=(clock()-started)*1000
+  pumpPeak=math.max(pumpPeak,ms)
+  if not covered and ms>16.7 then pumpOverruns=pumpOverruns+1 end
+  local d=V.mod and rawget(V.mod,"_kimArenaDiag")
+  if d then d("voxel queue",("%d pending; slice %.1f ms; peak %.1f; >16ms %d"):format(#jobs,ms,pumpPeak,pumpOverruns)) end
 end
 
 -- Meshes for `map`, built SYNCHRONOUSLY on first use -- the historical

@@ -495,6 +495,30 @@ return function(host)
         end
       end
     end
+    -- These are distinct encounter methods, not grass encounters. Chance is
+    -- conditional on an encounter: trees also have a coordinate/OT-ID gate,
+    -- and rocks have a separate 40% gate in the engine.
+    local function addSet(setName, key, title)
+      local set = tables.treeSets and tables.treeSets[setName]
+      local rows = set and set[key]
+      if type(rows) ~= "table" then return end
+      local list, idx = {}, {}
+      for _,row in ipairs(rows) do
+        local pct = tonumber(row.chance) or 0
+        if pct > 0 then addMon(list,idx,row.species,pct,row.level) end
+      end
+      if #list > 0 then sections[#sections+1] = {title=title,mons=list} end
+    end
+    local tree = tables.trees and tables.trees[map.id]
+    local Enc = req("src.battle.gen2.Encounter")
+    local GV = req("src.core.GameVersion")
+    local engine = GV and type(GV.engine)=="function" and GV.engine(game.save and game.save.version)
+    if tree and Enc and Enc.treeSetUsable(tree, engine) then
+      addSet(tree,"common","HEADBUTT · COMMON TREES")
+      addSet(tree,"rare","HEADBUTT · RARE TREES")
+    end
+    local rock = tables.rocks and tables.rocks[map.id]
+    if rock then addSet(rock,"common","ROCK SMASH") end
     return sections
   end
 

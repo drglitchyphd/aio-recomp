@@ -689,7 +689,12 @@ return function(mod)
   local LIVE = Runtime._qolTogglesLive or {}
   Runtime._qolTogglesLive = LIVE
   LIVE.get, LIVE.exports = sessionGet, mod.exports
+  LIVE.diag = mod._kimArenaDiag
+  LIVE.lastMachine = nil
   local function get(key) return LIVE.get(key) end
+  local function nurseDiag(key, text)
+    if type(LIVE.diag) == "function" then LIVE.diag("nurse "..key,text) end
+  end
 
   -- BADGELESS FLY: the engine keeps the destination list separate from the
   -- badge/field-move eligibility gate.  Give the native picker a temporary
@@ -2085,7 +2090,9 @@ return function(mod)
   mod.exports.turnAround = function(player)
     if not player or not player.facing then return nil end
     local back = REVERSE_FACING[player.facing] or "down"
-    player.facing = back
+    if type(player.stopForEvent) == "function" then player:stopForEvent() end
+    if type(player.scriptFace) == "function" then player:scriptFace(back)
+    else player.facing = back end
     return back
   end
 
@@ -2233,7 +2240,12 @@ return function(mod)
       local spriteName = tostring(def.sprite or npc.spriteId or npc.sprite or ""):upper()
       local scriptName = tostring(def.scriptKey or def.script or "")
       local objName = tostring(def.name or ""):upper()
+      local scripts = world.stdScripts and world.stdScripts.scripts
+      local nurseScript = scripts and scripts.PokecenterNurseScript
+      local knownKey = type(nurseScript) == "table" and nurseScript.key
+      nurseDiag("target",spriteName.." / "..scriptName)
       if scriptName == "PokecenterNurseScript"
+         or (knownKey and scriptName == tostring(knownKey))
          or spriteName == "SPRITE_NURSE"
          or spriteName:find("NURSE") ~= nil
          or objName:find("NURSE") ~= nil then
@@ -4030,23 +4042,29 @@ return function(mod)
       if not World2._qolTogglesTurnAwayInstalled then
         World2._qolTogglesTurnAwayInstalled = true
         World2.startHealMachineAnim = function(self, animType, onDone)
-          LIVE.lastMachine = { world = self, type = animType }
+          LIVE.lastMachine = { world = self, type = tonumber(animType) or 0, vm = self.vm }
+          nurseDiag("machine","type "..tostring(animType))
           return vanillaMachine(self, animType, onDone)
         end
       end
       -- the event bus is rebuilt every session: subscribe every time
-      mod.events:on("script.started", function()
-        LIVE.lastMachine = nil
+      mod.events:on("script.started", function(ev)
+        if not (ev and ev.ctx and ev.ctx.kind == "callback") then LIVE.lastMachine = nil end
       end)
       mod.events:on("script.ended", function(ev)
         local ctx, hit = ev and ev.ctx, LIVE.lastMachine
+        -- Nested map callbacks have their own script.ended; they must not
+        -- consume a pending nurse farewell belonging to the parent VM.
+        if ctx and ctx.kind == "callback" then return end
+        if hit and ctx and ctx.vm and hit.vm ~= ctx.vm then return end
         LIVE.lastMachine = nil
+        nurseDiag("ended",tostring(ev and ev.completed).." / "..tostring(ctx and ctx.scriptKey))
         if not (ev and ev.completed and ctx and ctx.kind ~= "callback")
            or not hit or hit.type ~= 0 then
           return
         end
         if get("turn_away_nurse") then
-          mod.exports.turnAround(hit.world and hit.world.player)
+          LIVE.exports.turnAround(hit.world and hit.world.player)
         end
       end)
       return
@@ -4086,12 +4104,17 @@ return function(mod)
         if vanillaInteract then
           World2._qolTogglesQuickNurseInstalled = true
           World2.interactBody = function(self)
+            nurseDiag("interact","quick "..tostring(get("quick_nurse"))..", turn "..tostring(get("turn_away_nurse")))
+            if self._aioQuickNurse then return true end
             if get("quick_nurse") then
-              local npc = mod.exports.nurseAt(self)
+              local npc = LIVE.exports.nurseAt(self)
               -- the heal machine does not make the world busy: another A
               -- press restarted the animation and dropped its onDone
               if npc and self.healAnim then return true end
               if npc then
+                nurseDiag("quick","healing")
+                if self.player.stopForEvent then self.player:stopForEvent() end
+                self.turningDirection = nil
                 if self.vm then
                   self.vm.lastTalked = (npc.def and npc.def.index or 0) + 1
                 end
@@ -4116,12 +4139,15 @@ return function(mod)
                   self:healParty()
                 end
                 if type(self.startHealMachineAnim) == "function" then
+                  self._aioQuickNurse = true
                   if npc then npc.facing = "left" end
                   self:startHealMachineAnim(0, function()
                     if npc and type(npc.facePlayer) == "function" then
                       npc:facePlayer(self.player)
                     end
-                    mod.exports.turnAround(self.player)
+                    self._aioQuickNurse = nil
+                    LIVE.exports.turnAround(self.player)
+                    nurseDiag("quick","complete; facing "..tostring(self.player.facing))
                     self.talkNpc = nil
                   end)
                 else
@@ -4133,6 +4159,23 @@ return function(mod)
             end
             return vanillaInteract(self)
           end
+          -- Run before facade wrappers (touch/easy interactions/followers),
+          -- which can consume A without ever reaching interactBody.
+          local originalInteract = World2.interact
+          if type(originalInteract) == "function" then
+            World2.interact = function(self,...)
+              if self._aioQuickNurse then return true end
+              if get("quick_nurse") and LIVE.exports.nurseAt(self) then return self:interactBody() end
+              return originalInteract(self,...)
+            end
+          end
+          local originalBusy = World2.busy
+          if type(originalBusy) == "function" then
+            World2.busy = function(self,...)
+              return self._aioQuickNurse == true or originalBusy(self,...)
+            end
+          end
+          nurseDiag("install","Gen2 interact + body installed")
         end
       end
     end

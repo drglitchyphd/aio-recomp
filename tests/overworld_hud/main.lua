@@ -76,7 +76,8 @@ function love.load()
   for _,r in ipairs(l.cells) do check(r.x>=0 and r.x+r.w<=d[1] and r.y+r.h<=d[2],'buttons fit viewport') end
   local c=love.graphics.newCanvas(d[1],d[2]); love.graphics.setCanvas(c); love.graphics.clear(.12,.20,.18,1)
   hud.draw(game); love.graphics.setCanvas()
-  local png=c:newImageData():encode('png'); local f=assert(io.open('/tmp/aio-hud-'..d[1]..'x'..d[2]..'.png','wb')); f:write(png:getString()); f:close()
+  check(l.y<math.min(d[1],d[2])*.10,'HUD stays near the safe top on tall screens')
+  local png=c:newImageData():encode('png'); local f=assert(io.open((os.getenv('AIO_TEST_OUTPUT') or os.getenv('TEMP') or '/tmp')..'/aio-hud-'..d[1]..'x'..d[2]..'.png','wb')); f:write(png:getString()); f:close()
  end
  print('Overworld HUD: '..count..' checks PASS; four preview renders saved')
  love.graphics.getDimensions=actualDimensions

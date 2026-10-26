@@ -11,7 +11,11 @@ return function(host)
   local okV, View = pcall(require, "src.ui.gen2.BattleAnimView")
   local okB, BS = pcall(require, "src.ui.gen2.BattleState")
   if not (okV and type(View) == "table" and type(View.drawObjects) == "function") then return nil end
-  if View._kimArenaHdBall then return View._kimArenaHdBall end
+  if View._kimArenaHdBall then
+    View._kimArenaHdBall.live.mod = mod
+    return View._kimArenaHdBall
+  end
+  local live = { mod = mod }
 
   local FILES = { POKE_BALL = "poke", GREAT_BALL = "great", ULTRA_BALL = "ultra",
     MASTER_BALL = "master", LEVEL_BALL = "level", LURE_BALL = "lure", MOON_BALL = "moon",
@@ -23,7 +27,7 @@ return function(host)
     local hit = images[name]
     if hit ~= nil then return hit or nil, quads[name] end
     local ok, img = pcall(function()
-      local bytes = mod:read("assets/gen2_aio/balls/" .. name .. ".png")
+      local bytes = live.mod:read("assets/gen2_aio/balls/" .. name .. ".png")
       local fd = love.filesystem.newFileData(bytes, name .. ".png")
       local i = love.graphics.newImage(love.image.newImageData(fd))
       i:setFilter("nearest", "nearest")
@@ -38,7 +42,7 @@ return function(host)
   end
 
   local enabled = function()
-    local ok, v = pcall(mod.options.get, mod.options, "hdBall")
+    local ok, v = pcall(live.mod.options.get, live.mod.options, "hdBall")
     return not (ok and v == false)
   end
 
@@ -66,6 +70,7 @@ return function(host)
 
   local origDraw = View.drawObjects
   View.drawObjects = function(self, runner, battle, ...)
+    if runner then runner._aioHdBall = nil end
     if not (enabled() and runner and type(runner.oam) == "function") then
       return origDraw(self, runner, battle, ...)
     end
@@ -82,17 +87,26 @@ return function(host)
       end
     end
     if x0 == math.huge then return origDraw(self, runner, battle, ...) end
+    local img, quad = icon(currentBall)
+    -- An unavailable asset keeps the native ball visible.
+    if not img then return origDraw(self, runner, battle, ...) end
     local own = rawget(runner, "oam")
     runner.oam = function() return keep end
     local r = { pcall(origDraw, self, runner, battle, ...) }
     runner.oam = own
-    local img, quad = icon(currentBall)
     if img then
       local G = love.graphics
       local cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
       -- 0.9.24: 11px, not the GB tiles' 16: next to KIM's HD Pokemon (drawn
       -- well inside Crystal's 56px pic frame) a 16px ball read as huge
-      local size = 11
+      local size = 8
+      if runner._aioCaptureBall then
+        -- The 3D effect card can shear and stretch. Its ball is composited
+        -- separately at the projected center with one uniform screen size.
+        runner._aioHdBall = { image=img, quad=quad, x=cx, y=cy, size=size }
+        if not r[1] then error(r[2],0) end
+        return unpack(r,2)
+      end
       local prevShader = G.getShader and G.getShader()
       if G.setShader then G.setShader() end
       G.setColor(1, 1, 1, 1)
@@ -108,8 +122,8 @@ return function(host)
         local tsx = math.sqrt((bx - ax) ^ 2 + (by - ay) ^ 2)
         local tsy = math.sqrt((qx - ax) ^ 2 + (qy - ay) ^ 2)
         if tsx > 0 and tsy > 0 then
-          local k = math.max(1, math.floor(size * math.sqrt(tsx * tsy) / 18 + 0.5))
-          sx, sy = k / tsx, k / tsy
+          local pixels = size * math.min(tsx,tsy)
+          sx, sy = pixels / (18*tsx), pixels / (18*tsy)
         end
       end)
       G.draw(img, quad, cx, cy, 0, sx, sy, 9, 9)
@@ -119,7 +133,7 @@ return function(host)
     return unpack(r, 2)
   end
 
-  local api = { icon = icon }
+  local api = { icon = icon, live = live }
   View._kimArenaHdBall = api
   if log then log("info", "Gen2-AIO: HD Poke Balls installed") end
   return api
