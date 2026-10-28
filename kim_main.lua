@@ -506,7 +506,7 @@ return function(mod)
         { "OFF", "off" }, { "LOW", "low" }, { "MEDIUM", "medium" },
         { "HIGH", "high" }, { "ULTRA", "ultra" },
       },
-      description = "Ground-contact shadow quality for Kanto in Motion HD battle Pokemon. Uses the same shadow system as Red/Blue/Yellow.",
+      description = "Ground-contact shadow quality for Kanto in Motion HD battle Pokemon. OFF hides them; higher settings add softer edges.",
     }
     optionSchema[#optionSchema + 1] = {
       key = "battleShadowOpacity", label = "SHADOW OPACITY", type = "choice",
@@ -7715,6 +7715,21 @@ return function(mod)
   mod.hooks:wrap("ui.options.rows", function(next, game, rows)
     local out = next(game, rows)
     if type(out) ~= "table" then return out end
+    -- 0.9.66: the hub places ASSET MANAGER on its ADVANCED page (KIM's own
+    -- screen is no longer a hub row: its settings sit on the hub's pages)
+    if assetManager and type(assetManager.open) == "function" then
+      out[#out + 1] = {
+        id = "gen2-aio:asset_manager", label = "ASSET MANAGER",
+        value = function()
+          if type(assetManager.statusLabel) == "function" then
+            local okS, s = pcall(assetManager.statusLabel, assetManager)
+            if okS and s then return s end
+          end
+          return "OPEN"
+        end,
+        activate = function(g) assetManager.open(g or game) end,
+      }
+    end
     if submenuReady then
       return insertOpenRow(out, {
         id = "gen2-aio:settings_open",

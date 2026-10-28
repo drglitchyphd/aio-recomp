@@ -150,6 +150,12 @@ function love.load()
       {label="TEXT SPEED",text=value("FAST")},{label="BATTLE SCENE",text=value("ON")},
       {label="UI THEME",text=value("DEFAULT")},{label="FONT SCALE",text=value("100%")},
       {label="QUICK MENU",group=true},{label="CANCEL",cancel=true}}},Opt)end},
+    -- 0.9.66: hub pages show the selected row's help above the footer
+    {"options-help",function()return setmetatable({title="QUALITY OF LIFE",kimSubtitle="CATEGORY",index=2,scroll=0,rows={
+      {label="SPRINT",text=value("ON"),help="Run faster on foot while you hold the sprint button."},
+      {label="REPELS",text=value("ASK"),help="When a REPEL wears off. ASK: offer to use another. AUTO: use the next one from your bag by itself. INFINITE: a used REPEL never wears off (bends Nuzlocke rules). OFF: Crystal's own message only."},
+      {label="QUICK NURSE",text=value("OFF"),help="Skip the nurse's speech. Bends Nuzlocke rules."},
+      {label="BACK",cancel=true}}},Opt)end},
     {"quick",function()return setmetatable({title="QUICK MENU",kimSubtitle="HOLD START",index=1,scroll=0,rows={
       {label="POKeGEAR",group=true},{label="FLY",group=true},{label="AREA DEX",group=true},
       {label="DAY-CARE",group=true},{label="TODAY",group=true},{label="QUICK HEAL",group=true}}},Opt)end},

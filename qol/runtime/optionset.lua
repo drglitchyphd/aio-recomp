@@ -213,6 +213,13 @@ function OptionSet.new()
   -- feature that divided by a garbage string would be a crash out in the
   -- overworld.  Out-of-vocabulary reads fall back to the row default.
   function self.read(mod, key)
+    -- gen2-aio 0.9.66: the host may hold a row (a setting it merged into
+    -- one of its own, or dropped): its answer wins over anything stored
+    local hostLock = type(mod) == "table" and rawget(mod, "_kimArenaQolLock")
+    if type(hostLock) == "function" then
+      local okL, locked = pcall(hostLock, key)
+      if okL and locked ~= nil then return locked end
+    end
     local row = self.byKey[key]
     local storedUnder = self.storageId[key] or mod.id
 

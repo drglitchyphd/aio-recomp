@@ -1,10 +1,50 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.65)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.66)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.66 (2026-10-28)
+
+Settings overhaul. The decisions are in docs/settings_audit.md.
+
+- `lib/gen2_aio/hub.lua`:
+  - `SECTIONS` is an explicit, ordered list of keys per page. Substring
+    RULES are gone.
+  - An entry is a key (a component's own row if one exists, otherwise a row
+    built from the merged schema), `{id}` / `{id, prefix}`,
+    `{qol = feature}` (opens a Gen1Wild QOL feature screen), `{modList}` or
+    `{rest}`.
+  - Rows no page names land on ADVANCED. `tests/settings_overhaul.lua`
+    asserts that none do.
+  - Visibility comes from `_kimArenaRowHidden`, which now includes main.lua
+    `DEPENDS`, and from the schema's `visible_if`.
+  - Each step rebuilds the open page in place and keeps the cursor on the
+    same row.
+- Writes go through each component's own path:
+  - QOL keys use `mod.exports.qol.optionWrite` and `optionValue`. The keys
+    are recorded as `_kimArenaQolKeys`.
+  - `wok_` keys use the new `mod.exports.wilds.setOption`.
+  - Everything else uses the ingame_options path.
+- main.lua `DERIVED_OPT` wraps `realOptions.get`. `spriteAnim` answers
+  `animate` / `spriteAnimation`, and `repels` answers the repel rows. Neither
+  new row has a default, so the old keys migrate.
+- QoL Toggles:
+  - `_kimArenaQtFilter` is applied last in `sessionGet`. It handles FORCED,
+    DERIVED (repel, auto_repel, exp_bar) and CYCLES decoding, which fixed
+    the stored "off" multiplier.
+  - quick_ssanne and bulk_coins are FORCED false.
+  - unlimited_tms and forgettable_hms are unforced, default false, and
+    labelled REUSABLE TMS / FORGET HM MOVES.
+- Gen1Wild QOL: `optionset.read` honours `_kimArenaQolLock`. REPEL PROMPT
+  follows REPELS, and rematch_scale is held false.
+- `perfectDVSet` keeps the shiny pattern, gender (lowers ATK until
+  `Mon.gender` matches) and Unown's middle bits. The HP DV comes from the
+  low bits.
+- `drawOptions` draws the selected row's `help` in a band above the footer.
+- KIM adds an `gen2-aio:asset_manager` row for ADVANCED.
 
 ## 0.9.65 (2026-10-28)
 

@@ -549,3 +549,16 @@ How hard the game is, and what you can catch.
 ## Files used
 
 - Harness and raw dumps: `/tmp/claude-0/-home-user-aio-recomp/93d24e30-e7a0-544d-b874-3287c2b09229/scratchpad/audit/` (`h.lua`, `dump.lua`, `qtcheck.lua`, `out.txt`, `refs_detail.txt`).
+
+## Decisions (2026-10-28)
+
+1. Gen 2 REUSABLE TMS and FORGET HM MOVES: fix them, OFF by default. Unforce `unlimited_tms` / `forgettable_hms` and drop the dead Gen1Wild rows.
+2. ANIMATION and SPRITE ANIMATION become one setting: ON / BATTLE ONLY / OFF.
+3. Drop Gen1Rematch MATCH LEVELS (`rematch_scale`). TRAINER LEVELS covers rematches.
+4. MOD LIST moves to ADVANCED.
+5. One REPELS setting: OFF / ASK / AUTO / INFINITE, default ASK.
+6. Easy-mode toggles: warn in the help text that they bend Nuzlocke rules. PERFECT DVS maxes stats but keeps the shiny, gender and Unown DV bits.
+7. Remove QUICK SHIP and BULK COINS.
+8. HUD COLOR, EXP BAR and POKéDEX INDICATOR are visible only when BATTLE HUD = NATIVE.
+9. Use the 9 pages as proposed. The EXP and money multipliers go under GAMEPLAY. NUZLOCKE & RULES keeps its own page.
+10. Each component on/off switch is the first row of its own page, marked "(next launch)".

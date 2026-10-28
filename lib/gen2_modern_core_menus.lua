@@ -2245,7 +2245,13 @@ return function(mod)
     local titleBlockH=math.max(big:getHeight(),small:getHeight())
     local top=y+math.max(86*scale,18*scale+titleBlockH+14*scale)
     local footerH=chromeFooterH()+math.max(4,6*scale)
-    local listH=math.max(1,h-(top-y)-footerH)
+    -- gen2-aio 0.9.66: hub pages carry each row's help; the selected row's
+    -- shows in a band above the footer (up to three lines, shrinking to fit)
+    local helpBand=0
+    for _,r in ipairs(rows) do
+      if type(r)=="table" and type(r.help)=="string" then helpBand=font(23*scale):getHeight()*3+18*scale; break end
+    end
+    local listH=math.max(1,h-(top-y)-footerH-helpBand)
     local desiredVisible=math.max(5,math.min(9,math.floor(7/den+.5)))
     local minRowH=math.max(body:getHeight(),valueFont:getHeight())+math.max(6,9*scale)
     local fitVisible=math.max(1,math.floor(listH/math.max(1,minRowH)))
@@ -2298,13 +2304,31 @@ return function(mod)
       end
     end
 
+    if helpBand>0 then
+      local bandY=y+h-footerH-helpBand
+      color(c.divider)
+      G.rectangle("fill",x+26*scale,bandY+4*scale,w-52*scale,1)
+      local help=selected and type(selected.help)=="string" and selected.help or ""
+      if help~="" then
+        local hw=w-64*scale
+        local px=23*scale
+        local hf=font(px)
+        for _=1,6 do
+          local okW,_,lines=pcall(hf.getWrap,hf,help,hw)
+          if not okW or #lines<=3 or px<=12*scale then break end
+          px=px*.9; hf=font(px)
+        end
+        text(help,hf,x+32*scale,bandY+12*scale,hw,"left",c.muted)
+      end
+    end
+
     chromeFooter(x,y,w,h,c,nil,hint)
 
     if scroll>0 then
       drawVerticalArrow(x+w-30*scale,top+4*scale,math.max(12*scale,body:getHeight()*.65),"up",c.accent)
     end
     if scroll+visible<#rows then
-      drawVerticalArrow(x+w-30*scale,y+h-footerH-42*scale,math.max(12*scale,body:getHeight()*.65),"down",c.accent)
+      drawVerticalArrow(x+w-30*scale,y+h-footerH-helpBand-42*scale,math.max(12*scale,body:getHeight()*.65),"down",c.accent)
     end
   end
 

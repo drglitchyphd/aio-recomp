@@ -561,6 +561,11 @@ return function(mod)
   mod.exports.follower = follower
   mod.exports.ambient = ambient
   mod.exports.handleOptionsChanged = handleOptionsChanged
+  -- gen2-aio 0.9.66: the hub's WILD POKEMON page writes Wilds settings
+  -- through the same path as Wilds' own screens (live respawn / sprite swap)
+  mod.exports.setOption = function(key, value, game)
+    return settingsMenus:_setOption(key, value, game)
+  end
   mod.exports.isBattleableWild = Config.isBattleableWild
   mod.exports.getActiveFollowerMon = function(game, needHealthy)
     return follower:getActiveFollowerMon(game, needHealthy ~= false)
