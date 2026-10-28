@@ -61,7 +61,14 @@ return function(host)
       radius = math.min(clockPx * .3, step * .36)
     end
     statusW = math.min(W - gap * 4, statusW)
-    return { cells = cells, x = x, y = y, w = width, size = size, gap = gap, W = W, H = H,
+    -- 0.9.62: the clock + party panel is a tap target too (opens POKeMON)
+    local statusY = y + size + gap
+    local statusH = font(clockPx):getHeight() + padding * 2
+    local targets = {}
+    for i, c in ipairs(cells) do targets[i] = c end
+    targets[#targets + 1] = { x = W - math.min(W - gap * 4, statusW) - gap * 2, y = statusY,
+      w = math.min(W - gap * 4, statusW), h = statusH, action = { id = "party", label = "PARTY" } }
+    return { cells = cells, targets = targets, x = x, y = y, w = width, size = size, gap = gap, W = W, H = H,
       clockPx = clockPx, padding = padding, radius = radius, step = step, clockW = clockW,
       statusW = statusW, statusX = W - statusW - gap * 2 }
   end
@@ -190,7 +197,7 @@ return function(host)
       else
         local l = M.layout(game)
         local match
-        for _, r in ipairs(l and l.cells or {}) do
+        for _, r in ipairs(l and l.targets or {}) do
           if r.action.id == p.id and l.W == p.W and l.H == p.H then match = r end
         end
         if not match or not contains(match, ev.x, ev.y) then p.cancelled = true end
@@ -206,7 +213,7 @@ return function(host)
       pointers[ev.id] = { wheel = true, game = game }; q.wheelHover(ev.x, ev.y); return true
     end
     local l = M.layout(game)
-    for _, r in ipairs(l and l.cells or {}) do
+    for _, r in ipairs(l and l.targets or {}) do
       if contains(r, ev.x, ev.y) then
         pointers[ev.id] = { id = r.action.id, W = l.W, H = l.H, game = game }
         return true

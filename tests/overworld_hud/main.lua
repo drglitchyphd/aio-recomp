@@ -45,6 +45,12 @@ function love.load()
  game.world.scriptBusy=true;check(hud.layout(game)==nil,'script activity hides HUD');game.world.scriptBusy=nil
  game.world.choicebox={};check(hud.layout(game)==nil,'choice box hides HUD');game.world.choicebox=nil
  tap('gear'); check(gear=='pokegear','gear opens native menu'); top=nil
+ local pr; for _,t in ipairs(hud.layout(game).targets) do if t.action.id=='party' then pr=t end end
+ check(pr and pr.y>hud.layout(game).y,'clock/party panel is a tap target')
+ gear=nil; send('pressed',pr.x+pr.w-6,pr.y+pr.h/2); send('released',pr.x+pr.w-6,pr.y+pr.h/2)
+ check(gear=='pokemon','tapping the party dots opens POKeMON'); top=nil; gear=nil
+ send('pressed',pr.x+6,pr.y+6); send('moved',0,0); send('released',pr.x+6,pr.y+6)
+ check(gear==nil,'dragging off the panel cancels')
  tap('bike'); check(registered=='BICYCLE','bike uses native register path')
  tap('dex'); check(top.kimAreaDex,'area opens actual area dex'); top=nil
  check(not cell('quick'),'no QUICK button (hold START opens the QUICK MENU)')
