@@ -1,10 +1,17 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.61)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.62)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.62 (2026-10-28)
+
+- overworld_hud layout adds `targets` (cells + the clock/party panel with
+  action id "party"); pointer capture uses targets. quick_menu.hudActivate
+  handles "party" via pushStartMenuItem("pokemon"), with the same mid-step
+  deferral. HUD harness 83 checks.
 
 ## 0.9.61 (2026-10-28)
 

@@ -1088,6 +1088,11 @@ return function(host)
     if not M.overworld(game) then return false end
     local function activate(g)
       if g ~= game or opt("overworldHud", true) == false then return end
+      -- 0.9.62: tapping the clock / party panel opens the POKeMON screen
+      if id == "party" then
+        if type(g.pushStartMenuItem) == "function" then g:pushStartMenuItem("pokemon") end
+        return
+      end
       -- Ownership/unlocks may have changed while the current step finished.
       for _, action in ipairs(M.hudActions(g)) do
         if action.id == id then
