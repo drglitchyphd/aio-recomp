@@ -299,7 +299,8 @@ return function(mod)
     drawPreview(self,mon,x,y,portrait,portrait)
     local tx=x+portrait+18*scale
     local name=displayName(self,mon)
-    text(name,titleFont,tx,y,w-portrait-18*scale,"left",c.text)
+    local reserve=Style and Style.closeReserve and Style.closeReserve() or 0
+    text(name,titleFont,tx,y,math.max(1,w-portrait-18*scale-reserve),"left",c.text)
     local dex=def and tonumber(def.dex)
     local dexText=dex and ("No. %03d"):format(dex) or "No. ---"
     text(dexText,smallFont,tx,y+titleFont:getHeight()+3*scale,w*.28,"left",c.muted)
@@ -447,7 +448,6 @@ return function(mod)
       local desc=d.description or d.desc or d.text
       if desc then text(desc,smallFont,rx,y+bodyFont:getHeight()+170*scale,rw,"left",c.text) end
     end
-    text(self.swapFrom and "A: PLACE MOVE   B: CANCEL" or "A: PICK UP MOVE   B/SELECT: BACK",smallFont,rx,y+h-smallFont:getHeight(),rw,"right",c.muted)
   end
 
   local function drawSummary(self)
@@ -461,15 +461,19 @@ return function(mod)
     local scale=math.max(.72,math.min(1.28,math.min(pw/980,ph/630)))
     local x=sx+(sw-pw)/2; local y=sy+(sh-ph)/2
     panel(x,y,pw,ph,c,.94)
+    if Style and Style.closeButton then Style.closeButton(x,y,pw,ph,c) end
 
     local titleFont=fontFor(32*scale); local bodyFont=fontFor(24*scale); local smallFont=fontFor(18*scale)
     local pad=22*scale
     local headerH=174*scale
     local tabsH=38*scale
-    local footerH=38*scale
+    local footerH=Style and Style.footerHeight and Style.footerHeight() or 38*scale
 
     if self.moveDetail then
-      drawMoveDetail(self,x+pad,y+pad,pw-pad*2,ph-pad*2,scale,c,titleFont,bodyFont,smallFont)
+      drawMoveDetail(self,x+pad,y+pad,pw-pad*2,ph-pad-footerH-8*scale,scale,c,titleFont,bodyFont,smallFont)
+      if Style and Style.footer then
+        Style.footer(x,y,pw,ph,{colors=c,hints={{"A",self.swapFrom and "PLACE" or "MOVE"},{"B","BACK"}}})
+      end
       return
     end
 
@@ -488,38 +492,12 @@ return function(mod)
       drawStatusPage(self,x+pad,contentY,pw-pad*2,contentH,scale,c,bodyFont,smallFont)
     end
 
-    local footerY=y+ph-footerH
-    local fcy=footerY+footerH*.52
-    local icon=math.max(5*scale,smallFont:getHeight()*.38)
-    local gap=7*scale
-    local itemGap=18*scale
-    local pageW=icon*1.56+gap+smallFont:getWidth("PAGE")
-    local monW=icon*.78+gap+smallFont:getWidth("POKéMON")
-    local extra=(self.page==SummaryMenu.GREEN_PAGE) and smallFont:getWidth("SELECT MOVE DETAILS") or 0
-    local backW=smallFont:getWidth("B BACK")
-    local total=pageW+itemGap+monW+itemGap+backW
-    if extra>0 then total=total+itemGap+extra end
-    local tx=x+(pw-total)*.5
-    local ty=fcy-smallFont:getHeight()*.5
-
-    chevron(tx+icon*.34,fcy,icon*.82,"left",c.muted)
-    tx=tx+icon*.78
-    chevron(tx+icon*.34,fcy,icon*.82,"right",c.muted)
-    tx=tx+icon*.78+gap
-    text("PAGE",smallFont,tx,ty,nil,nil,c.muted)
-    tx=tx+smallFont:getWidth("PAGE")+itemGap
-
-    chevron(tx+icon*.34,fcy-icon*.36,icon*.62,"up",c.muted)
-    chevron(tx+icon*.34,fcy+icon*.36,icon*.62,"down",c.muted)
-    tx=tx+icon*.78+gap
-    text("POKéMON",smallFont,tx,ty,nil,nil,c.muted)
-    tx=tx+smallFont:getWidth("POKéMON")+itemGap
-
-    if extra>0 then
-      text("SELECT MOVE DETAILS",smallFont,tx,ty,nil,nil,c.muted)
-      tx=tx+extra+itemGap
+    if Style and Style.footer then
+      local hints={{"LR","PAGE"},{"UD","POKéMON"}}
+      if self.page==SummaryMenu.GREEN_PAGE then hints[#hints+1]={"SELECT","DETAILS"} end
+      hints[#hints+1]={"B","BACK"}
+      Style.footer(x,y,pw,ph,{colors=c,hints=hints})
     end
-    text("B BACK",smallFont,tx,ty,nil,nil,c.muted)
   end
 
   local upstreamNew=SummaryMenu.new

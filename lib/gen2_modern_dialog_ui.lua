@@ -465,10 +465,13 @@ return function(mod)
     local x=sx+(sw-w)/2
     local y=sy+(sh-h)/2
     panel(x,y,w,h,c,.97)
+    -- gen2-aio: the shared close button; the money label keeps clear of it
+    local reserve=Style and Style.closeReserve and Style.closeReserve() or 0
+    if Style and Style.closeButton then Style.closeButton(x,y,w,h,c) end
 
     drawFittedText("POKé MART",30*scale,x+22*scale,y+14*scale,w*.45-22*scale,"left",c.text)
     drawFittedText(("MONEY  ¥%d"):format(type(mart.money)=="function" and mart:money() or 0),
-      23*scale,x+w*.52,y+18*scale,w*.43-12*scale,"right",c.accent)
+      23*scale,x+w*.52,y+18*scale,math.max(1,w*.48-reserve-6*scale),"right",c.accent)
 
     local phase=tostring(mart.phase or "top")
     local contentY=y+65*scale
@@ -612,7 +615,8 @@ return function(mod)
       local textH=0
       for _,line in ipairs(lines) do textH=textH+wrappedHeight(line,body,w-84*scale)+8*scale end
       local dh=math.max(140*scale,textH+40*scale)
-      local dy=y+h-dh-18*scale
+      local fb=Style and Style.footerHeight and Style.footerHeight() or 0
+      local dy=y+h-dh-fb-8*scale
       panel(x+18*scale,dy,w-36*scale,dh,c,.99)
       wrappedLines(lines,body,x+42*scale,dy+20*scale,w-84*scale,c.text,8*scale)
       if mart.confirm and type(mart.yesNoVisible)=="function" and mart:yesNoVisible() then
@@ -634,8 +638,14 @@ return function(mod)
       end
     end
 
-    drawFittedText("A CHOOSE   B BACK",18*scale,x+22*scale,y+h-small:getHeight()-12*scale,
-      w-44*scale,"left",c.muted)
+    if Style and Style.footer then
+      local hints={{"A","CHOOSE"},{"B","BACK"}}
+      if phase=="buyQuantity" or phase=="sellQuantity" then hints={{"UD","QUANTITY"},{"A","OK"},{"B","BACK"}} end
+      Style.footer(x,y,w,h,{colors=c,hints=hints})
+    else
+      drawFittedText("A CHOOSE   B BACK",18*scale,x+22*scale,y+h-small:getHeight()-12*scale,
+        w-44*scale,"left",c.muted)
+    end
   end
 
   -- Crystal's NEW GAME gender prompt is its own full-screen state rather than

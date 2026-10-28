@@ -316,13 +316,22 @@ return function(mod)
     return "",label
   end
 
+  -- gen2-aio: the view hands its hints to drawDex, which draws the shared
+  -- footer along the window's bottom; the close button sits in the window's
+  -- top-right corner, so header items keep clear of it.
+  local footerSpec=nil
+  local curPad=0
+  local function closeShift(scale)
+    local r=Style and Style.closeReserve and Style.closeReserve() or 0
+    return math.max(0,r-curPad)
+  end
   local function drawList(prepared,x,y,w,h,c,big,body,small,scale,portrait)
     local m=prepared.model
     local source=prepared.sourceModel or {}
     local rows=m.rows or {}
     local selected=tonumber(m.selected) or 1
     local scroll=tonumber(m.scroll) or 0
-    local footerH=small:getHeight()+14*scale
+    local footerH=4*scale   -- the shared footer sits below this view (drawDex)
     local desc=type(m.description)=="table"
       and table.concat(m.description,"  ")
       or (m.description or "UP/DOWN SPECIES   A DATA   SELECT OPTIONS   B BACK")
@@ -403,7 +412,7 @@ return function(mod)
       cy=cy+small:getHeight()+7*scale
       fittedText(("OWNED %d"):format(totals.caught or 0),small:getHeight(),countX+8*scale,cy,countW-16*scale,"left",c.text)
 
-      fittedText(desc,16*scale,x,y+h-small:getHeight(),w,"left",c.muted)
+      footerSpec=desc
       return
     end
 
@@ -480,7 +489,7 @@ return function(mod)
     fittedText(("SEEN   %d"):format(totals.seen or 0),small:getHeight(),rightX+12*scale,py,rightW-24*scale,"left",c.muted)
     py=py+small:getHeight()+5*scale
     fittedText(("OWNED  %d"):format(totals.caught or 0),small:getHeight(),rightX+12*scale,py,rightW-24*scale,"left",c.text)
-    fittedText(desc,16*scale,x,y+h-small:getHeight(),w,"left",c.muted)
+    footerSpec=desc
   end
 
   local function drawEntry(prepared,x,y,w,h,c,big,body,small,scale)
@@ -497,14 +506,15 @@ return function(mod)
     active=math.max(1,math.min(#tabs,active))
 
     local tabsWidth=w*.48
-    local titleWidth=w-tabsWidth-12*scale
+    local shift=closeShift(scale)
+    local titleWidth=w-tabsWidth-12*scale-shift
     local tabH=math.max(40*scale,small:getHeight()+12*scale)
     local headerH=math.max(big:getHeight(),tabH)+10*scale
 
     text(m.title or ((cur.name or "ENTRY").." / POKéDEX"),
       big,x,y,titleWidth,"left",c.text)
 
-    local tabX=x+w-tabsWidth
+    local tabX=x+w-tabsWidth-shift
     local tabW=tabsWidth/math.max(1,#tabs)
     -- gen2-aio 0.9.46: tap PAGE / AREA / CRY / PRINT; a new-entry page
     -- (just caught) takes a tap anywhere as A
@@ -529,7 +539,7 @@ return function(mod)
         tabW-4*scale,"center",i==active and c.text or c.muted)
     end
 
-    local footerH=small:getHeight()+14*scale
+    local footerH=4*scale   -- the shared footer sits below this view (drawDex)
     local contentBottom=y+h-footerH
     local topY=y+headerH
     local available=contentBottom-topY
@@ -572,8 +582,7 @@ return function(mod)
     local desc=table.concat(lines," "):gsub("(%a)%- (%a)","%1%2")
     text(desc,body,x+28*scale,descY,w-56*scale,"left",c.text)
 
-    fittedText("LEFT/RIGHT ACTION   A SELECT   B BACK",18*scale,
-      x,y+h-small:getHeight(),w,"left",c.muted)
+    footerSpec={{"LR","ACTION"},{"A","CHOOSE"},{"B","BACK"}}
   end
 
   local areaCanvas
@@ -604,8 +613,8 @@ return function(mod)
     local source=prepared and prepared.sourceModel or {}
     local area=source.area or {}
     local title=(area.name or (source.current and source.current.name) or "POKéMON").." / HABITAT"
-    text(title,big,x,y,w,"left",c.text)
-    local footerH=small:getHeight()+14*scale
+    text(title,big,x,y,w-closeShift(scale),"left",c.text)
+    local footerH=4*scale   -- the shared footer sits below this view (drawDex)
     local mapTop=y+big:getHeight()+14*scale
     local mapH=math.max(1,h-(mapTop-y)-footerH-8*scale)
     panel(x,mapTop,w,mapH,c,.60)
@@ -622,13 +631,12 @@ return function(mod)
       Tap.add(x,mapTop,w/2,mapH,function() end,"left")
       Tap.add(x+w/2,mapTop,w/2,mapH,function() end,"right")
     end
-    fittedText("LEFT/RIGHT REGION   A/B RETURN",18*scale,
-      x,y+h-small:getHeight(),w,"left",c.muted)
+    footerSpec={{"LR","REGION"},{"B","BACK"}}
     return true
   end
 
   local function drawMenu(prepared,x,y,w,h,c,big,body,small,scale)
-    local m=prepared.model; text(m.title or "POKéDEX",big,x,y,w,"left",c.text)
+    local m=prepared.model; text(m.title or "POKéDEX",big,x,y,w-closeShift(scale),"left",c.text)
     local rows=m.rows or {}; local selected=tonumber(m.selected) or 1
     local rh=math.max(50,body:getHeight()+22)
     for i,row in ipairs(rows) do
@@ -652,7 +660,7 @@ return function(mod)
       text(row.right or "",small,x+w*.70,barY+math.max(0,(barH-small:getHeight())*.5),w*.26,"right",i==selected and c.text or c.muted)
     end
     local desc=m.description; if type(desc)=="table" then desc=table.concat(desc,"  ") end
-    fittedText(desc or "A CHOOSE   B BACK",19*scale,x,y+h-24,w,"left",c.muted)
+    footerSpec=desc or {{"A","CHOOSE"},{"B","BACK"}}
   end
   local function drawDex(state)
     curState=state
@@ -680,18 +688,25 @@ return function(mod)
     end
 
     local x=sx+(sw-pw)/2; local y=sy+(sh-ph)/2; panel(x,y,pw,ph,c,.95)
+    if Style and Style.closeButton then Style.closeButton(x,y,pw,ph,c) end
     local bigBase=portrait and 30 or 32
     local bodyBase=portrait and 22 or 23
     local smallBase=portrait and 16 or 17
     local big,body,small=font(bigBase*scale),font(bodyBase*scale),font(smallBase*scale)
     local pad=(portrait and 18 or 22)*scale
-    local vx,vy=x+pad,y+pad; local vw,vh=pw-pad*2,ph-pad*2
+    curPad=pad
+    footerSpec=nil
+    local fb=Style and Style.footerHeight and Style.footerHeight() or 0
+    local vx,vy=x+pad,y+pad; local vw,vh=pw-pad*2,ph-pad-fb-4*scale
     local view=tostring(prepared.model.sourceView or prepared.sourceModel and prepared.sourceModel.view or "list")
     if view=="list" then drawList(prepared,vx,vy,vw,vh,c,big,body,small,scale,portrait)
     elseif view=="entry" then drawEntry(prepared,vx,vy,vw,vh,c,big,body,small,scale)
     elseif view=="area" and drawAreaMap(state,prepared,vx,vy,vw,vh,c,big,body,small,scale) then
       -- Native Gen 2 nest map rendered inside the Modern UI frame.
     else drawMenu(prepared,vx,vy,vw,vh,c,big,body,small,scale) end
+    if Style and Style.footer then
+      Style.footer(x,y,pw,ph,{colors=c,hints=footerSpec or {{"A","CHOOSE"},{"B","BACK"}}})
+    end
   end
 
   local upstreamNew=PokedexMenu.new

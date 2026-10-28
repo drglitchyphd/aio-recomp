@@ -266,6 +266,262 @@ return function(mod)
     return sx+(sw-w)/2,sy+(sh-h)/2,w,h,scale
   end
 
+  ---------------------------------------------------------------------------
+  -- gen2-aio: shared menu chrome. Every full Modern menu window draws the same
+  -- footer (Style.footer) and the same close button (Style.closeButton) so the
+  -- bottom bar and the way out look and sit alike on every screen.
+  --
+  --   Style.footerHeight()            -> band height (same on every screen)
+  --   Style.footer(x,y,w,h,spec)      -> draws the band along the window's
+  --       bottom, returns the band's top y. spec = { info = "CAUGHT 3",
+  --       hints = { {"LR","POCKET"}, {"A","CHOOSE"}, {"B","BACK"} } or a
+  --       string such as "UP/DOWN SCROLL   A PAGE   B BACK", colors = theme }.
+  --       Keys: A, B, SELECT, START, LR (drawn as left/right triangles), UD
+  --       (up/down triangles). B always reads BACK.
+  --   Style.closeReserve()            -> width to keep clear at the right end
+  --       of a window's title row.
+  --   Style.closeButton(x,y,w,h,c,opts) -> draws the close button in the
+  --       window's top-right corner and records it for this frame; the late
+  --       render.hud pass below publishes it (mod._kimMenuClose) for KIM Touch,
+  --       which taps B there. opts.selected highlights it (a native CANCEL
+  --       row is selected).
+  ---------------------------------------------------------------------------
+  local function clockNow()
+    return love and love.timer and love.timer.getTime and love.timer.getTime() or 0
+  end
+
+  function Style.chromeScale()
+    local sw,sh=G.getDimensions()
+    return (Style.uiScale(sw,sh))
+  end
+
+  local FOOTER_PX=19
+  local function footerFont(k)
+    return Style.font(FOOTER_PX*Style.chromeScale()*(k or 1))
+  end
+
+  function Style.chromePad()
+    return math.max(12,math.floor(22*Style.chromeScale()+.5))
+  end
+
+  function Style.footerHeight()
+    local fh=footerFont():getHeight()
+    local vpad=math.max(6,math.floor(fh*.45+.5))
+    return fh+vpad*2
+  end
+
+  local KEY_ALIASES={
+    {"UP/DOWN/LEFT/RIGHT","UD"},{"UP/DOWN","UD"},{"UP-DOWN","UD"},{"D-PAD","UD"},
+    {"LEFT/RIGHT","LR"},{"< >","LR"},{"<>","LR"},{"L/R","LR"},
+    {"B/START","B"},{"B/SELECT","B"},{"A/B","B"},
+    {"SELECT","SELECT"},{"START","START"},{"A","A"},{"B","B"},
+  }
+  -- "UP/DOWN SCROLL   A PAGE   B BACK" -> { {"UD","SCROLL"}, {"A","PAGE"}, {"B","BACK"} }
+  -- Segments without a key are returned as info text.
+  function Style.parseHints(value)
+    local hints,info={},{}
+    value=tostring(value or ""):gsub("\n"," ")
+    value=value:gsub(":%s"," ")
+    for seg in (value.."   "):gmatch("(.-)%s%s+") do
+      seg=seg:gsub("^%s+",""):gsub("%s+$","")
+      if seg~="" then
+        local upper=seg:upper()
+        local key,rest
+        for _,alias in ipairs(KEY_ALIASES) do
+          local a=alias[1]
+          if upper==a or upper:sub(1,#a+1)==a.." " then
+            key=alias[2]; rest=upper:sub(#a+2):gsub("^%s+","")
+            break
+          end
+        end
+        if key then
+          if key=="B" then rest="BACK" end
+          hints[#hints+1]={key,rest~="" and rest or nil}
+        else
+          info[#info+1]=upper
+        end
+      end
+    end
+    return hints,(#info>0 and table.concat(info,"  ") or nil)
+  end
+
+  local function keyWidth(key,f)
+    local fh=f:getHeight()
+    if key=="LR" or key=="UD" then return fh*1.05 end
+    return f:getWidth(key)
+  end
+  local function hintWidth(h,f)
+    local fh=f:getHeight()
+    local w=keyWidth(h[1],f)
+    if h[2] and h[2]~="" then w=w+fh*.35+f:getWidth(h[2]) end
+    return w
+  end
+  local function hintsWidth(list,f)
+    local fh=f:getHeight()
+    local total=0
+    for i,h in ipairs(list) do
+      total=total+hintWidth(h,f)
+      if i>1 then total=total+fh*1.1 end
+    end
+    return total
+  end
+  local function triangle(cx,cy,s,dir)
+    if dir=="left" then G.polygon("fill",cx-s*.5,cy,cx+s*.4,cy-s*.55,cx+s*.4,cy+s*.55)
+    elseif dir=="right" then G.polygon("fill",cx+s*.5,cy,cx-s*.4,cy-s*.55,cx-s*.4,cy+s*.55)
+    elseif dir=="up" then G.polygon("fill",cx,cy-s*.5,cx-s*.55,cy+s*.4,cx+s*.55,cy+s*.4)
+    else G.polygon("fill",cx,cy+s*.5,cx-s*.55,cy-s*.4,cx+s*.55,cy-s*.4) end
+  end
+  local function ellipsize(value,f,maxW)
+    if f:getWidth(value)<=maxW then return value end
+    local out=value
+    while #out>0 and f:getWidth(out.."...")>maxW do
+      out=out:gsub("[\1-\127\194-\244][\128-\191]*$","")
+    end
+    if out=="" then return nil end
+    return out.."..."
+  end
+
+  function Style.footer(x,y,w,h,spec)
+    spec=spec or {}
+    local c=spec.colors or Style.theme()
+    local pad=Style.chromePad()
+    local bandH=Style.footerHeight()
+    local top=y+h-bandH
+    local hints,parsedInfo
+    if type(spec.hints)=="string" then hints,parsedInfo=Style.parseHints(spec.hints)
+    else hints=spec.hints or {} end
+    local copy={}
+    for i,hh in ipairs(hints) do
+      local label=hh[2]
+      if hh[1]=="B" then label="BACK" end
+      copy[i]={hh[1],label and tostring(label):upper() or nil}
+    end
+    hints=copy
+    local info=spec.info or parsedInfo
+    if info~=nil then info=tostring(info):upper(); if info=="" then info=nil end end
+
+    Style.color(c.divider or c.muted,nil,true)
+    G.rectangle("fill",x+pad,top,w-pad*2,math.max(1,math.floor(Style.chromeScale()+.5)))
+
+    local avail=w-pad*2
+    local f=footerFont()
+    local function total(fnt,inf,list)
+      local t=hintsWidth(list,fnt)
+      if inf then t=t+fnt:getWidth(inf)+(#list>0 and fnt:getHeight()*1.6 or 0) end
+      return t
+    end
+    local need=total(f,info,hints)
+    if need>avail then
+      local k=math.max(.8,avail/need*.98)
+      f=footerFont(k)
+      need=total(f,info,hints)
+    end
+    if need>avail and info then
+      local room=avail-hintsWidth(hints,f)-(#hints>0 and f:getHeight()*1.6 or 0)
+      info=room>f:getWidth("MMM") and ellipsize(info,f,room) or nil
+      need=total(f,info,hints)
+    end
+    while need>avail and #hints>1 do
+      table.remove(hints,1)
+      need=total(f,info,hints)
+    end
+
+    local fh=f:getHeight()
+    local cy=top+bandH*.5
+    local ty=math.floor(cy-fh*.5+.5)
+    G.setFont(f)
+    if info then
+      Style.text(info,f,x+pad,ty,nil,nil,c.muted)
+    end
+    local hx=x+w-pad-hintsWidth(hints,f)
+    local keyColor=c.text or c.muted
+    for i,hh in ipairs(hints) do
+      if i>1 then hx=hx+fh*1.1 end
+      local key=hh[1]
+      if key=="LR" or key=="UD" then
+        local s=fh*.42
+        Style.color(keyColor,nil,true)
+        if key=="LR" then
+          triangle(hx+s*.5,cy,s,"left"); triangle(hx+fh*1.05-s*.5,cy,s,"right")
+        else
+          triangle(hx+s*.55,cy,s,"up"); triangle(hx+fh*1.05-s*.55,cy,s,"down")
+        end
+      else
+        Style.text(key,f,hx,ty,nil,nil,keyColor)
+      end
+      hx=hx+keyWidth(key,f)
+      if hh[2] and hh[2]~="" then
+        hx=hx+fh*.35
+        Style.text(hh[2],f,hx,ty,nil,nil,c.muted)
+        hx=hx+f:getWidth(hh[2])
+      end
+    end
+    return top
+  end
+
+  local function closeMetrics(x,y,w,h)
+    local fh=footerFont():getHeight()
+    local size=math.floor(math.max(26,fh*1.9)+.5)
+    size=math.min(size,math.floor(math.min(w,h)*.16))
+    local inset=math.max(5,math.floor(size*.24+.5))
+    return x+w-inset-size,y+inset,size,inset
+  end
+
+  function Style.closeReserve()
+    local fh=footerFont():getHeight()
+    local size=math.floor(math.max(26,fh*1.9)+.5)
+    local inset=math.max(5,math.floor(size*.24+.5))
+    return size+inset*2
+  end
+
+  function Style.closeButton(x,y,w,h,c,opts)
+    c=c or Style.theme()
+    opts=opts or {}
+    local bx,by,size=closeMetrics(x,y,w,h)
+    local r=math.max(3,size*.22)
+    local fill=opts.selected and (c.selected or c.accent) or (c.raised or c.surface)
+    Style.color(fill,math.min(1,(fill[4] or 1)*Style.panelOpacity(1)))
+    G.rectangle("fill",bx,by,size,size,r,r)
+    Style.color(c.frame or c.accent,nil,true)
+    G.setLineWidth(math.max(1.5,size*.06))
+    G.rectangle("line",bx,by,size,size,r,r)
+    local k=size*.27
+    local cx,cy=bx+size*.5,by+size*.5
+    Style.color(c.text or {1,1,1,1},nil,true)
+    G.setLineWidth(math.max(2,size*.1))
+    pcall(G.setLineStyle,"smooth")
+    G.line(cx-k,cy-k,cx+k,cy+k)
+    G.line(cx-k,cy+k,cx+k,cy-k)
+    -- A generous hit area: mostly up/right (away from the window's content),
+    -- a little left/down.
+    Style._frameClose={x=bx,y=by,w=size,h=size,
+      hit={x=bx-size*.45,y=by-size*.9,w=size*2.35,h=size*1.15+size*.25}}
+    return bx,by,size
+  end
+
+  -- The late pass: published only for a frame in which a menu window drew
+  -- its close button, and tied to the state on top of the stack that frame.
+  if mod.hooks and type(mod.hooks.wrap)=="function" then
+    local unpackFn=table.unpack or unpack
+    mod.hooks:wrap("render.hud",function(nextFn,game,viewport)
+      Style._frameClose=nil
+      local result={pcall(nextFn,game,viewport)}
+      local ok=table.remove(result,1)
+      local reg=Style._frameClose
+      Style._frameClose=nil
+      local stack=game and game.stack
+      local top=stack and type(stack.top)=="function" and stack:top() or nil
+      if reg and top~=nil then
+        reg.state=top; reg.time=clockNow()
+        rawset(mod,"_kimMenuClose",reg)
+      else
+        rawset(mod,"_kimMenuClose",nil)
+      end
+      if not ok then error(result[1],0) end
+      return unpackFn(result)
+    end,120000)
+  end
+
   mod._kantoInMotionGen2Ui=Style
   return Style
 end
