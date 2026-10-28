@@ -877,6 +877,9 @@ return function(mod)
       help = "BALANCED: frame rate held at 60 or below (the game itself runs at 60, so a "
         .. "120Hz screen was drawing every frame twice), voxel AA off, FOREST FX FULL as LOW. "
         .. "3D SPRITE DETAIL is left to you (4X is sharpest and costs the most). Cooler and longer battery. QUALITY: your own settings." },
+    { key = "setupWizard", label = "SETUP WIZARD ON NEW GAME", type = "toggle", default = true,
+      help = "Starting a NEW GAME opens the setup wizard (difficulty, Nuzlocke, look, battles, "
+        .. "world, wild Pokemon, conveniences). It is always on the GEN2-AIO page too." },
     { key = "diagnostics", label = "DIAGNOSTICS", type = "toggle", default = false,
       help = "Show short status lines on screen (battle background errors, voxel edge, "
         .. "disk cache, Wilds). For reporting problems; leave off otherwise." },
@@ -1179,6 +1182,13 @@ return function(mod)
   if type(nzRulesFactory) == "function" and type(mod.exports.nuzlocke) == "table" then
     local okR, err = pcall(nzRulesFactory, { mod = mod, nz = mod.exports.nuzlocke })
     if not okR then log("warn", "Gen2-AIO: nuzlocke rules page: %s", tostring(err)) end
+  end
+
+  -- 0.9.67 SETUP WIZARD (NEW GAME and GEN2-AIO -> SETUP WIZARD)
+  local wizardFactory = loadOwn("lib/gen2_aio/setup_wizard.lua")
+  if type(wizardFactory) == "function" then
+    local okW, err = pcall(wizardFactory, { mod = mod, diag = diagSet })
+    if not okW then log("warn", "Gen2-AIO: setup wizard: %s", tostring(err)) end
   end
 
   -- 0.9.46 QUICK MENU (hold START / START -> QUICK), AREA DEX, DAY-CARE,

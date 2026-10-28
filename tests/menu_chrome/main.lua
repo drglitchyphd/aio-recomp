@@ -156,6 +156,16 @@ function love.load()
       {label="REPELS",text=value("ASK"),help="When a REPEL wears off. ASK: offer to use another. AUTO: use the next one from your bag by itself. INFINITE: a used REPEL never wears off (bends Nuzlocke rules). OFF: Crystal's own message only."},
       {label="QUICK NURSE",text=value("OFF"),help="Skip the nurse's speech. Bends Nuzlocke rules."},
       {label="BACK",cancel=true}}},Opt)end},
+    -- 0.9.67: the setup wizard's first page
+    {"wizard",function()return setmetatable({title="SETUP WIZARD",kimSubtitle="NEW GAME",index=1,scroll=0,rows={
+      {label="RECOMMENDED",group=true,value=value("SUGGESTED"),help="The way Gen2-AIO is meant to be played: fair trainers, no Nuzlocke, HD battles, the 3D world, visible wild Pokemon and the standard conveniences."},
+      {label="CASUAL",group=true,help="Relaxed: easier trainers, more EXP and every convenience."},
+      {label="NUZLOCKE",group=true,help="A classic Nuzlocke run."},
+      {label="HARDCORE NUZLOCKE",group=true,help="HARD trainers and HARDCORE rules."},
+      {label="CLASSIC CRYSTAL",group=true,help="As close to the cartridge as it gets."},
+      {label="STEP BY STEP",group=true,help="Choose each part yourself."},
+      {label="SKIP",group=true,help="Start with the settings as they are."},
+      {label="BACK",cancel=true}}},Opt)end},
     {"quick",function()return setmetatable({title="QUICK MENU",kimSubtitle="HOLD START",index=1,scroll=0,rows={
       {label="POKeGEAR",group=true},{label="FLY",group=true},{label="AREA DEX",group=true},
       {label="DAY-CARE",group=true},{label="TODAY",group=true},{label="QUICK HEAL",group=true}}},Opt)end},

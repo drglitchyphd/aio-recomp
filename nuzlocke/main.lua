@@ -2780,6 +2780,13 @@ return function(mod)
       local startingBalls = 0
       local startingCandies = 0
       local profile = newGameRulesSnapshot or pendingNewGameRules
+      -- gen2-aio 0.9.67: a run with Nuzlocke OFF keeps Crystal's own start
+      -- (3000 money, no extra items) unless SETUP set them on purpose
+      if profile and profile.nuzlocke_enabled == false
+          and (tonumber(profile.starting_money) or 0) == 0
+          and (tonumber(profile.starting_pokeballs) or 0) == 0 then
+          return result or targetSave
+      end
       if profile then
           startingMoney = math.max(0, math.min(9999,
               math.floor(tonumber(profile.starting_money) or 0)))
@@ -6210,6 +6217,24 @@ return function(mod)
   mod.exports.ruleCategories = ruleCategories
   mod.exports.getRule = function(key) return getConfigValue(key, false) end
   mod.exports.setRule = function(key, value) return setConfigValue(key, value, false) end
+  -- gen2-aio 0.9.67: the setup wizard. preGame = the run NEW GAME is about
+  -- to start (the title screen's SETUP rules), otherwise the current save.
+  mod.exports.prepareNewGame = function(game)
+      pcall(mod.exports.__beta25.selectSetupProfileScope, game)
+      if not pendingNewGameRules then
+          pendingNewGameRules = loadSetupProfileFromDisk() or makeDefaultPreGameRules()
+      end
+  end
+  mod.exports.getRuleFor = function(key, preGame) return getConfigValue(key, preGame) end
+  mod.exports.setRuleFor = function(key, value, preGame) return setConfigValue(key, value, preGame) end
+  mod.exports.applyLockePreset = function(mode, preGame) return LockePreset.apply(mode, preGame) end
+  -- re-stage after the wizard changed the pending rules (NEW GAME may have
+  -- staged them already, depending on which wrapper ran first)
+  mod.exports.stageNewGame = function()
+      if not pendingNewGameRules then return end
+      saveSetupProfileToDisk(pendingNewGameRules)
+      stageNewGameProfile()
+  end
 
   mod.hooks:wrap("ui.start_menu.items", function(next, game, items)
       local result = next(game, items)

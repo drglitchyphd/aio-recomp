@@ -112,7 +112,7 @@ check(s4.attack >= 9 and s4.defense >= 9, "unown raised")
 -- every row lands on a named page: nothing falls through to ADVANCED
 local _, adv = page("advanced")
 local known = { PERFORMANCE = 1, ["VOXEL PRECACHE"] = 1, ["VOXEL DISK CACHE"] = 1,
-  ["ASSET MANAGER"] = 1, DIAGNOSTICS = 1, ["MOD LIST"] = 1 }
+  ["ASSET MANAGER"] = 1, DIAGNOSTICS = 1, ["MOD LIST"] = 1, ["SETUP WIZARD ON NEW GAME"] = 1 }
 for label in pairs(adv) do check(known[label], "unplaced row on ADVANCED: " .. label) end
 local _, root = (function() game.stack.states = {}; local r = Hub.open(game); local m = {}
   for _, x in ipairs(r.rows) do m[x.label] = x end; return r, m end)()

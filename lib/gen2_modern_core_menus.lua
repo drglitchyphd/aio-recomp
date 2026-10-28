@@ -2184,7 +2184,16 @@ return function(mod)
   end
 
   local function optionValue(s,row)
-    if not row or row.group then return row and row.group and "OPEN" or "" end
+    if not row then return "" end
+    if row.group then
+      -- gen2-aio 0.9.67: a group row may say something of its own (the setup
+      -- wizard's SUGGESTED / CURRENT / CHOSEN, its REVIEW answers)
+      if type(row.value)=="function" then
+        local ok,v=pcall(row.value,s.game)
+        if ok and v~=nil then return tostring(v) end
+      end
+      return "OPEN"
+    end
     if row.cancel then return "" end
     if row.frame then return "TYPE "..tostring(s.options and s.options.frame or 1) end
     if type(row.text)=="function" then

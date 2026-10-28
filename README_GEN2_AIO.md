@@ -57,6 +57,38 @@ GitHub and overlay patches are not the updater's install package. The custom
 index is independent of the community index; a community listing would require
 a separate submission.
 
+## 0.9.67 changes
+
+New SETUP WIZARD. It opens when you start a NEW GAME, and at any time from
+GEN2-AIO -> SETUP WIZARD (the first row).
+
+- Pick a ready-made profile in one tap, or go STEP BY STEP. The profiles are:
+  - RECOMMENDED
+  - CASUAL
+  - NUZLOCKE
+  - HARDCORE NUZLOCKE
+  - CLASSIC CRYSTAL
+- STEP BY STEP asks seven short questions, each with 3-5 choices plus KEEP AS IS:
+  - DIFFICULTY
+  - NUZLOCKE
+  - LOOK
+  - BATTLES
+  - WORLD
+  - WILD POKEMON
+  - CONVENIENCE
+- Each choice explains itself in the help line. The choice matching your
+  current settings is marked CURRENT, the suggested one SUGGESTED.
+- A REVIEW page lists every answer; tap one to change it. Nothing changes
+  until START GAME (new game) or APPLY (from the menu), so B backs out safely.
+- At NEW GAME the Nuzlocke choice sets the new run's rules. From the menu it
+  changes the current run, unless LOCK RULES is on.
+- SKIP starts a new game with your settings untouched. Turn the wizard off
+  for new games with ADVANCED -> SETUP WIZARD ON NEW GAME.
+- Fixed: a new game with Nuzlocke OFF now starts with Crystal's 3000 money
+  instead of 0.
+- Menu rows that open a page can show a status of their own (used for the
+  wizard's CURRENT / SUGGESTED marks).
+
 ## 0.9.66 changes
 
 Settings overhaul. The GEN2-AIO hub now has nine pages: GAMEPLAY, NUZLOCKE
