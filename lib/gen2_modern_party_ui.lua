@@ -385,17 +385,19 @@ return function(mod)
     scale=math.max(.52,scale)
     local x=sx+(sw-pw)/2; local y=sy+(sh-ph)/2
     panel(x,y,pw,ph,colors,0.92)
+    -- gen2-aio: the shared close button; it lights up while the list's
+    -- CANCEL entry is selected (that entry is what B / the button does)
+    local cancelSelected=type(self.isCancel)=="function" and self:isCancel() or false
+    if Style and Style.closeButton then Style.closeButton(x,y,pw,ph,colors,{selected=cancelSelected}) end
     local titleFont, bodyFont, smallFont = fontFor(34*scale), fontFor(26*scale), fontFor(19*scale)
     lastLayout={x=x,y=y,pw=pw,ph=ph,scale=scale,colors=colors,bodyFont=bodyFont}
     local pad=math.max(10,16*scale)
     local header=math.max(50*scale,titleFont:getHeight()+18*scale)
-    local footer=math.max(44*scale,smallFont:getHeight()+18*scale)
+    local footer=Style and Style.footerHeight and Style.footerHeight() or math.max(44*scale,smallFont:getHeight()+18*scale)
     local title=("POKéMON  %d/6"):format(#self.party)
     local tf=fittedFont(34*scale,title,pw*.56,header*.76)
     drawText(title,tf,x+pad,y+math.max(6,10*scale),pw*.56,"left",colors.text)
     local prompt = type(self.bottomMessage)=="function" and self:bottomMessage() or "Choose a POKéMON."
-    local pf=fittedFont(19*scale,prompt,pw*.38,header*.60)
-    drawText(prompt,pf,x+pw*.59,y+math.max(8,14*scale),pw*.37-pad,"right",colors.muted)
 
     local contentY=y+header; local contentH=ph-header-footer
     local function rowInfo(mon,i,listX,listW,ry,rowH)
@@ -574,14 +576,15 @@ return function(mod)
       end
     end
 
-    local footerY=y+ph-footer
-    color(colors.divider,0.55,true); G.rectangle("fill",x+pad,footerY,pw-pad*2,1)
-    local footPrompt=fittedFont(18*scale,prompt,pw*.58,footer*.72)
-    drawText(prompt,footPrompt,x+pad,footerY+(footer-footPrompt:getHeight())*.50,pw*.58,"left",colors.muted)
-    local cancelSelected=self:isCancel(); local cancelW=math.min(140*scale,pw*.24); local cancelX=x+pw-pad-cancelW
-    if cancelSelected then color(colors.selected); G.rectangle("fill",cancelX,footerY+4*scale,cancelW,footer-8*scale,5,5) end
-    local cf=fittedFont(23*scale,"CANCEL",cancelW-8*scale,footer*.70)
-    drawText("CANCEL",cf,cancelX,footerY+(footer-cf:getHeight())*.50,cancelW,"center",cancelSelected and colors.text or colors.muted)
+    if Style and Style.footer then
+      Style.footer(x,y,pw,ph,{colors=colors,info=tostring(prompt),
+        hints={{"A",cancelSelected and "CLOSE" or "CHOOSE"},{"B","BACK"}}})
+    else
+      local footerY=y+ph-footer
+      color(colors.divider,0.55,true); G.rectangle("fill",x+pad,footerY,pw-pad*2,1)
+      local footPrompt=fittedFont(18*scale,prompt,pw*.9,footer*.72)
+      drawText(prompt,footPrompt,x+pad,footerY+(footer-footPrompt:getHeight())*.50,pw*.9,"left",colors.muted)
+    end
 
     if self.submenu and type(self.submenu.items)=="table" then
       -- gen2-aio: a centred modal like the Pack's (was a small box in the

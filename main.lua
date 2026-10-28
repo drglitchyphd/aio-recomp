@@ -649,6 +649,9 @@ return function(mod)
   mod.exports.kimStyle = function() return rawget(mod, "_kantoInMotionGen2Ui") end
   -- Party / Pack rows KIM drew last frame: { state, kind, time, cells }.
   mod.exports.screenTapTargets = function() return rawget(mod, "_kimScreenTapTargets") end
+  -- The close button a Modern menu window drew last frame: { x, y, w, h, hit,
+  -- state, time } (lib/gen2_modern_style.lua); KIM Touch taps B there.
+  mod.exports.menuCloseRect = function() return rawget(mod, "_kimMenuClose") end
   mod.exports.arena = Backdrop and { status = Backdrop.status, mode = Backdrop.mode } or nil
 
   mod.hooks:wrap("input.step", function(next, game, dt)

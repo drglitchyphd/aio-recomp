@@ -25,12 +25,16 @@ return function(host)
     local x,y=(W-w)/2,(H-h)/2
     S.color(c.surface);G.rectangle("fill",0,0,W,H)
     S.panel(x,y,w,h,c,.98)
-    S.text(d.title,title,x+pad,y+pad,w-pad*2,"left",c.text)
+    -- gen2-aio: the shared close button (B) and footer
+    local reserve=S.closeReserve and S.closeReserve() or 0
+    if S.closeButton then S.closeButton(x,y,w,h,c) end
+    local fb=S.footerHeight and S.footerHeight() or small:getHeight()+pad
+    S.text(d.title,title,x+pad,y+pad,math.max(1,w-pad-reserve),"left",c.text)
     local rowH=math.max(40*scale,body:getHeight()+pad)
     local rows=d.rows or {}
     local listY=y+pad*2+title:getHeight()
     local helpH=math.max(small:getHeight()*4,pad*3)
-    local helpY=y+h-helpH-pad*4-small:getHeight()*2
+    local helpY=y+h-fb-helpH-pad*3-small:getHeight()
     local visible=math.max(1,math.floor((helpY-listY-pad)/rowH))
     local selected=d.selected or 1
     local start=math.max(1,math.min(d.start or (selected-math.floor(visible/2)),math.max(1,#rows-visible+1)))
@@ -65,8 +69,13 @@ return function(host)
     for i=offset+1,math.min(#lines,offset+maxLines) do
       S.text(lines[i],small,x+pad*2,helpY+(i-offset-1)*small:getHeight(),w-pad*4,"left",c.muted)
     end
-    local fy=y+h-pad-small:getHeight()
-    S.text(d.footer or "A CHOOSE   B BACK",small,x+pad,fy-small:getHeight()-pad,w-pad*2,"center",c.muted)
+    local footerTop=y+h-fb
+    if S.footer then
+      S.footer(x,y,w,h,{colors=c,hints=d.footer or {{"A","CHOOSE"},{"B","BACK"}}})
+    else
+      S.text(d.footer or "A CHOOSE   B BACK",small,x+pad,footerTop,w-pad*2,"center",c.muted)
+    end
+    local fy=footerTop-pad*.75-small:getHeight()
     local buttons=d.buttons or {{label="UP",button="up"},{label="DOWN",button="down"},{label="BACK",button="b"}}
     local bw=(w-pad*2)/#buttons
     for i,b in ipairs(buttons) do

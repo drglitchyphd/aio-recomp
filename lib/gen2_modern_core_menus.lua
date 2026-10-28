@@ -266,6 +266,24 @@ return function(mod)
     return y+math.max(0,(h-fh)*.5)
   end
 
+  -- gen2-aio: the shared menu chrome (gen2_modern_style.lua): one footer and
+  -- one top-right close button for every full menu window.
+  local function chromeFooterH()
+    return Style and Style.footerHeight and Style.footerHeight() or 40
+  end
+  local function chromeFooter(x,y,w,h,c,info,hints)
+    if Style and Style.footer then
+      return Style.footer(x,y,w,h,{colors=c,info=info,hints=hints})
+    end
+    return y+h
+  end
+  local function closeButton(x,y,w,h,c,opts)
+    if Style and Style.closeButton then Style.closeButton(x,y,w,h,c,opts) end
+  end
+  local function closeReserve()
+    return Style and Style.closeReserve and Style.closeReserve() or 0
+  end
+
   local function modal(x,y,w,h,c,title,rows,selected,body,small,message)
     color({0,0,0,1},.35); G.rectangle("fill",0,0,G.getDimensions())
     local rh=math.max(52,small:getHeight()+20)
@@ -539,11 +557,12 @@ return function(mod)
     local inset=(tonumber(opt("startMenuInset","0")) or 0)/100
     local x=sx+sw-w-28*scale-(sw-w)*inset; local y=sy+(sh-h)/2
     panel(x,y,w,h,c,.95)
+    closeButton(x,y,w,h,c)
     local textRatio=math.max(.60,math.min(2.0,
       (tonumber(opt("startMenuTextScale","100")) or 100)/100))
     local big, body, small = font(40*scale*textRatio),
       font(31*scale*textRatio), font(23*scale*textRatio)
-    text("START",big,x+18*scale,y+15*scale,w-36*scale,"left",c.text)
+    text("START",big,x+18*scale,y+15*scale,w-36*scale-closeReserve(),"left",c.text)
     local index=(s.list and tonumber(s.list.index)) or 1
 
     -- Chrome.List is authoritative for input and can expose up to eight rows.
@@ -957,6 +976,7 @@ return function(mod)
     end
     scale=math.max(.52,scale)
     local x=sx+(sw-w)/2; local y=sy+(sh-h)/2; panel(x,y,w,h,c,.95)
+    closeButton(x,y,w,h,c)
     local big, body, small = font(35*scale), font(26*scale), font(19*scale)
     local countFont = font(22*scale)
     local pad=math.max(12,22*scale)
@@ -975,8 +995,7 @@ return function(mod)
     end
 
     local headerH=(tabTop-y)+tabH+math.max(8,12*scale)
-    local footerH=portrait and math.max(78*scale,small:getHeight()*2+18*scale)
-      or math.max(62*scale,small:getHeight()+24*scale)
+    local footerH=chromeFooterH()
     local rows=s.rows or {}; local idx=tonumber(s.index) or 1; local scroll=tonumber(s.scroll) or 0
     local selected=idx<=#rows and rows[idx] or nil
 
@@ -1033,16 +1052,7 @@ return function(mod)
       text(itemDescription(s,selected),font(22*scale),detailX,contentY+df:getHeight()+26*scale,w-listW-40*scale,"left",c.muted)
     end
 
-    local footerTop=y+h-footerH
-    color(c.divider,nil,true); G.rectangle("fill",x+pad,footerTop,w-pad*2,1)
-    local footerLabel="< >  POCKET     A  CHOOSE     B  BACK"
-    local ff=fittedFont(20*scale,footerLabel,w-pad*2)
-    if portrait and ff:getWidth(footerLabel)>w-pad*2 then
-      fittedText("< >  POCKET",20*scale,x+pad,footerTop+8*scale,w-pad*2,"left",c.accent)
-      fittedText("A  CHOOSE     B  BACK",20*scale,x+pad,footerTop+8*scale+ff:getHeight()+5*scale,w-pad*2,"left",c.accent)
-    else
-      text(footerLabel,ff,x+pad,footerTop+(footerH-ff:getHeight())*.5,w-pad*2,"center",c.accent)
-    end
+    chromeFooter(x,y,w,h,c,nil,{{"LR","POCKET"},{"A","CHOOSE"},{"B","BACK"}})
 
     if s.submenu and type(s.submenu.rows)=="table" then
       local labels={use="USE",give="GIVE",toss="TOSS",sel="REGISTER",quit="QUIT"}
@@ -1714,13 +1724,15 @@ return function(mod)
     -- the final panel dimensions so the fourth Gym row always clears footer.
     scale=math.min(scale,w/940,h/620)
     local x=sx+(sw-w)/2; local y=sy+(sh-h)/2; panel(x,y,w,h,c,.95)
+    closeButton(x,y,w,h,c)
     local big, body, small = font(35*scale), font(26*scale), font(20*scale)
     local pageFont = font(23*scale)
-    local footerFont = font(22*scale)
     local save=s.save or {}; local player=save.player or {}; local page=tonumber(s.page) or 1
     local pageCount=(player.kantoBadges and next(player.kantoBadges)) and 3 or 2
     text("TRAINER CARD",big,x+24*scale,y+20*scale,w*.55,"left",c.text)
-    text(("PAGE %d / %d"):format(page,pageCount),pageFont,x+w*.56,y+22*scale,w*.38,"right",c.accent)
+    -- the page label sits left of the close button
+    local pageRight=x+w-closeReserve()-6*scale
+    text(("PAGE %d / %d"):format(page,pageCount),pageFont,x+w*.56,y+22*scale,math.max(1,pageRight-(x+w*.56)),"right",c.accent)
     local contentY=y+96*scale
     local nativeCard=captureNativeTrainerCard(s)
     if page==1 then
@@ -1799,12 +1811,7 @@ return function(mod)
         end
       end
     end
-    local footerY=y+h-54*scale
-    local footerX=x+24*scale
-    local footerArrowSize=math.max(10*scale,footerFont:getHeight()*.5)
-    drawChevronPair(footerX+footerArrowSize*.55, footerY+footerFont:getHeight()*.1, footerArrowSize, c.muted, footerArrowSize*1.45)
-    footerX=footerX+footerArrowSize*2.45
-    fittedText("PAGE   A NEXT   B/START BACK",22*scale,footerX,footerY,w-48*scale-(footerArrowSize*2.45),"left",c.muted)
+    chromeFooter(x,y,w,h,c,nil,{{"LR","PAGE"},{"A","NEXT"},{"B","BACK"}})
   end
 
   local function cardId(s)
@@ -1850,6 +1857,7 @@ return function(mod)
     if layoutStyle()=="full" then w=sw*.94; h=sh*.92; scale=math.min(w/1080,h/(portrait and 900 or 680)) end
     scale=math.max(.52,scale)
     local x=sx+(sw-w)/2; local y=sy+(sh-h)/2; panel(x,y,w,h,c,.95)
+    closeButton(x,y,w,h,c)
     local big, body, small = font(35*scale), font(26*scale), font(19*scale)
     local pad=math.max(12,24*scale)
     text("POKéGEAR",fittedFont(35*scale,"POKéGEAR",w*.46),x+pad,y+18*scale,w*.46,"left",c.text)
@@ -1872,18 +1880,12 @@ return function(mod)
       text(label,tf,tx+4,centeredTextY(tabTop,tabH,tf),tabW-8,"center",sel and c.text or c.muted)
     end
 
-    local footerH=math.max(60*scale,small:getHeight()+22*scale)
+    local footerH=chromeFooterH()
     local cy=tabTop+tabH+math.max(8,12*scale)
     local ch=math.max(1,y+h-footerH-cy)
     local id=cardId(s)
     -- gen2-aio 0.9.47: the card strip previews the highlighted card (it
     -- showed only "Choose a POKeGEAR card." over an empty panel)
-    if s.mode=="strip" then
-      local hint="A OPEN"
-      local hf=fittedFont(19*scale,hint,w-pad*2)
-      text(hint,hf,x+pad,y+h-footerH-hf:getHeight()-6*scale,w-pad*2,"center",c.accent)
-      ch=ch-hf:getHeight()-10*scale
-    end
     if id=="clock" then
       local hour,minute,weekday=0,0,1
       if type(s.clockParts)=="function" then local ok,a,b,d=pcall(s.clockParts,s); if ok then hour,minute,weekday=a,b,d end end
@@ -2023,11 +2025,12 @@ return function(mod)
         end
       end
     end
-    local fy=y+h-footerH
-    color(c.divider,nil,true); G.rectangle("fill",x+pad,fy,w-pad*2,1)
-    local footerText=(s.action=="fly") and "B RETURN    < > REGION" or "B RETURN    < > CARD"
-    local ff=fittedFont(19*scale,footerText,w-pad*2)
-    text(footerText,ff,x+pad,fy+(footerH-ff:getHeight())*.5,w-pad*2,"center",c.muted)
+    -- one footer: the strip opens a card with A; the phone card calls
+    local hints={{"LR",(s.action=="fly") and "REGION" or "CARD"}}
+    if s.mode=="strip" then hints[#hints+1]={"A","OPEN"}
+    elseif id=="phone" and not (s.call or s.phoneSubmenu) then hints[#hints+1]={"A","CALL"} end
+    hints[#hints+1]={"B","BACK"}
+    chromeFooter(x,y,w,h,c,nil,hints)
   end
 
   -- Gen 2's SaveMenu remains responsible for writing saves and processing
@@ -2213,6 +2216,7 @@ return function(mod)
     if layoutStyle()=="full" then w=sw*.94; h=sh*.92; scale=math.min(w/1080,h/700) end
     local x=sx+(sw-w)/2; local y=sy+(sh-h)/2
     panel(x,y,w,h,c,.97)
+    closeButton(x,y,w,h,c)
 
     local big=font(38*scale)
     local body=font(26*scale)
@@ -2222,25 +2226,25 @@ return function(mod)
     -- gen2-aio 0.9.46: hub / quick-menu pages show their own title
     local pageTitle=type(rawget(s,"title"))=="string" and rawget(s,"title") or nil
     fittedText(pageTitle or "OPTIONS",38*scale,x+28*scale,y+18*scale,w*.55,"left",c.text)
-    fittedText(rawget(s,"kimSubtitle") or (s.sub and "CATEGORY" or "SETTINGS"),19*scale,x+w*.62,y+30*scale,w*.30,"right",c.accent)
+    fittedText(rawget(s,"kimSubtitle") or (s.sub and "CATEGORY" or "SETTINGS"),19*scale,x+w*.62,y+30*scale,
+      math.max(1,w*.38-closeReserve()-6*scale),"right",c.accent)
 
     local rows=type(s.visible)=="function" and s:visible() or (s.view or s.rows or {})
     local idx=tonumber(s.index) or 1
     local scroll=tonumber(s.scroll) or 0
     local selected=rows[idx]
-    local hint="UP/DOWN SELECT   LEFT/RIGHT CHANGE   A OPEN/CHANGE   B BACK"
+    local hint={{"LR","CHANGE"},{"B","BACK"}}
     if selected and selected.group then
-      hint="A OPEN CATEGORY   B BACK"
+      hint={{"A","OPEN"},{"B","BACK"}}
     elseif selected and selected.cancel then
-      hint="A/B BACK"
+      hint={{"B","BACK"}}
     elseif selected and selected.activate then
-      hint="A OPEN   B BACK"
+      hint={{"A","OPEN"},{"B","BACK"}}
     end
-    if selected and selected.info then hint=selected.hint or "B BACK" end
+    if selected and selected.info then hint=selected.hint or {{"B","BACK"}} end
     local titleBlockH=math.max(big:getHeight(),small:getHeight())
     local top=y+math.max(86*scale,18*scale+titleBlockH+14*scale)
-    local hintFont=fittedFont(19*scale,hint,w-56*scale)
-    local footerH=math.max(62*scale,hintFont:getHeight()+30*scale)
+    local footerH=chromeFooterH()+math.max(4,6*scale)
     local listH=math.max(1,h-(top-y)-footerH)
     local desiredVisible=math.max(5,math.min(9,math.floor(7/den+.5)))
     local minRowH=math.max(body:getHeight(),valueFont:getHeight())+math.max(6,9*scale)
@@ -2294,14 +2298,10 @@ return function(mod)
       end
     end
 
-    color(c.divider)
-    G.rectangle("fill",x+24*scale,y+h-footerH,w-48*scale,1)
-
-    text(hint,hintFont,x+28*scale,
-      y+h-hintFont:getHeight()-14*scale,w-56*scale,"left",c.muted)
+    chromeFooter(x,y,w,h,c,nil,hint)
 
     if scroll>0 then
-      drawVerticalArrow(x+w-30*scale,y+22*scale,math.max(12*scale,body:getHeight()*.65),"up",c.accent)
+      drawVerticalArrow(x+w-30*scale,top+4*scale,math.max(12*scale,body:getHeight()*.65),"up",c.accent)
     end
     if scroll+visible<#rows then
       drawVerticalArrow(x+w-30*scale,y+h-footerH-42*scale,math.max(12*scale,body:getHeight()*.65),"down",c.accent)
@@ -2344,6 +2344,7 @@ return function(mod)
     if layoutStyle()=="full" then w=sw*.94; h=sh*.92; scale=math.min(w/1160,h/720) end
     local x=sx+(sw-w)/2; local y=sy+(sh-h)/2
     panel(x,y,w,h,c,.97)
+    closeButton(x,y,w,h,c)
 
     local titleFont=font(38*scale)
     local body=font(27*scale)
@@ -2355,14 +2356,14 @@ return function(mod)
       or "KANTO IN MOTION"
     fittedText(string.upper(tostring(title)),38*scale,
       x+28*scale,y+18*scale,w*.58,"left",c.text)
-    fittedText("MOD SETTINGS",19*scale,x+w*.63,y+30*scale,w*.30,"right",c.accent)
+    fittedText("MOD SETTINGS",19*scale,x+w*.63,y+30*scale,math.max(1,w*.37-closeReserve()-6*scale),"right",c.accent)
 
     local rows=s.optionRows or {}
     local idx=tonumber(s.cursor) or 1
     local scroll=tonumber(s.scroll) or 0
     local selectedRow=rows[idx]
     local desc=managerOptionDescription(s,selectedRow)
-    local hint="UP/DOWN  SELECT   LEFT/RIGHT  CHANGE   A  CHANGE   B  DONE"
+    local hint={{"LR","CHANGE"},{"B","BACK"}}
     local titleBlockH=math.max(titleFont:getHeight(),small:getHeight())
     local listTop=y+math.max(86*scale,18*scale+titleBlockH+14*scale)
     local descLines=0
@@ -2371,9 +2372,7 @@ return function(mod)
       descLines=type(wrapped)=="table" and math.max(1,#wrapped) or 1
     end
     local descH=descLines*descFont:getHeight()
-    local hintFont=fittedFont(19*scale,hint,w-64*scale)
-    local footerNeeded=14*scale+descH+(descH>0 and 10*scale or 0)
-      +hintFont:getHeight()+16*scale
+    local footerNeeded=14*scale+descH+(descH>0 and 10*scale or 0)+chromeFooterH()
     local footerH=math.max(128*scale,footerNeeded)
     local listH=math.max(1,h-(listTop-y)-footerH)
     local desiredVisible=math.max(5,math.min(9,math.floor(7/den+.5)))
@@ -2441,11 +2440,10 @@ return function(mod)
         w-64*scale,"left",c.muted)
     end
 
-    text(hint,hintFont,x+32*scale,
-      y+h-hintFont:getHeight()-14*scale,w-64*scale,"left",c.accent)
+    chromeFooter(x,y,w,h,c,nil,hint)
 
     if scroll>0 then
-      drawVerticalArrow(x+w-30*scale,y+24*scale,math.max(12*scale,body:getHeight()*.65),"up",c.accent)
+      drawVerticalArrow(x+w-30*scale,listTop+4*scale,math.max(12*scale,body:getHeight()*.65),"up",c.accent)
     end
     if scroll+visible<#rows then
       drawVerticalArrow(x+w-30*scale,y+h-footerH-42*scale,math.max(12*scale,body:getHeight()*.65),"down",c.accent)
@@ -2460,6 +2458,7 @@ return function(mod)
     if layoutStyle()=="full" then w=sw*.94; h=sh*.92; scale=math.min(w/1120,h/720) end
     local x=sx+(sw-w)/2; local y=sy+(sh-h)/2
     panel(x,y,w,h,c,.97)
+    closeButton(x,y,w,h,c)
 
     local titleFont=font(38*scale)
     local body=font(27*scale)
@@ -2472,7 +2471,7 @@ return function(mod)
     local section=rawget(s,"_kimModernSettings")
     local sectionLabel=section=="battle" and "BATTLE SETTINGS"
       or section=="ui" and "UI SETTINGS" or "MOD SETTINGS"
-    fittedText(sectionLabel,19*scale,x+w*.60,y+30*scale,w*.33,"right",c.accent)
+    fittedText(sectionLabel,19*scale,x+w*.60,y+30*scale,math.max(1,w*.40-closeReserve()-6*scale),"right",c.accent)
 
     local rows=s.items or {}
     local idx=tonumber(s.index) or 1
@@ -2493,7 +2492,10 @@ return function(mod)
         and "Return to Kanto in Motion settings."
         or "Close Kanto in Motion settings."
     end
-    local hint="UP/DOWN  SELECT   LEFT/RIGHT  CHANGE   A  CHANGE/OPEN   B  BACK"
+    local hint=(selected and selected.submenu) and {{"A","OPEN"},{"B","BACK"}}
+      or (selected and (selected.cancel or selected.resetBattleDefaults or selected.resetUiDefaults))
+        and {{"A","CHOOSE"},{"B","BACK"}}
+      or {{"LR","CHANGE"},{"B","BACK"}}
     local titleBlockH=math.max(titleFont:getHeight(),small:getHeight())
     local listTop=y+math.max(86*scale,18*scale+titleBlockH+14*scale)
     local descLines=0
@@ -2502,9 +2504,7 @@ return function(mod)
       descLines=type(wrapped)=="table" and math.max(1,#wrapped) or 1
     end
     local descH=descLines*descFont:getHeight()
-    local hintFont=fittedFont(19*scale,hint,w-64*scale)
-    local footerNeeded=14*scale+descH+(descH>0 and 10*scale or 0)
-      +hintFont:getHeight()+16*scale
+    local footerNeeded=14*scale+descH+(descH>0 and 10*scale or 0)+chromeFooterH()
     local footerH=math.max(132*scale,footerNeeded)
     local listH=math.max(1,h-(listTop-y)-footerH)
     local desiredVisible=math.max(5,math.min(9,math.floor(7/den+.5)))
@@ -2570,11 +2570,10 @@ return function(mod)
         w-64*scale,"left",c.muted)
     end
 
-    text(hint,hintFont,x+32*scale,
-      y+h-hintFont:getHeight()-14*scale,w-64*scale,"left",c.accent)
+    chromeFooter(x,y,w,h,c,nil,hint)
 
     if scroll>0 then
-      drawVerticalArrow(x+w-30*scale,y+24*scale,math.max(12*scale,body:getHeight()*.65),"up",c.accent)
+      drawVerticalArrow(x+w-30*scale,listTop+4*scale,math.max(12*scale,body:getHeight()*.65),"up",c.accent)
     end
     if scroll+visible<#rows then
       drawVerticalArrow(x+w-30*scale,y+h-footerH-42*scale,math.max(12*scale,body:getHeight()*.65),"down",c.accent)
@@ -2656,6 +2655,7 @@ return function(mod)
     -- this presenter is active so the live overworld remains behind the card.
     color({0,0,0,1},.24); G.rectangle("fill",sx,sy,sw,sh)
     panel(x,y,w,h,c,.97)
+    closeButton(x,y,w,h,c)
 
     local titleFont=font(36*scale)
     local body=font(25*scale)
@@ -2663,11 +2663,11 @@ return function(mod)
     local tiny=font(16*scale)
     local pad=26*scale
     local headerH=94*scale
-    local footerH=52*scale
+    local footerH=chromeFooterH()
 
     text("DEX RADAR",titleFont,x+pad,y+18*scale,w*.52,"left",c.text)
     local owned=("%d/%d OWNED"):format(tonumber(s.ownedN) or 0,tonumber(s.totalN) or 0)
-    text(owned,small,x+w*.56,y+29*scale,w*.38-pad,"right",c.accent)
+    text(owned,small,x+w*.56,y+29*scale,math.max(1,w*.44-closeReserve()-6*scale),"right",c.accent)
     text(tostring(s.mapLabel or "UNKNOWN"):upper(),small,x+pad,
       y+58*scale,w-pad*2,"left",c.muted)
     color(c.divider); G.rectangle("fill",x+pad,y+headerH-8*scale,w-pad*2,1)
@@ -2764,9 +2764,7 @@ return function(mod)
     end
     G.setScissor()
 
-    color(c.divider); G.rectangle("fill",x+pad,y+h-footerH,w-pad*2,1)
-    fittedText("UP/DOWN/LEFT/RIGHT  MOVE    B  BACK",16*scale,x+pad,
-      y+h-footerH+17*scale,w-pad*2,"left",c.accent)
+    chromeFooter(x,y,w,h,c,nil,{{"UD","MOVE"},{"B","BACK"}})
     if first>1 then drawVerticalArrow(x+w-52*scale,listTop+4*scale,math.max(12*scale,body:getHeight()*.65),"up",c.accent) end
     if last<#rows then drawVerticalArrow(x+w-52*scale,listBottom-34*scale,math.max(12*scale,body:getHeight()*.65),"down",c.accent) end
   end
@@ -2871,7 +2869,7 @@ return function(mod)
   end
   local function drawPcHeader(x,y,w,scale,c,title,subtitle)
     local tf=font(34*scale); local sf=font(18*scale)
-    text(title or "PC",tf,x+20*scale,y+14*scale,w-40*scale,"left",c.text)
+    text(title or "PC",tf,x+20*scale,y+14*scale,w-40*scale-closeReserve(),"left",c.text)
     if subtitle and subtitle~="" then
       text(subtitle,sf,x+20*scale,y+52*scale,w-40*scale,"left",c.muted)
     end
@@ -2896,6 +2894,7 @@ return function(mod)
     local c=theme(); local sx,sy,sw,sh=playfield(); local scale=uiScale(sw,sh)
     local w=math.min(sw*.62,680*scale); local h=math.min(sh*.72,520*scale)
     local x=sx+(sw-w)/2; local y=sy+(sh-h)/2; panel(x,y,w,h,c,.96)
+    closeButton(x,y,w,h,c)
     drawPcHeader(x,y,w,scale,c,"PC","Access whose PC?")
     local body=font(24*scale); local small=font(18*scale)
     if s.message then
@@ -2909,7 +2908,7 @@ return function(mod)
         lines=type(page)=="table" and page or {tostring(page or "")}
       end
       text(table.concat(lines,"\n"),body,x+30*scale,y+110*scale,w-60*scale,"left",c.text)
-      text("A / B  continue",small,x+30*scale,y+h-48*scale,w-60*scale,"right",c.muted)
+      chromeFooter(x,y,w,h,c,nil,{{"A","NEXT"}})
       return
     end
     if s.confirm then
@@ -2929,18 +2928,19 @@ return function(mod)
     for _,e in ipairs(s.entries or {}) do rows[#rows+1]={label=e.label or e.id} end
     drawPcRows(x+24*scale,y+92*scale,w-48*scale,h-150*scale,rows,s.index or 1,scale,c,
       function(i) return function(st) st.index=i end end)
-    text("D-PAD  move    A  select    B  back",small,x+24*scale,y+h-40*scale,w-48*scale,"center",c.muted)
+    chromeFooter(x,y,w,h,c,nil,{{"A","CHOOSE"},{"B","BACK"}})
   end
 
   local function drawPcMenuModern(s)
     local c=theme(); local sx,sy,sw,sh=playfield(); local scale=uiScale(sw,sh)
     local w=math.min(sw*.64,720*scale); local h=math.min(sh*.78,570*scale)
     local x=sx+(sw-w)/2; local y=sy+(sh-h)/2; panel(x,y,w,h,c,.96)
+    closeButton(x,y,w,h,c)
     drawPcHeader(x,y,w,scale,c,"BILL'S PC","POKéMON Storage System")
     local body=font(23*scale); local small=font(18*scale)
     if s.message then
       text(normalizeUiText(s.message),body,x+28*scale,y+115*scale,w-56*scale,"left",c.text)
-      text("A / B  continue",small,x+28*scale,y+h-44*scale,w-56*scale,"right",c.muted)
+      chromeFooter(x,y,w,h,c,nil,{{"A","NEXT"}})
       return
     end
     if s.picking then
@@ -2966,7 +2966,7 @@ return function(mod)
           text((s.saveChoice or 1)==1 and "> YES     NO" or "  YES   > NO",body,x+40*scale,my+85*scale,w-80*scale,"center",c.accent)
         end
       else
-        text("Which BOX?",small,x+28*scale,y+h-44*scale,w-56*scale,"left",c.muted)
+        chromeFooter(x,y,w,h,c,"WHICH BOX?",{{"A","CHOOSE"},{"B","BACK"}})
       end
       return
     end
@@ -2977,13 +2977,14 @@ return function(mod)
     end
     drawPcRows(x+28*scale,y+94*scale,w-56*scale,h-160*scale,rows,s.index or 1,scale,c,
       function(i) return function(st) st.index=i end end)
-    text("A  select    B  back",small,x+28*scale,y+h-42*scale,w-56*scale,"center",c.muted)
+    chromeFooter(x,y,w,h,c,nil,{{"A","CHOOSE"},{"B","BACK"}})
   end
 
   local function drawBoxPcModern(s)
     local c=theme(); local sx,sy,sw,sh=playfield(); local scale=uiScale(sw,sh)
     local w=math.min(sw*.78,980*scale); local h=math.min(sh*.82,620*scale)
     local x=sx+(sw-w)/2; local y=sy+(sh-h)/2; panel(x,y,w,h,c,.96)
+    closeButton(x,y,w,h,c)
     local title=type(s.title)=="function" and s:title() or "POKéMON STORAGE"
     drawPcHeader(x,y,w,scale,c,normalizeUiText(title),normalizeUiText(type(s.prompt)=="function" and s:prompt() or "Choose a POKéMON."))
     local body=font(22*scale); local small=font(17*scale); local tiny=font(15*scale)
@@ -3047,7 +3048,7 @@ return function(mod)
       local mw=w*.64; local mh=125*scale; local mx=x+(w-mw)/2; local my=y+h-mh-18*scale
       panel(mx,my,mw,mh,c,.99); text(normalizeUiText(s.message),small,mx+22*scale,my+20*scale,mw-44*scale,"left",c.text)
     else
-      text("A  select    B  back",small,x+24*scale,y+h-42*scale,w-48*scale,"center",c.muted)
+      chromeFooter(x,y,w,h,c,nil,{{"A","CHOOSE"},{"B","BACK"}})
     end
   end
 
@@ -3175,7 +3176,8 @@ return function(mod)
     local x=sx+(sw-w)/2
     local y=sy+(sh-h)/2
     panel(x,y,w,h,c,.96)
-    text(title,titleFont,x+22*scale,y+16*scale,w-44*scale,"left",c.text)
+    closeButton(x,y,w,h,c)
+    text(title,titleFont,x+22*scale,y+16*scale,w-44*scale-closeReserve(),"left",c.text)
     local listY=y+60*scale
     for i,label in ipairs(rows) do
       local yy=listY+(i-1)*rh
@@ -3187,7 +3189,7 @@ return function(mod)
       fittedText(label,23*scale,x+30*scale,centeredTextY(barY,barH,rowFont),
         w-60*scale,"left",i==selected and c.text or c.muted)
     end
-    fittedText("A SELECT    B BACK",18*scale,x+22*scale,y+h-34*scale,w-44*scale,"left",c.muted)
+    chromeFooter(x,y,w,h,c,nil,{{"A","CHOOSE"},{"B","BACK"}})
   end
 
   local renderers={

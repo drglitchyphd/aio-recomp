@@ -634,13 +634,18 @@ return function(host)
     local px, py = (W - pw) / 2, (H - ph) / 2
     local s = math.max(0.6, math.min(pw / 900, ph / 900, 2.2))
     panel(px, py, pw, ph, th, 0.97)
+    -- gen2-aio: the shared close button and footer (gen2_modern_style.lua)
+    local S = style()
+    local reserve = (S and S.closeReserve) and S.closeReserve() or 0
+    if S and S.closeButton then S.closeButton(px, py, pw, ph, th) end
     local tf, bf, sf = font(30 * s), font(20 * s), font(15 * s)
     G.setFont(tf); setc(th.text)
     G.printf("AREA DEX", px + 20 * s, py + 14 * s, pw * 0.5, "left")
     G.setFont(sf); setc(th.accent)
-    G.printf(self.title, px + pw * 0.4, py + 22 * s, pw * 0.6 - 24 * s, "right")
+    G.printf(self.title, px + pw * 0.4, py + 22 * s, math.max(1, pw * 0.6 - reserve - 8 * s), "right")
     local top = py + 14 * s + tf:getHeight() + 10 * s
-    local bottom = py + ph - sf:getHeight() - 18 * s
+    local footH = (S and S.footerHeight) and S.footerHeight() or (sf:getHeight() + 18 * s)
+    local bottom = py + ph - footH - 4 * s
     local Tap = rawget(mod, "_kimTap")
     if Tap and Tap.begin then Tap.begin(self) end
     local seen, caught = dex(game)
@@ -715,9 +720,13 @@ return function(host)
         if caught[m.species] then caughtN = caughtN + 1 elseif seen[m.species] then seenN = seenN + 1 end
       end
     end
-    G.setFont(sf); setc(th.muted)
-    G.printf(("CAUGHT %d   SEEN %d   ?? %d      SWIPE / UP-DOWN SCROLL   TAP / B CLOSE")
-      :format(caughtN, seenN, total - caughtN - seenN), px + 20 * s, py + ph - sf:getHeight() - 10 * s, pw - 40 * s, "left")
+    local info = ("CAUGHT %d  SEEN %d  ?? %d"):format(caughtN, seenN, total - caughtN - seenN)
+    if S and S.footer then
+      S.footer(px, py, pw, ph, { colors = th, info = info, hints = { { "UD", "SCROLL" }, { "B", "BACK" } } })
+    else
+      G.setFont(sf); setc(th.muted)
+      G.printf(info .. "   B BACK", px + 20 * s, py + ph - sf:getHeight() - 10 * s, pw - 40 * s, "left")
+    end
   end
   function M.openAreaDex(game)
     if not (game and game.stack) then return end

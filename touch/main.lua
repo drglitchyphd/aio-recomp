@@ -378,6 +378,24 @@ return function(mod)
     return nil
   end
 
+  -- gen2-aio: the close button a Modern menu window drew last frame (top
+  -- right of the window); a tap on it is B and only B.
+  local function closeTarget(game)
+    local exports = kim()
+    local fn = exports and exports.menuCloseRect
+    local r
+    if type(fn) == "function" then local ok, v = pcall(fn); r = ok and v or nil end
+    if type(r) ~= "table" then return nil end
+    local state = topState(game)
+    if state == nil or r.state ~= state then return nil end
+    if now() - (tonumber(r.time) or 0) > 0.5 then return nil end
+    return r, state
+  end
+  local function inClose(r, x, y)
+    local h = type(r.hit) == "table" and r.hit or r
+    return x >= h.x and x <= h.x + h.w and y >= h.y and y <= h.y + h.h
+  end
+
   local function inPanel(t, x, y)
     local p = t and t.panel
     return p and x >= p.x and x <= p.x + p.w and y >= p.y and y <= p.y + p.h
@@ -590,6 +608,11 @@ return function(mod)
         return
       end
     end
+    local cr, cstate = closeTarget(game)
+    if cr and inClose(cr, x, y) then
+      pointers[ev.id] = { kind = "close", rect = cr, state = cstate }
+      return
+    end
     local st, sstate, smode = screenTargets(game)
     if st and st.freeScroll then
       -- a touch catches a list that is still gliding
@@ -768,6 +791,13 @@ return function(mod)
       return
     end
     if not g or g.kind == "swallow" or g.swipe then return end
+    if g.kind == "close" then
+      -- lifted on the close button, with the same screen still on top: B
+      if inClose(g.rect, ev.x, ev.y) and topState(game) == g.state then
+        tap(game, "b"); buzz()
+      end
+      return
+    end
     if g.kind == "wheel" then
       local q = Q()
       if q then pcall(q.wheelRelease, ev.x, ev.y, true) end
