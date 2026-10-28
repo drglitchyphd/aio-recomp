@@ -70,11 +70,13 @@ local function ids()
 end
 
 -- defaults: GEAR, AREA (BIKE / ITEMS need the items)
-check(ids() == "gear,dex", "default HUD is GEAR, AREA without a bike or key items")
+check(ids() == "gear,dex,bike,items", "default HUD always shows its four buttons")
+local function off(id) for _, a in ipairs(q.hudActions(game)) do if a.id == id then return a.disabled end end end
+check(off("bike") and off("items") and not off("gear"), "unusable buttons are dimmed, not hidden")
 q.setHudPlace(game, "heal", 1)
 check(table.concat(q.hudOrder(game), ",") == "heal,gear,dex,bike,items", "editor inserts at a place")
 check(game.options.modOptions["gen2-aio"].hudButtons == "heal,gear,dex,bike,items", "editor persists to options")
-check(ids() == "gear,dex", "QUICK HEAL hidden while the party is healthy")
+check(off("heal"), "QUICK HEAL dimmed while the party is healthy")
 q.setHudPlace(game, "gear", nil)
 check(table.concat(q.hudOrder(game), ",") == "heal,dex,bike,items", "editor removes a button")
 q.setHudPlace(game, "pokedex", 2); q.setHudPlace(game, "travel", 9)
@@ -107,7 +109,7 @@ game.save.party = {
   { hp = 20, maxHp = 20, status = "par" },    -- no PARLYZ: FULL_HEAL, never HEAL_POWDER
   { hp = 50, maxHp = 50 },                    -- healthy: untouched
 }
-check(ids():find("heal") ~= nil, "QUICK HEAL shows when someone needs care")
+check(not off("heal"), "QUICK HEAL active when someone needs care")
 q.quickHeal(game)
 local p = game.save.party
 check(p[1].hp == 45 and p[2].hp == 60 and p[3].hp == 40, "everyone topped up")

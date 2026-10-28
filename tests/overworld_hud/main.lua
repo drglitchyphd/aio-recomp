@@ -61,8 +61,8 @@ function love.load()
  game.world.textbox={}; check(hud.layout(game)==nil,'dialogue hidden'); game.world.textbox=nil
  game.world.battleActive=true; check(hud.layout(game)==nil,'battle hidden'); game.world.battleActive=false
  opts.overworldHud=false; check(hud.layout(game)==nil,'toggle hidden'); opts.overworldHud=true
- hasGear=false; check(not cell('gear'),'gear unavailable before unlock'); hasGear=true
- game.save.inventory.BICYCLE=nil; check(not cell('bike'),'unowned bike hidden'); game.save.inventory.BICYCLE=1
+ hasGear=false; check(cell('gear') and cell('gear').action.disabled,'gear dimmed before unlock'); gear=nil; tap('gear'); check(gear==nil,'dimmed gear does not open'); hasGear=true
+ game.save.inventory.BICYCLE=nil; check(cell('bike') and cell('bike').action.disabled,'unowned bike dimmed'); game.save.inventory.BICYCLE=1
  tap('items'); check(q.wheelActive(),'items opens wheel'); check(hud.layout(game)==nil,'wheel hides hud')
  send('pressed',0,0); send('released',0,0); check(not q.wheelActive(),'mouse closes wheel')
  for _,d in ipairs({{1080,2520},{2184,1968},{1280,720},{360,640}}) do

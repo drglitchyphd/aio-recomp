@@ -1,10 +1,19 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.60)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.61)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.61 (2026-10-28)
+
+- User confirmed on device (0.9.60): QUICK NURSE works; disk cache loads much
+  faster, occasional stutter remains (next: ask for "voxel slow" lines).
+- HUD: hudAction returns { disabled = true, reason } instead of nil for a
+  chosen-but-unusable button; overworld_hud draws it dimmed; hudActivate says
+  the reason. Users read hidden buttons as "only 2 of 4 show".
+- Settings overhaul still waiting on the 10 answers (docs/settings_audit.md).
 
 ## 0.9.60 (2026-10-28)
 
