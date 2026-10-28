@@ -1,6 +1,6 @@
 # Gen2-AIO settings audit (build 0.9.58, Crystal, Android/Fold)
 
-Read-only audit. No repository file was changed.
+Read-only audit. No repository file was changed. Implemented in 0.9.66 (see "Decisions" at the end).
 
 ## How this was checked
 
