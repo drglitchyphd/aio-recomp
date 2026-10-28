@@ -485,18 +485,69 @@ return function(mod)
     Style.color(c.frame or c.accent,nil,true)
     G.setLineWidth(math.max(1.5,size*.06))
     G.rectangle("line",bx,by,size,size,r,r)
-    local k=size*.27
-    local cx,cy=bx+size*.5,by+size*.5
-    Style.color(c.text or {1,1,1,1},nil,true)
-    G.setLineWidth(math.max(2,size*.1))
-    pcall(G.setLineStyle,"smooth")
-    G.line(cx-k,cy-k,cx+k,cy+k)
-    G.line(cx-k,cy+k,cx+k,cy-k)
+    -- 0.9.63: the glyph (close X or back arrow) is drawn by the late pass
+    -- below, once it knows what is on top of the stack.
     -- A generous hit area: mostly up/right (away from the window's content),
     -- a little left/down.
-    Style._frameClose={x=bx,y=by,w=size,h=size,
+    Style._frameClose={x=bx,y=by,w=size,h=size,color=c.text or {1,1,1,1},
       hit={x=bx-size*.45,y=by-size*.9,w=size*2.35,h=size*1.15+size*.25}}
     return bx,by,size
+  end
+
+  -- 0.9.63: back arrow vs close X. B on these states steps back INSIDE the
+  -- same screen (a popup, a list, a card, a sub-page); everywhere else B
+  -- closes the screen and the button shows X. Tapping it is B either way.
+  local function req(name) local ok,m=pcall(require,name); return ok and m or nil end
+  local function isA(state,name)
+    local M=req(name)
+    return M~=nil and type(state)=="table" and getmetatable(state)==M
+  end
+  function Style.closeIsBack(game,top)
+    if type(top)~="table" then return false end
+    if isA(top,"src.ui.gen2.PartyMenu") then
+      return top.submenu~=nil or top.switchFrom~=nil
+    end
+    if isA(top,"src.ui.gen2.HeldItemMenu") then return true end
+    if isA(top,"src.ui.gen2.PackMenu") then
+      return top.submenu~=nil or top.confirm~=nil or top.qtyState~=nil
+    end
+    if isA(top,"src.ui.gen2.MartMenu") then
+      local p=tostring(top.phase or "")
+      return p=="buy" or p=="sell" or p=="buyQuantity" or p=="sellQuantity"
+    end
+    if isA(top,"src.ui.gen2.PokedexMenu") then
+      return top.view~=nil and top.view~="list"
+    end
+    if isA(top,"src.ui.gen2.Pokegear") then
+      return top.mode=="card" or top.phoneSubmenu~=nil or top.call~=nil
+    end
+    if isA(top,"src.ui.gen2.OptionsMenu") then
+      -- a settings / quick-menu sub-page sitting on another options page
+      local states=game and game.stack and game.stack.states
+      if type(states)=="table" then
+        for i=#states,2,-1 do
+          if states[i]==top then return isA(states[i-1],"src.ui.gen2.OptionsMenu") end
+        end
+      end
+    end
+    return false
+  end
+  local function drawGlyph(reg,back)
+    local size=reg.w
+    local cx,cy=reg.x+size*.5,reg.y+size*.5
+    local k=size*.27
+    Style.color(reg.color,nil,true)
+    G.setLineWidth(math.max(2,size*.1))
+    pcall(G.setLineStyle,"smooth")
+    if back then
+      -- a left arrow: shaft plus a chevron head
+      G.line(cx-k,cy,cx+k,cy)
+      G.line(cx-k,cy,cx-k*.15,cy-k*.85)
+      G.line(cx-k,cy,cx-k*.15,cy+k*.85)
+    else
+      G.line(cx-k,cy-k,cx+k,cy+k)
+      G.line(cx-k,cy+k,cx+k,cy-k)
+    end
   end
 
   -- The late pass: published only for a frame in which a menu window drew
@@ -512,6 +563,11 @@ return function(mod)
       local stack=game and game.stack
       local top=stack and type(stack.top)=="function" and stack:top() or nil
       if reg and top~=nil then
+        local okB,back=pcall(Style.closeIsBack,game,top)
+        reg.back=okB and back==true or false
+        G.push("all"); G.origin()
+        pcall(drawGlyph,reg,reg.back)
+        G.pop()
         reg.state=top; reg.time=clockNow()
         rawset(mod,"_kimMenuClose",reg)
       else

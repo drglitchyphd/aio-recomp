@@ -252,6 +252,30 @@ function love.load()
 
     -- not on a dialogue box or a YES/NO prompt
     dims={1080,2520}
+    -- 0.9.63: back arrow when B steps back inside the same screen, X when
+    -- B closes it (tapping is B either way)
+    do
+      local S=mod._kantoInMotionGen2Ui
+      local function back(st,below)
+        local g={stack={states=below and {below,st} or {st}}}
+        return S.closeIsBack(g,st)
+      end
+      local P,K,M=classes["src.ui.gen2.PartyMenu"],classes["src.ui.gen2.PackMenu"],classes["src.ui.gen2.MartMenu"]
+      local D,Gr,O=classes["src.ui.gen2.PokedexMenu"],classes["src.ui.gen2.Pokegear"],classes["src.ui.gen2.OptionsMenu"]
+      check(not back(setmetatable({},P)),"party list shows X")
+      check(back(setmetatable({submenu={}},P)),"party popup shows back")
+      check(back(setmetatable({},classes["src.ui.gen2.HeldItemMenu"])),"GIVE / TAKE shows back")
+      check(not back(setmetatable({},K)),"pack list shows X")
+      check(back(setmetatable({qtyState={}},K)),"pack quantity shows back")
+      check(not back(setmetatable({phase="top"},M)),"mart BUY/SELL/QUIT shows X")
+      check(back(setmetatable({phase="buy"},M)) and back(setmetatable({phase="sellQuantity"},M)),"mart lists show back")
+      check(not back(setmetatable({view="list"},D)) and back(setmetatable({view="entry"},D)),"pokedex list X, entry back")
+      check(not back(setmetatable({mode="strip"},Gr)) and back(setmetatable({mode="card"},Gr)),"pokegear strip X, card back")
+      check(back(setmetatable({},O),setmetatable({},O)),"settings sub-page shows back")
+      check(not back(setmetatable({},O),{}),"top settings page shows X")
+      check(results["mart1080"].close and results["mart1080"].close.back==true,"rendered mart BUY list publishes back")
+      check(results["party1080"].close and results["party1080"].close.back==false,"rendered party list publishes X")
+    end
     local box=setmetatable({pages={{"Welcome to the","POKéMON CENTER!"}},page=1,lines={"Welcome to the","POKéMON CENTER!"}},
       classes["src.render.TextBox"])
     pcall(frame,box,"dialogue")

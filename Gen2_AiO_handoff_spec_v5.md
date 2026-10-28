@@ -1,10 +1,25 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.62)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.63)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.63 (2026-10-28) — menu chrome
+
+- gen2_modern_style: Style.footer / footerHeight / parseHints (one footer for
+  every modern menu; B always "BACK"); Style.closeButton draws the corner box
+  and records it; a render.hud pass at priority 120000 draws the glyph and
+  publishes mod._kimMenuClose { x,y,w,h, hit, state, time, back } (exports.
+  menuCloseRect). Style.closeIsBack(game, top) picks back arrow vs X (party
+  submenu/switch, HeldItemMenu, pack submenu/confirm/qty, mart buy/sell(+qty),
+  pokedex view ~= list, pokegear card/phoneSubmenu/call, OptionsMenu on an
+  OptionsMenu). touch/main.lua: the close rect is checked after side buttons,
+  before screen/battle targets; release inside taps "b" only.
+- Not converted: START menu footer (row descriptions), save/title menus,
+  dialogue, YES/NO, battle, overworld HUD, Wilds preview_browser (native).
+- tests/menu_chrome (15 screens x 2 sizes, touch, back/close decisions).
 
 ## 0.9.62 (2026-10-28)
 
