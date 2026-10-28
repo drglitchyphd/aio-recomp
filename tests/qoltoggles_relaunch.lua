@@ -108,4 +108,23 @@ assert(w6.player.facing=="down")
 w6.player.facing="up";w6:startHealMachineAnim(1,function()end)
 emit("script.ended",{completed=true,ctx={kind="script",vm=w6.vm}})
 assert(w6.player.facing=="up","Elm's machine must not turn the player")
+-- ---- session 3: the hub stored the switch as "qt_qt_quick_nurse" (0.9.58
+-- and earlier) and the engine getter answers with the schema default
+listeners = {}
+GameFacade.mods = { modOptions = { ["gen2-aio"] = { qt_qt_quick_nurse = true } } }
+local entry3 = assert(loadstring(src, "@qt"))()
+local events3 = { on = events.on, once = events.once, emit = events.emit }
+local mod3 = { exports = {}, generation = 2, id = "gen2-aio", events = events3, _kimKeyPrefix = "qt_",
+  hooks = { wrap = function() end },
+  options = { get = function() return false end, define = function() end },
+  content = U("content"), log = U("log"), storage = nil, find = function() return nil end }
+mod3.read = function() return nil end
+assert(pcall(entry3, mod3))
+emit("game.ready", { game = {} })
+local w7 = setmetatable({ player = { cellX=5, cellY=5, facing="up" }, map = {}, vm = {},
+  nurse = { def = { sprite = "SPRITE_NURSE", index = 1 } } }, World2)
+assert(w7:interactBody() == true and not w7.vanillaCalled, "legacy qt_qt_ value turns QUICK NURSE on")
+GameFacade.mods.modOptions["gen2-aio"].qt_quick_nurse = false
+w7.anim.cb(); w7.vanillaCalled = nil
+assert(w7:interactBody() == "vanilla", "a correctly keyed value wins over the legacy one")
 print("Nurse: relaunch, facade interception, busy lock, nested callbacks and VM ownership PASS")
