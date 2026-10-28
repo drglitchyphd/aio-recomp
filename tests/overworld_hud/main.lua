@@ -67,6 +67,24 @@ function love.load()
  game.world.textbox={}; check(hud.layout(game)==nil,'dialogue hidden'); game.world.textbox=nil
  game.world.battleActive=true; check(hud.layout(game)==nil,'battle hidden'); game.world.battleActive=false
  opts.overworldHud=false; check(hud.layout(game)==nil,'toggle hidden'); opts.overworldHud=true
+ -- 0.9.64: HUD POSITION
+ for _,pos in ipairs({'tl','tc','bc','bl','br'}) do
+  opts.hudPosition=pos
+  local L=hud.layout(game); local W,H=L.W,L.H
+  local left=L.cells[1].x; local right=L.cells[#L.cells].x+L.cells[#L.cells].w
+  check(left>=0 and right<=W and L.statusX>=0 and L.statusX+L.statusW<=W,'HUD '..pos..' fits horizontally')
+  if pos:sub(2,2)=='l' then check(left<W*.25,'HUD '..pos..' at the left') end
+  if pos:sub(2,2)=='c' then check(math.abs((left+right)/2-W/2)<2,'HUD '..pos..' centred') end
+  if pos:sub(2,2)=='r' then check(right>W*.75,'HUD '..pos..' at the right') end
+  if pos:sub(1,1)=='b' then
+   check(L.statusY>L.cells[1].y and L.statusY+30<=H and L.statusY>H*.6,'HUD '..pos..' clock panel at the bottom, buttons above')
+  else
+   check(L.statusY>L.cells[1].y and L.cells[1].y<H*.25,'HUD '..pos..' at the top')
+  end
+  local pr; for _,t in ipairs(L.targets) do if t.action.id=='party' then pr=t end end
+  check(pr and pr.y==L.statusY and pr.x==L.statusX,'HUD '..pos..' party tap target follows the panel')
+ end
+ opts.hudPosition=nil
  hasGear=false; check(cell('gear') and cell('gear').action.disabled,'gear dimmed before unlock'); gear=nil; tap('gear'); check(gear==nil,'dimmed gear does not open'); hasGear=true
  game.save.inventory.BICYCLE=nil; check(cell('bike') and cell('bike').action.disabled,'unowned bike dimmed'); game.save.inventory.BICYCLE=1
  tap('items'); check(q.wheelActive(),'items opens wheel'); check(hud.layout(game)==nil,'wheel hides hud')

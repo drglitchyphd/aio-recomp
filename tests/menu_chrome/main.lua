@@ -315,6 +315,11 @@ function love.load()
     -- the generous hit area: just above the button
     tlog={}; send("pressed",cx,close.y-close.h*.4); T=T+0.08; send("released",cx,close.y-close.h*.4)
     check(table.concat(tlog,",")=="tap:b","touch: tap just above close = B (got "..table.concat(tlog,",")..")")
+    -- 0.9.64: the lower half of the button counts too (it used to miss)
+    tlog={}; send("pressed",cx,close.y+close.h*.9); T=T+0.08; send("released",cx,close.y+close.h*.9)
+    check(table.concat(tlog,",")=="tap:b","touch: tap on the button's lower edge = B (got "..table.concat(tlog,",")..")")
+    tlog={}; send("pressed",close.x-close.w*.4,cy); T=T+0.08; send("released",close.x-close.w*.4,cy)
+    check(table.concat(tlog,",")=="tap:b","touch: tap just left of close = B (got "..table.concat(tlog,",")..")")
     -- slid off before lifting: nothing
     tlog={}; send("pressed",cx,cy); T=T+0.08; send("released",cx-close.w*4,cy+close.h*6)
     check(#tlog==0,"touch: press on close, release far away = nothing (got "..table.concat(tlog,",")..")")
@@ -325,6 +330,44 @@ function love.load()
     T=T+1
     tlog={}; send("pressed",cx,cy); T=T+0.08; send("released",cx,cy)
     check(table.concat(tlog,",")=="tap:a","touch: stale close rect ignored (got "..table.concat(tlog,",")..")")
+  end
+
+  -- 0.9.64: MENU BUTTON in a bottom corner sits in the footer band, the
+  -- footer text stays clear of it, and the title row gets its width back
+  if not renderOnly then
+    local S=mod._kantoInMotionGen2Ui
+    for _,corner in ipairs({"br","bl"}) do
+      opts.menuClosePos=corner
+      dims={1080,2520}
+      local Pk=classes["src.ui.gen2.PackMenu"]
+      for _,sc in ipairs(screens) do
+        if sc[1]=="pack" or sc[1]=="party" then
+          local state=sc[2]()
+          local drawn=frame(state,sc[1].."-"..corner)
+          local close=rawget(mod,"_kimMenuClose")
+          check(close~=nil,sc[1].." "..corner.." publishes a close button")
+          check(S.closeReserve()==0,corner.." frees the title row")
+          if close then
+            local leftSide=corner=="bl"
+            local winTop=nil
+            for _,t in ipairs(drawn) do
+              local f=t.font
+              if f and t.text~="" then
+                local tw=math.min(t.w or f:getWidth(t.text),f:getWidth(t.text))
+                local tx=t.x
+                if t.align=="right" and t.w then tx=t.x+t.w-tw end
+                if t.align=="center" and t.w then tx=t.x+(t.w-tw)/2 end
+                local overlap=tx<close.x+close.w and tx+tw>close.x and t.y<close.y+close.h and t.y+f:getHeight()>close.y
+                check(not overlap,sc[1].." "..corner.." button clear of '"..t.text.."'")
+              end
+            end
+            check(close.y>dims[2]*.5,sc[1].." "..corner.." button sits low (footer)")
+            check(leftSide and close.x<dims[1]*.5 or (not leftSide and close.x>dims[1]*.5),sc[1].." "..corner.." on the chosen side")
+          end
+        end
+      end
+    end
+    opts.menuClosePos=nil
   end
 
   for _,p in ipairs(shots) do print("png",p) end

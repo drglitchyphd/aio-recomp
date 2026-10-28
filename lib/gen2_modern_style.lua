@@ -381,6 +381,7 @@ return function(mod)
     return out.."..."
   end
 
+  local footerReserve -- set with the close-button metrics below
   function Style.footer(x,y,w,h,spec)
     spec=spec or {}
     local c=spec.colors or Style.theme()
@@ -403,7 +404,8 @@ return function(mod)
     Style.color(c.divider or c.muted,nil,true)
     G.rectangle("fill",x+pad,top,w-pad*2,math.max(1,math.floor(Style.chromeScale()+.5)))
 
-    local avail=w-pad*2
+    local reserve,side=footerReserve()
+    local avail=w-pad*2-reserve
     local f=footerFont()
     local function total(fnt,inf,list)
       local t=hintsWidth(list,fnt)
@@ -430,10 +432,11 @@ return function(mod)
     local cy=top+bandH*.5
     local ty=math.floor(cy-fh*.5+.5)
     G.setFont(f)
+    local leftX=x+pad+(side=="left" and reserve or 0)
     if info then
-      Style.text(info,f,x+pad,ty,nil,nil,c.muted)
+      Style.text(info,f,leftX,ty,nil,nil,c.muted)
     end
-    local hx=x+w-pad-hintsWidth(hints,f)
+    local hx=x+w-pad-(side=="right" and reserve or 0)-hintsWidth(hints,f)
     local keyColor=c.text or c.muted
     for i,hh in ipairs(hints) do
       if i>1 then hx=hx+fh*1.1 end
@@ -459,19 +462,46 @@ return function(mod)
     return top
   end
 
+  -- 0.9.64: MENU BUTTON corner (option menuClosePos): "tr" top right of
+  -- the title row, or "br" / "bl" inside the footer band at that end
+  function Style.closeCorner()
+    local v=tostring(opt("menuClosePos","tr"))
+    if v=="br" or v=="bl" then return v end
+    return "tr"
+  end
   local function closeMetrics(x,y,w,h)
     local fh=footerFont():getHeight()
     local size=math.floor(math.max(26,fh*1.9)+.5)
     size=math.min(size,math.floor(math.min(w,h)*.16))
     local inset=math.max(5,math.floor(size*.24+.5))
+    local corner=Style.closeCorner()
+    if corner~="tr" then
+      local bandH=Style.footerHeight()
+      size=math.min(size,math.floor(bandH-2))
+      local by=y+h-bandH+math.floor((bandH-size)/2)
+      if corner=="br" then return x+w-inset-size,by,size,inset end
+      return x+inset,by,size,inset
+    end
     return x+w-inset-size,y+inset,size,inset
   end
 
+  -- width a title row keeps clear at its right end (0 when the button is
+  -- in the footer)
   function Style.closeReserve()
+    if Style.closeCorner()~="tr" then return 0 end
     local fh=footerFont():getHeight()
     local size=math.floor(math.max(26,fh*1.9)+.5)
     local inset=math.max(5,math.floor(size*.24+.5))
     return size+inset*2
+  end
+  -- width the footer keeps clear at the button's end ("left"/"right"/nil)
+  footerReserve=function()
+    local corner=Style.closeCorner()
+    if corner=="tr" then return 0,nil end
+    local fh=footerFont():getHeight()
+    local size=math.min(math.floor(math.max(26,fh*1.9)+.5),math.floor(Style.footerHeight()-2))
+    local inset=math.max(5,math.floor(size*.24+.5))
+    return size+inset*2,(corner=="bl") and "left" or "right"
   end
 
   function Style.closeButton(x,y,w,h,c,opts)
@@ -490,7 +520,11 @@ return function(mod)
     -- A generous hit area: mostly up/right (away from the window's content),
     -- a little left/down.
     Style._frameClose={x=bx,y=by,w=size,h=size,color=c.text or {1,1,1,1},
-      hit={x=bx-size*.45,y=by-size*.9,w=size*2.35,h=size*1.15+size*.25}}
+      -- 0.9.64: centred on the button (it used to stop halfway down it, so
+      -- taps on its lower half were missed), larger toward the window edge
+      hit=(Style.closeCorner()=="tr")
+        and {x=bx-size*.7,y=by-size*1.1,w=size*2.6,h=size*2.6}
+        or {x=bx-size*.7,y=by-size*.7,w=size*2.4,h=size*2.4}}
     return bx,by,size
   end
 
