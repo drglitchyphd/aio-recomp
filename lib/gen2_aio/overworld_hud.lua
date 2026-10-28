@@ -122,10 +122,12 @@ return function(host)
       local held = false
       for _, p in pairs(pointers) do if p.id == r.action.id and not p.cancelled then held = true end end
       panel(r.x, r.y, r.w, r.h, th, held)
-      color(th.accent)
+      -- 0.9.61: a button that can't act right now stays, dimmed
+      local dim = r.action.disabled and .38 or nil
+      color(th.accent, dim)
       icon(r.action.id, r.x + r.w * .29, r.y + r.h * .13, r.w * .42)
       local f = font(r.w * .16)
-      G.setFont(f); color(th.text)
+      G.setFont(f); color(dim and (th.muted or th.text) or th.text, dim)
       G.printf(r.action.label, r.x + 2, r.y + r.h * .72, r.w - 4, "center")
     end
     local f = font(l.clockPx)

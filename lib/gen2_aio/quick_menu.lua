@@ -945,32 +945,52 @@ return function(host)
     end
     return out
   end
+  -- 0.9.61: a chosen button always shows. One that can't act right now is
+  -- `disabled` (drawn dimmed); tapping it says why instead of doing nothing.
+  local function off(id, label, reason)
+    return { id = id, label = label, disabled = true, reason = reason }
+  end
   local function hudAction(game, id)
     if id == "gear" then
-      return hasPokegear(game) and { id = "gear", label = "GEAR", run = openPokegear } or nil
+      return hasPokegear(game) and { id = "gear", label = "GEAR", run = openPokegear }
+        or off("gear", "GEAR", "You don't have a\nPOKeGEAR yet.")
     elseif id == "dex" then
       return { id = "dex", label = "AREA", run = M.openAreaDex }
     elseif id == "bike" then
       return selectable(game, "BICYCLE") and { id = "bike", label = "BIKE",
-        run = function(g) useItem(g, "BICYCLE") end } or nil
+        run = function(g) useItem(g, "BICYCLE") end }
+        or off("bike", "BIKE", "You don't have a\nBICYCLE yet.")
     elseif id == "items" then
-      return (opt("keyWheel", true) ~= false and #M.keyItems(game) > 0)
-        and { id = "items", label = "ITEMS", run = M.wheelOpen } or nil
+      if opt("keyWheel", true) == false then
+        return off("items", "ITEMS", "KEY ITEM WHEEL is\nturned off in settings.")
+      end
+      return #M.keyItems(game) > 0 and { id = "items", label = "ITEMS", run = M.wheelOpen }
+        or off("items", "ITEMS", "You have no key\nitems to use.")
     elseif id == "pokedex" then
       local SM = req("src.ui.gen2.StartMenu")
       local okA, a = false, nil
       if SM and SM.availability then okA, a = pcall(SM.availability, { save = game.save, game = game }) end
-      if okA and type(a) == "table" and a.pokedex == false then return nil end
+      if okA and type(a) == "table" and a.pokedex == false then
+        return off("pokedex", "DEX", "You don't have a\nPOKeDEX yet.")
+      end
       return { id = "pokedex", label = "DEX", run = function(g)
         if type(g.pushStartMenuItem) == "function" then g:pushStartMenuItem("pokedex") end
       end }
     elseif id == "heal" then
-      return M.healPlan(game) and { id = "heal", label = "HEAL", run = M.quickHeal } or nil
+      return M.healPlan(game) and { id = "heal", label = "HEAL", run = M.quickHeal }
+        or off("heal", "HEAL", "Your POKeMON are\nalready healthy.")
     elseif id == "travel" then
       local label, run = M.travelAction(game)
-      return label and { id = "travel", label = label, run = run } or nil
+      if label then return { id = "travel", label = label, run = run } end
+      local ctx = fieldCtx(game)
+      local env = ctx and ctx.environment
+      local why = (env == "TOWN" or env == "ROUTE") and "No POKeMON in your\nparty can use FLY."
+        or ((env == "CAVE" or env == "DUNGEON") and "No DIG user or\nESCAPE ROPE.")
+        or "FLY works outside;\nDIG or a ROPE in caves."
+      return off("travel", (env == "CAVE" or env == "DUNGEON") and "DIG" or "FLY", why)
     elseif id == "quick" then
-      return opt("quickMenu", true) ~= false and { id = "quick", label = "QUICK", run = M.openQuick } or nil
+      return opt("quickMenu", true) ~= false and { id = "quick", label = "QUICK", run = M.openQuick }
+        or off("quick", "QUICK", "QUICK MENU is\nturned off in settings.")
     end
     return nil
   end
@@ -1070,7 +1090,11 @@ return function(host)
       if g ~= game or opt("overworldHud", true) == false then return end
       -- Ownership/unlocks may have changed while the current step finished.
       for _, action in ipairs(M.hudActions(g)) do
-        if action.id == id then action.run(g); return end
+        if action.id == id then
+          if action.disabled then say(g, action.reason or "Can't use that now.")
+          else action.run(g) end
+          return
+        end
       end
     end
     if M.ready(game) then activate(game) else later(activate) end
