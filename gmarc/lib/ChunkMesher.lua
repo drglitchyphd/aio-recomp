@@ -1207,6 +1207,7 @@ local function flatQuads(quads)
   local f = ffi.new("float[?]", n * 6)
   local o = 0
   for _, q in ipairs(quads) do
+    Budget.tick()
     for i = 1, 4 do
       local c = q[i]
       local uv = q.uv and q.uv[i] or { q.u, q.v }
@@ -1229,6 +1230,7 @@ local function meshFromFlat(ptr, n)
     local ip = ffi.cast("uint32_t*", idx:getFFIPointer())
     for q = 0, n / 4 - 1 do
       for k = 1, 6 do ip[q*6+k-1] = q*4 + TRI_ORDER[k] - 1 end
+      Budget.tick()
     end
     m:setVertexMap(idx, "uint32"); idx:release()
     return m
@@ -1273,6 +1275,7 @@ local function persist(name, map, sink, waterSink, mesh)
       for j, v in ipairs(m.verts) do
         local o = (j - 1) * 6
         f[o], f[o+1], f[o+2], f[o+3], f[o+4], f[o+5] = v[1], v[2], v[3], v[4], v[5], v[6]
+        Budget.tick()
       end
       add("model" .. i, f, nv)
       sections[#sections].keep = f
@@ -1306,7 +1309,7 @@ local function persist(name, map, sink, waterSink, mesh)
         local flat = st.flat; st.flat = nil
         local nv = #flat / 6
         local f = ffi.new("float[?]", #flat)
-        for j = 1, #flat do f[j - 1] = flat[j] end
+        for j = 1, #flat do f[j - 1] = flat[j]; if j % 64 == 0 then Budget.tick() end end
         add("cut" .. k, f, nv); sections[#sections].keep = f
         st.sec, st.count = "cut" .. k, nv
       end
@@ -1358,7 +1361,10 @@ local function restore(blob, map, c, job)
         local flat = {}
         if p then
           local fp = ffi.cast("float*", p)
-          for j = 0, (st.count or 0) * 6 - 1 do flat[j + 1] = fp[j] end
+          for j = 0, (st.count or 0) * 6 - 1 do
+            flat[j + 1] = fp[j]
+            if j % 64 == 0 then Budget.tick() end
+          end
         end
         st.flat = flat
       end
@@ -1374,8 +1380,12 @@ end
 -- A build only lands if the map's generation still matches the one the
 -- job was queued under -- invalidate/evict bump it to cancel in-flight
 -- work whose inputs went stale.
+-- gen2-aio 0.9.58: the phase a job is in, so a long uninterrupted slice
+-- can be blamed on restore / persist / geometry in DIAGNOSTICS.
+local jobPhase = "start"
 local function runJob(job)
   job.started=clock()
+  jobPhase = "lookup"
   local map = job.map
   local c = entry(job.id)
   -- gen2-aio: restore from the disk cache when this exact build exists
@@ -1389,6 +1399,7 @@ local function runJob(job)
         if blob == nil then coroutine.yield() end
       until blob ~= nil
       if blob then
+        jobPhase = "restore"
         local okR, mesh, water = pcall(restore, blob, map, c, job)
         pcall(blob.release, blob)
         if okR and mesh then
@@ -1428,6 +1439,7 @@ local function runJob(job)
     c.figures = (okX and figures) or false
     if c.stale then c.stale.aux = nil end
   end
+  jobPhase = "geometry"
   local sink = newSink()
   local waterSink = newSink()
   local instances=newInstances(map);job.instances=instances
@@ -1436,6 +1448,7 @@ local function runJob(job)
   if instances then instances:finish(mesh)end
   local water = waterSink.finish()
   if storeName and mesh and (gen[job.id] or 0) == job.gen then
+    jobPhase = "persist"
     local okS, errS = pcall(persist, storeName, map, sink, waterSink, mesh)
     if not okS then print("[warn] voxel disk cache: " .. tostring(errS)) end
   end
@@ -1510,8 +1523,17 @@ local function pump(covered)
       pick.co = coroutine.create(runJob)
     end
     Budget.begin(pick.co, deadline - clock())
+    local resumed = clock()
     local ok, err = coroutine.resume(pick.co, pick)
     Budget.finish()
+    local spent = (clock() - resumed) * 1000
+    if spent > 50 then
+      local d = V.mod and rawget(V.mod, "_kimArenaDiag")
+      if d then
+        d("voxel slow", ("%.0f ms in %s (%s %s)"):format(spent, jobPhase,
+          tostring(pick.id), tostring(pick.slot)))
+      end
+    end
     if not ok then
       finishJob(pick, false, err)
     elseif coroutine.status(pick.co) == "dead" then
