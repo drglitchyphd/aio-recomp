@@ -95,7 +95,7 @@ return function(host)
       "touchDeadzone", "touchBattleTap", "touchLongPress", "touchHotbar", "touchRunDrag",
     } },
     { id = "advanced", label = "ADVANCED", rows = {
-      "perfMode", "voxelPrecache", "voxelDiskCache",
+      "setupWizard", "perfMode", "voxelPrecache", "voxelDiskCache",
       { id = "gen2-aio:asset_manager" }, "diagnostics", { modList = true }, { rest = true },
     } },
   }
@@ -527,11 +527,23 @@ return function(host)
   end
   Hub.sections = SECTIONS
   Hub.buildAll = buildAll
+  -- 0.9.67: the setup wizard reads and writes settings the way the pages do
+  function Hub.read(key) return readValue(key, schemaRow(key)) end
+  function Hub.write(game, key, value) return writeValue(game, key, value) end
+  -- rows above the page list on the root page (SETUP WIZARD); a function
+  -- of the game returning a list of rows
+  Hub.rootTop = nil
 
   function Hub.open(game)
     if type(game) ~= "table" or not game.stack then return end
     local pages = buildAll(game)
     local root = {}
+    if type(Hub.rootTop) == "function" then
+      local okT, top = pcall(Hub.rootTop, game)
+      if okT and type(top) == "table" then
+        for _, r in ipairs(top) do root[#root + 1] = r end
+      end
+    end
     for _, sec in ipairs(SECTIONS) do
       if #(pages[sec.id] or {}) > 0 then
         root[#root + 1] = { id = "kimArena.hub." .. sec.id, label = sec.label, group = true,

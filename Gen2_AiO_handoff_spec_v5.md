@@ -1,10 +1,38 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.66)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.67)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.67 (2026-10-28)
+
+- `lib/gen2_aio/setup_wizard.lua` (`mod._kimArenaWizard`): data-driven
+  `STEPS` and `PROFILES`.
+  - A choice has `set` (setting presets written through `Hub.write`) and/or
+    `apply(game, ctx)`.
+  - A step may have `available(ctx)` and `current(ctx)`. Otherwise the
+    current choice is the one whose `set` matches the settings (`Hub.read`).
+  - Picks are kept in `ctx.picks` and applied only at FINISH (`applyAll`).
+  - Pages are hub pages marked `_kimWizard`; `closeWizard` pops them.
+- Hub additions: `Hub.read` / `Hub.write` / `Hub.rootTop` (SETUP WIZARD on
+  the root page). New option `setupWizard` (ADVANCED).
+- NEW GAME: `MainMenu.choose` is wrapped once per process and routed through
+  `MainMenu._aioWizardLive`. On "new" it opens the wizard with
+  `preGame = true`; FINISH or SKIP calls the wrapped choose.
+- Nuzlocke exports (preGame = the run NEW GAME is about to create):
+  `prepareNewGame`, `getRuleFor` / `setRuleFor`, `applyLockePreset`,
+  `stageNewGame`. FINISH re-stages, because Nuzlocke's own choose wrapper may
+  have staged before the wizard ran.
+- Nuzlocke `save.new_game`: with nuzlocke_enabled false and no starting
+  money or balls set, the save keeps Crystal's own start.
+- WORLD writes the voxel pipeline level through Pipelines.setLevel and
+  syncOptions. Wilds followers go through `wilds.setFollowerCount`.
+- `optionValue` in core menus: a group row with a `value` function shows it
+  instead of OPEN.
+- Tests: `tests/setup_wizard.lua` (37 checks). The harness accepts
+  `HARNESS_STUBS`.
 
 ## 0.9.66 (2026-10-28)
 

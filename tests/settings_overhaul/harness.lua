@@ -46,6 +46,8 @@ local stubs = {
 }
 local realRequire = require
 require = function(n)
+  -- a test can hand in real stand-ins before booting (HARNESS_STUBS)
+  if HARNESS_STUBS and HARNESS_STUBS[n] then return HARNESS_STUBS[n] end
   if stubs[n] then return stubs[n] end
   if n == "bit" or n == "ffi" or n == "string" or n == "table" or n == "math" then return realRequire(n) end
   local v = U(n); stubs[n] = v; return v
