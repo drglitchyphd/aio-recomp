@@ -57,6 +57,42 @@ GitHub and overlay patches are not the updater's install package. The custom
 index is independent of the community index; a community listing would require
 a separate submission.
 
+## 0.9.66 changes
+
+Settings overhaul. The GEN2-AIO hub now has nine pages: GAMEPLAY, NUZLOCKE
+& RULES, BATTLE, OVERWORLD & 3D, DISPLAY & MENUS, QUALITY OF LIFE, WILD
+POKEMON & FOLLOWERS, TOUCH CONTROLS and ADVANCED.
+
+- Every setting is on exactly one page. The Kanto in Motion, Gen1Wild QOL,
+  QoL Toggles and Wilds of Kanto screens no longer hold settings of their
+  own. Their rows sit on the topic pages. AUTO SAVE, AUTO CONTINUE, EXP SHARE,
+  REMEMBER MOVES and MENU LAYOUT still open their own screens.
+- The selected setting's help shows at the bottom of every hub page.
+- Rows that do nothing with the current settings are hidden. For example:
+  - HUD COLOR, EXP BAR and POKeDEX INDICATOR appear only with BATTLE HUD = NATIVE.
+  - The weather rows hide when WEATHER is OFF.
+  - The SPRINT options hide when SPRINT is OFF.
+  - AA appears only with PERFORMANCE = QUALITY.
+  - PIXEL ART FONT appears only with UI FONT = KIM ORIGINAL.
+  - The frame rows hide for the GEN 3 and CUSTOM themes.
+- New REPELS setting (QUALITY OF LIFE) replaces AUTO-REPEL, REPEL PROMPT and
+  INFINITE REPEL: OFF / ASK / AUTO / INFINITE, default ASK.
+- New ANIMATED SPRITES setting (DISPLAY & MENUS) replaces ANIMATION and SPRITE
+  ANIMATION: ON / BATTLE ONLY / OFF. An earlier OFF choice carries over.
+- REUSABLE TMS and FORGET HM MOVES now work on Crystal. They are OFF by
+  default, under QUALITY OF LIFE.
+- PERFECT DVS keeps shiny Pokemon shiny, keeps their gender and keeps
+  Unown's letter. It used to make every Pokemon non-shiny and mostly male.
+- Removed:
+  - QUICK SHIP and BULK COINS, which could not work on Crystal.
+  - Rematch MATCH LEVELS: TRAINER LEVELS covers rematches.
+- Settings that make a Nuzlocke easier say so in their help.
+- The WILDS OF KANTO, NUZLOCKE, QUALITY OF LIFE and QOL TOGGLES switches are
+  the first row of their page. After a change they read "(NEXT LAUNCH)".
+- MOD LIST, DIAGNOSTICS, PERFORMANCE, the voxel cache rows and ASSET MANAGER
+  are on ADVANCED.
+- Fixed: EXP MULT and MONEY MULT set back to OFF could keep scaling.
+
 ## 0.9.65 changes
 
 - 3D battles: the player's Pokemon no longer shows dark diagonal stripes

@@ -52,6 +52,7 @@ return function(mod)
 
   -- -------------------------------------------------------------- options
   local realOptions = mod.options
+  local repelsMode
   local realDefine = realOptions.define
   local realGet = realOptions.get
   local merged, position = {}, {}
@@ -68,6 +69,40 @@ return function(mod)
     return schema
   end
   realOptions.define = mergeDefine
+  -- the merged schema, for the hub's pages (lib/gen2_aio/hub.lua)
+  rawset(mod, "_kimArenaSchema", function() return merged, position end)
+
+  -- 0.9.66: rows merged into one. The new row has no default, so a player
+  -- who never touched it keeps what the old rows said; components keep
+  -- reading the old keys, answered from the new row.
+  local DERIVED_OPT = {}
+  local function spriteAnimMode()
+    local v = realGet(realOptions, "spriteAnim")
+    if v ~= nil then return v end
+    if realGet(realOptions, "animate") == false then return "off" end
+    if realGet(realOptions, "spriteAnimation") == false then return "battle" end
+    return "on"
+  end
+  -- REPELS: OFF / ASK (Gen1Wild's prompt when one wears off) / AUTO
+  -- (QoL Toggles' AUTO-REPEL) / INFINITE (QoL Toggles' INFINITE REPEL)
+  repelsMode = function()
+    local v = realGet(realOptions, "repels")
+    if v ~= nil then return v end
+    if realGet(realOptions, "qt_repel") == true then return "infinite" end
+    return "ask"
+  end
+  DERIVED_OPT.spriteAnim = spriteAnimMode
+  DERIVED_OPT.animate = function() return spriteAnimMode() ~= "off" end
+  DERIVED_OPT.spriteAnimation = function() return spriteAnimMode() == "on" end
+  DERIVED_OPT.repels = repelsMode
+  realOptions.get = function(self, key)
+    local derive = DERIVED_OPT[key]
+    if derive then
+      local ok, v = pcall(derive)
+      if ok and v ~= nil then return v end
+    end
+    return realGet(self, key)
+  end
 
   -- DIAGNOSTICS: short status lines components report, drawn on screen
   -- when the DIAGNOSTICS setting is on (so problems can be read off a phone)
@@ -108,6 +143,7 @@ return function(mod)
   end
   local function scene3d() local m = mode(); return m == "kenney" or m == "stadium" end
 
+  local DEPENDS
   local OWN_VISIBLE = {
     arenaStadiumField = function() return mode() == "stadium" end,
     arenaResolution = scene3d, arenaShader = scene3d,
@@ -118,6 +154,35 @@ return function(mod)
     arenaCamera = function() return mode() ~= "white" end,
     arenaPlayerIntro = function() return mode() ~= "white" end,
   }
+  -- 0.9.66: shown only while they can do something (hub pages, gmarc rows)
+  local function nativeHud() return opt("arenaHud", "modern") == "native" end
+  local function weatherOn() return opt("weatherFx", "on") ~= "off" end
+  local function hudOn() return opt("overworldHud", true) ~= false end
+  local function quickOn() return opt("quickMenu", true) ~= false end
+  local THEME_FRAME = { ["gen2_aio:gen3"] = true, ["gen2_aio:custom"] = true }
+  DEPENDS = {
+    gen2BattleHudColor = nativeHud, qt_exp_bar = nativeHud, caught_qol_caught_indicator = nativeHud,
+    arenaCardDetail = function() return mode() ~= "white" end,
+    arenaEnemySize = function() return mode() ~= "white" end,
+    aa = function() return opt("perfMode", "balanced") == "quality" end,
+    weatherPlaces = weatherOn, weatherRain = weatherOn, weatherMoves = weatherOn,
+    weatherBattle = weatherOn,
+    timeFade = function()
+      local v = opt("timeOfDay", "sync")
+      return v == "sync" or v == "cycle" or v == "cycle60"
+    end,
+    hudPosition = hudOn,
+    quickInStart = quickOn,
+    pixelFont = function() return opt("arenaFont", "pixel_operator") == "kim" end,
+    frameStyle = function() return not THEME_FRAME[opt("gen2UiTheme", "default")] end,
+    frameAsset = function()
+      return not THEME_FRAME[opt("gen2UiTheme", "default")] and opt("frameStyle", "pixel") == "pixel"
+    end,
+    frameScale = function()
+      return not THEME_FRAME[opt("gen2UiTheme", "default")] and opt("frameStyle", "pixel") == "pixel"
+    end,
+  }
+
   -- ------------------------------------------------- sub-mod proxies
   local function joined(prefix, rel)
     if rel == nil or rel == "" then return prefix end
@@ -182,6 +247,12 @@ return function(mod)
       if key == "arenaCardDetail" then return true end
     end
     if key == "arenaBackground" then return opt("battleSprites", true) == false end
+    -- 0.9.66: rows that only do something with another row's value
+    local dep = DEPENDS[key]
+    if dep then
+      local okD, show = pcall(dep)
+      if okD and not show then return true end
+    end
     local visible = OWN_VISIBLE[key]
     if visible then return not visible() end
     return false
@@ -692,9 +763,9 @@ return function(mod)
         .. "legendaries and mythicals as rare encounters after the Elite Four, and "
         .. "trade evolutions by level-up (Lv 37, or holding the trade item)." },
     { key = "qolMod", label = "QUALITY OF LIFE", type = "toggle", default = true,
-      help = "Load Gen1Wild QOL: sprint, autosave, auto continue, sound, EXP share, move "
-        .. "reminder, rematches, easy HMs, reusable TMs, area banners. Its own options are "
-        .. "under OPTION. Takes effect the next time the game starts." },
+      help = "Load Gen1Wild QOL: sprint, autosave, auto continue, low HP beep, EXP share, "
+        .. "move reminder, rematches, easy HMs and the menu layout editor. Their settings are "
+        .. "on this page. Takes effect the next time the game starts." },
     { key = "startMenuPc", label = "PC IN START MENU", type = "toggle", default = true,
       help = "START -> PC opens Bill's PC from anywhere: withdraw, deposit, change box, "
         .. "move Pokemon. Same screen as a Pokemon Center PC." },
@@ -724,8 +795,8 @@ return function(mod)
         .. "multipliers, lights on and more, on their own page. Takes effect the next time "
         .. "the game starts." },
     { key = "wildsOfKanto", label = "WILDS OF KANTO", type = "toggle", default = true,
-      help = "Visible wild Pokemon and followers (Wilds of Kanto Revival). Its own options "
-        .. "are below. Takes effect the next time the game starts." },
+      help = "Visible wild Pokemon and followers (Wilds of Kanto Revival). Its settings are "
+        .. "on this page. Takes effect the next time the game starts." },
     { key = "nuzlockeMod", label = "NUZLOCKE", type = "toggle", default = true,
       help = "Load the Nuzlocke ruleset (set up from the title screen's SETUP entry). "
         .. "Takes effect the next time the game starts." },
@@ -827,8 +898,7 @@ return function(mod)
       choices = { { "80%", 80 }, { "90%", 90 }, { "100%", 100 }, { "110%", 110 },
         { "120%", 120 }, { "130%", 130 }, { "140%", 140 }, { "150%", 150 },
         { "160%", 160 }, { "180%", 180 }, { "200%", 200 } },
-      help = "Size of the opponent's Pokemon in 3D battles, grown in place on its spot. "
-        .. "Pair with PLAYER PKMN SIZE to balance the two sides." },
+      help = "Size of the opponent's Pokemon in 3D battles, grown in place on its spot." },
     { key = "arenaBackground", label = "BATTLE BACKGROUND", type = "choice", default = "kim_hd",
       choices = { { "DEFAULT (WHITE)", "white" }, { "KIM HD", "kim_hd" },
         { "KENNEY HD", "kenney" }, { "VOXEL WORLD", "voxel" } },
@@ -845,8 +915,7 @@ return function(mod)
     { key = "arenaCamera", label = "BATTLE CAMERA", type = "choice", default = "locked",
       choices = { { "LOCKED", "locked" }, { "FREE", "free" } },
       help = "LOCKED holds the 3D battle camera in place: no slow drift, and mouse, "
-        .. "stick and zoom do not move it. FREE restores Battle Art's drifting, "
-        .. "steerable camera." },
+        .. "stick and zoom do not move it. FREE lets the camera drift and be steered." },
     { key = "hitFlicker", label = "HIT FLICKER", type = "choice", default = "steady",
       choices = { { "STEADY", "steady" }, { "FLICKER", "flicker" } },
       help = "STEADY: your Pokemon stays visible through the frame-long blanks inside some "
@@ -867,6 +936,17 @@ return function(mod)
     { key = "arenaWeather", label = "3D BG WEATHER", type = "choice", default = "off",
       choices = { { "OFF", "off" }, { "RAIN", "rain" }, { "THUNDERSTORM", "storm" } },
       help = "Cosmetic rain or storms in outdoor Kenney scenes." },
+    -- 0.9.66 merged rows (see DERIVED_OPT): no default, so an untouched row
+    -- keeps what the rows it replaced said
+    { key = "repels", label = "REPELS", type = "choice",
+      choices = { { "OFF", "off" }, { "ASK", "ask" }, { "AUTO", "auto" }, { "INFINITE", "infinite" } },
+      help = "When a REPEL wears off. ASK: offer to use another. AUTO: use the next one "
+        .. "from your bag by itself. INFINITE: a used REPEL never wears off (bends Nuzlocke "
+        .. "rules). OFF: Crystal's own message only." },
+    { key = "spriteAnim", label = "ANIMATED SPRITES", type = "choice",
+      choices = { { "ON", "on" }, { "BATTLE ONLY", "battle" }, { "OFF", "off" } },
+      help = "Kanto in Motion's animated Pokemon and trainers. BATTLE ONLY animates them in "
+        .. "battle and holds menu sprites (party, summary, Pokedex) still." },
     { key = "kimHdAlign", label = "KIM HD BG ALIGN", type = "toggle", default = true,
       help = "Fit each KIM HD background so its painted ground spots sit under the "
         .. "Pokemon's feet. OFF uses a plain crop (see KIM HD BG OFFSET)." },
@@ -897,8 +977,22 @@ return function(mod)
   if opt("qolMod", true) ~= false then
     local qol = subMod("qol")
     qol.find = find
+    -- 0.9.66: REPEL PROMPT follows REPELS (only OFF silences it); MATCH
+    -- LEVELS is dropped (TRAINER LEVELS covers rematches)
+    rawset(qol, "_kimArenaQolLock", function(key)
+      if key == "interact_qol_repel_prompt" then return repelsMode() ~= "off" end
+      if key == "rematch_scale" then return false end
+      return nil
+    end)
+    local before = {}
+    for key in pairs(position) do before[key] = true end
     qolOk = runComponent("Wild QOL", qol, "qol/main.lua")
     mod.exports.qol = qol.exports
+    -- the rows Gen1Wild QOL defined: the hub writes these through QOL's own
+    -- store (some live under a shared id)
+    local qolKeys = {}
+    for key in pairs(position) do if not before[key] then qolKeys[key] = true end end
+    rawset(mod, "_kimArenaQolKeys", qolKeys)
   end
 
   -- QoL Toggles 1.31.1 (qoltoggles/): ~40 switches, filed as rows of the
@@ -914,19 +1008,52 @@ return function(mod)
   if opt("qolToggles", true) ~= false then
     local qt = namespaced(subMod("qoltoggles"), "qt_")
     qt.find = find
-    local FORCED = { run_hold_b = false, map_location = false, unlimited_tms = false,
-      forgettable_hms = false, mouse_cam_lock = false, last_item = false }
-    local DEFAULTS = { catch_heal = false }
+    -- 0.9.66: QUICK SHIP and BULK COINS removed (their NPC matching cannot
+    -- work on Crystal). UNLIMITED TMs / FORGETTABLE HMs are back as REUSABLE
+    -- TMS / FORGET HM MOVES (the Gen1Wild versions are Gen 1 only), OFF by
+    -- default. INFINITE REPEL and AUTO-REPEL follow the bundle's REPELS row.
+    local FORCED = { run_hold_b = false, map_location = false, mouse_cam_lock = false,
+      last_item = false, quick_ssanne = false, bulk_coins = false }
+    local DERIVED = {
+      repel = function() return repelsMode() == "infinite" end,
+      auto_repel = function() return repelsMode() == "auto" end,
+      exp_bar = function()
+        if opt("arenaHud", "modern") ~= "native" then return false end
+        return nil
+      end,
+    }
+    local DEFAULTS = { catch_heal = false, unlimited_tms = false, forgettable_hms = false }
+    local LABELS = { unlimited_tms = "REUSABLE TMS", forgettable_hms = "FORGET HM MOVES" }
+    local NUZ_WARN = { catch_heal = true, always_catch = true, perfect_dvs = true,
+      instant_flee = true, b_to_run = true, heal_map_change = true, heal_battle = true,
+      quick_nurse = true, turn_away_nurse = true, keep_money = true }
     local CYCLES = {}
+    -- the host's word on a toggle's value (qoltoggles' sessionGet asks it
+    -- last, so stored values pass through it too)
+    local function hostValue(bare, v)
+      if FORCED[bare] ~= nil then return FORCED[bare] end
+      local derive = DERIVED[bare]
+      if derive then
+        local d = derive()
+        if d ~= nil then return d end
+      end
+      local dec = CYCLES[bare]
+      if dec and type(v) == "string" then
+        if v == "off" then return false end
+        local code = dec[v]
+        if code ~= nil then return code end
+        return tonumber(v) or v
+      end
+      if v == nil and DEFAULTS[bare] ~= nil then return DEFAULTS[bare] end
+      return v
+    end
+    rawset(qt, "_kimArenaQtFilter", function(key, v)
+      return hostValue((tostring(key):gsub("^qt_", "")), v)
+    end)
     local innerGet = qt.options.get
     qt.options.get = function(self, key)
       local bare = (tostring(key):gsub("^qt_", ""))
-      if FORCED[bare] ~= nil then return FORCED[bare] end
-      if bare == "exp_bar" and opt("arenaHud", "modern") ~= "native" then return false end
-      local v = innerGet(self, bare)
-      local dec = CYCLES[bare]
-      if dec and type(v) == "string" then return dec[v] end
-      return v
+      return hostValue(bare, innerGet(self, bare))
     end
     local qtErr
     qtOk, qtErr = pcall(function()
@@ -942,12 +1069,17 @@ return function(mod)
     if type(specs) == "table" then
       local schema = {}
       for _, spec in ipairs(specs) do
-        if type(spec) == "table" and FORCED[spec.key] == nil then
+        if type(spec) == "table" and FORCED[spec.key] == nil
+            and spec.key ~= "repel" and spec.key ~= "auto_repel" then
           local help = (tostring(spec.gen2Help or spec.help or ""):gsub("[\n\v]", " "))
           if spec.key == "exp_bar" then help = help .. " Only with BATTLE HUD = NATIVE." end
+          if NUZ_WARN[spec.key] and not help:find("Nuzlocke", 1, true) then
+            help = help .. " Bends Nuzlocke rules."
+          end
           local default = DEFAULTS[spec.key]
           if default == nil then default = spec.default end
-          local row = { key = spec.key, label = spec.gen2Label or spec.label, help = help }
+          local row = { key = spec.key, label = LABELS[spec.key] or spec.gen2Label or spec.label,
+            help = help }
           if type(spec.cycle) == "table" then
             local choices, dec = {}, {}
             for _, v in ipairs(spec.cycle) do

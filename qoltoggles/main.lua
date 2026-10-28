@@ -412,7 +412,8 @@ local TOGGLES = {
   { key = "always_catch", label = "ALWAYS CATCH", default = false,
     help = "Every ball\ncatches, Master\nBall style.\vThe ball is\nstill consumed." },
   { key = "perfect_dvs", label = "PERFECT DVS", default = false,
-    help = "Caught and\ngifted mons get\n15s across the\nboard, the Gen 1\nmaximum, with\nstats recomputed\nto match." },
+    help = "Caught and\ngifted mons get\n15s across the\nboard, the Gen 1\nmaximum, with\nstats recomputed\nto match.",
+    gen2Help = "Caught and gifted Pokemon get the highest DVs that keep their shininess, gender and Unown letter, with stats recomputed. Bends Nuzlocke rules." },
   { key = "exp_mult", label = "EXP MULT", default = false,
     cycle = MULT_CYCLE,
     help = "Scale battle\nEXP by a\nmultiplier: 0x,\n1.5x, 2x, 3x\nor 4x.\vOFF is\nvanilla." },
@@ -686,7 +687,21 @@ return function(mod)
     return nil
   end
   local lastSource = {}
+  local sessionGetRaw
+  -- gen2-aio 0.9.66: the host has the last word on every value -- settings
+  -- it holds (removed / merged rows: QUICK SHIP, REPELS, ...) and the
+  -- stored codes of its choice rows ("off", "2") decoded to what this mod
+  -- expects (false, 2). A stored value would otherwise bypass both.
   local function sessionGet(key)
+    local value = sessionGetRaw(key)
+    local filter = rawget(mod, "_kimArenaQtFilter")
+    if type(filter) == "function" then
+      local ok, v = pcall(filter, key, value)
+      if ok then return v end
+    end
+    return value
+  end
+  function sessionGetRaw(key)
     local live = Game and Game.mods
     local save = Game and Game.save
     local places = {
@@ -2286,10 +2301,59 @@ return function(mod)
   -- max DVs on a caught mon: all 15s, stats recomputed so the mon's actual
   -- stats match.  Gen 1's Stats.calc drives the five Gen 1 stats; Gold's
   -- Mon.stats computes the six Gen 2 stats (special split into spcA/spcD).
+  -- gen2-aio 0.9.66: on Gen 2 the DVs also decide shininess, gender and
+  -- Unown's letter, so all 15s made every mon non-shiny, mostly male and an
+  -- Unown "letter by DVs" alike. Each DV is raised as far as it can go
+  -- without changing those: a shiny keeps DEF / SPD / SPC at 10 and an ATK
+  -- in the shiny set, a female keeps an ATK under her species' threshold,
+  -- and Unown keeps the two middle bits of every DV.
+  mod.exports.perfectDVSet = function(mon, def)
+    local old = mon.dvs or {}
+    local dv = { attack = 15, defense = 15, speed = 15, special = 15 }
+    local okM, Mon = false, nil
+    if GEN2 then okM, Mon = pcall(require, "src.battle.gen2.Mon") end
+    if okM and type(Mon) == "table" then
+      local shiny = mon.shiny == true
+        or (type(Mon.vanillaShiny) == "function" and Mon.vanillaShiny(old))
+      if shiny then dv.defense, dv.speed, dv.special = 10, 10, 10 end
+      if mon.species == "UNOWN" then
+        local function keepMiddle(x) return 9 + (math.floor((tonumber(x) or 0) / 2) % 4) * 2 end
+        dv.attack = keepMiddle(old.attack)
+        if not shiny then
+          dv.defense, dv.speed, dv.special =
+            keepMiddle(old.defense), keepMiddle(old.speed), keepMiddle(old.special)
+        end
+      else
+        local function atkOk(a) return not shiny or a % 4 == 2 or a % 4 == 3 end
+        local want = mon.gender
+        if want == nil and def and type(Mon.gender) == "function" then
+          local okG, g = pcall(Mon.gender, def, old, { species = mon.species })
+          if okG then want = g end
+        end
+        local a = 15
+        while a >= 0 do
+          local ok = atkOk(a)
+          if ok and want and def and type(Mon.gender) == "function" then
+            local trial = { attack = a, defense = dv.defense, speed = dv.speed, special = dv.special }
+            local okG, g = pcall(Mon.gender, def, trial, { species = mon.species })
+            ok = (not okG) or g == want
+          end
+          if ok then break end
+          a = a - 1
+        end
+        if a >= 0 then dv.attack = a end
+      end
+    end
+    -- the HP DV is the four other DVs' low bits, as on the cart
+    dv.hp = (dv.attack % 2) * 8 + (dv.defense % 2) * 4 + (dv.speed % 2) * 2 + dv.special % 2
+    if not GEN2 then dv.hp = 15 end
+    dv.specialAttack, dv.specialDefense = dv.special, dv.special
+    return dv
+  end
+
   mod.exports.perfectDVs = function(mon, data)
-    mon.dvs = { attack = 15, defense = 15, speed = 15, special = 15, hp = 15,
-                specialAttack = 15, specialDefense = 15 }
     local def = data and data.pokemon and data.pokemon[mon.species]
+    mon.dvs = mod.exports.perfectDVSet(mon, def)
     if def then
       if GEN2 then
         mon.stats = require("src.battle.gen2.Mon").stats(def, mon.dvs,
