@@ -71,7 +71,15 @@ Voxel3D.FACE_SHADE = {
 
 local SHADER = [[
   varying float vShade;
-  varying vec3 vSun;          // this fragment's place in the sun's view
+  // This fragment's place in the sun's view -- highp, like vGrid below.
+  // LOVE's pixel stage defaults to mediump on GLES (Android): fp16, ~2^-11
+  // over the unit cube, which is about ONE shadow texel at these map sizes.
+  // A card standing large on screen then holds one quantised value across
+  // many pixels, dFdx/dFdy read zero (or a spike at each step), the compare
+  // loses its slope term and the card shades ITSELF in diagonal bands at
+  // texel pitch. Desktop GL ignores precision, which is why only the phone
+  // showed it.
+  varying LOVE_HIGHP_OR_MEDIUMP vec3 vSun;
   varying float vFog;         // how deep into the map's haze it stands
 #ifdef VOXEL_GRID
   // model space, one unit per voxel -- see VoxelGrid. Precision matters
@@ -152,28 +160,39 @@ local SHADER = [[
 #ifdef PIXEL
   uniform Image sunMap;
   uniform float sunDark;      // how far into black a shadow goes; 0 = off
-  uniform float sunBias;
-  uniform vec2 sunTexel;
+  // highp for the same reason as vSun: 1/1536 is not exact in fp16, and
+  // off by its rounding the texel index drifts most of a texel by the map's
+  // far edge
+  uniform LOVE_HIGHP_OR_MEDIUMP float sunBias;
+  uniform LOVE_HIGHP_OR_MEDIUMP vec2 sunTexel;
 
-  // the two-channel pack ShadowMap writes: high byte, then low
-  float sunDepth(vec2 uv) {
-    vec4 c = Texel(sunMap, uv);
-    return c.r + c.g * (1.0 / 255.0);
-  }
+  // 1 while a CARD (a battle Pokemon) is drawn: see Voxel3D.cardShadow
+  uniform float sunCard;
 
   // Compare at the actual shadow texel centre on this receiver's plane.
   // A constant bias alone fails on building fronts when the sun grazes them:
   // neighbouring texels can be many world pixels farther down the wall.
-  float shadowTap(vec3 p, vec2 offset, vec2 gradient) {
-    vec2 uv = (floor((p.xy + sunTexel * offset) / sunTexel) + 0.5) * sunTexel;
-    float receiver = p.z + dot(gradient, uv - p.xy) - sunBias;
-    return step(receiver, sunDepth(uv));
+  float shadowTap(LOVE_HIGHP_OR_MEDIUMP vec3 p, vec2 offset,
+                  LOVE_HIGHP_OR_MEDIUMP vec2 gradient) {
+    LOVE_HIGHP_OR_MEDIUMP vec2 uv =
+      (floor((p.xy + sunTexel * offset) / sunTexel) + 0.5) * sunTexel;
+    LOVE_HIGHP_OR_MEDIUMP vec4 c = Texel(sunMap, uv);
+    // a card takes nothing from the CAST layer (blue, see ShadowMap.sprites):
+    // the texels its own silhouette stored are the first of those, and no
+    // bias survives a sun grazing the card's plane
+    if (sunCard * c.b > 0.5) return 1.0;
+    LOVE_HIGHP_OR_MEDIUMP float receiver =
+      p.z + dot(gradient, uv - p.xy) - sunBias;
+    // the two-channel pack ShadowMap writes: high byte, then low. The high
+    // byte is snapped back to its exact step, so a lowp/mediump sample of it
+    // costs no depth.
+    return step(receiver, (floor(c.r * 255.0 + 0.5) + c.g) * (1.0 / 255.0));
   }
 
   // 1.0 in full sun, 1.0 - sunDark in full shadow. Four taps half a texel
   // out on the diagonals: a 2x2 box filter, which is what turns the
   // shadow map's texel staircase into a one-pixel soft edge.
-  float sunlight(vec3 p) {
+  float sunlight(LOVE_HIGHP_OR_MEDIUMP vec3 p) {
     if (sunDark <= 0.0) return 1.0;
     // outside the sun's frustum nothing was recorded, so nothing occludes
     if (p.x < 0.0 || p.x > 1.0 || p.y < 0.0 || p.y > 1.0 || p.z > 1.0) {
@@ -188,10 +207,16 @@ local SHADER = [[
     vec2 e = min(p.xy, 1.0 - p.xy);
     float edge = smoothstep(0.0, 0.06, min(e.x, e.y));
     if (edge <= 0.0) return 1.0;
-    vec3 dx = dFdx(p), dy = dFdy(p);
-    float det = dx.x * dy.y - dx.y * dy.x;
-    vec2 gradient = vec2(0.0);
-    if (abs(det) > 1e-12) {
+    // highp too: a texel-sized step per pixel squares to ~1e-8 here, under
+    // fp16's smallest value, so in mediump `det` was zero and the slope lost
+    LOVE_HIGHP_OR_MEDIUMP vec3 dx = dFdx(p), dy = dFdy(p);
+    LOVE_HIGHP_OR_MEDIUMP float det = dx.x * dy.y - dx.y * dy.x;
+    LOVE_HIGHP_OR_MEDIUMP vec2 gradient = vec2(0.0);
+    // A card compares at its own depth, unextrapolated: what is left for it
+    // is the world, and the plane of a card standing on the ground, carried
+    // a texel out past its feet, lands under that ground and reads the
+    // floor as an occluder -- bands across the legs under a low sun.
+    if (abs(det) > 1e-12 && sunCard < 0.5) {
       gradient = vec2(dx.z * dy.y - dy.z * dx.y,
                       dy.z * dx.x - dx.z * dy.x) / det;
     }
@@ -1084,6 +1109,8 @@ function Voxel3D.beginScene(w, h, cx, cy, vw, vh, sky, slot)
   pcall(sh.send, sh, "glassGlint", Voxel3D.glassGlint or 0)
   -- on until a sprite pass says otherwise, reset per frame like `ghost`
   pcall(sh.send, sh, "glassOn", 1)
+  -- and every draw an ordinary receiver until a card pass says otherwise
+  pcall(sh.send, sh, "sunCard", 0)
   -- the curved world bends about the camera's focus, so the horizon keeps
   -- a fixed distance ahead of the player rather than sitting on the map.
   -- A placed camera may decline it outright (Voxel3D.camera.curve = 0).
@@ -1361,6 +1388,23 @@ end
 function Voxel3D.glass(on)
   if not (active and activeShader) then return end
   pcall(activeShader.send, activeShader, "glassOn", on and 1 or 0)
+end
+
+-- Whether what is drawn next is a CARD receiving the sun -- an upright
+-- billboard that was itself drawn into the map as one of the cast (see
+-- ShadowMap.sprites). true for the length of such a pass, false to put it
+-- back; beginScene resets it.
+--
+-- A card cannot sensibly shadow itself: it is one flat quad, and every
+-- "self shadow" is the compare's own error -- a sun grazing the card's
+-- plane turns a texel's worth of slope into more depth than any bias
+-- forgives. So such a receiver ignores the cast layer of the map (itself,
+-- and the other mon with it) and compares at its own depth against the
+-- world's: trees, terrain and buildings between it and the sun still shade
+-- it, and its own shadow on the ground is untouched.
+function Voxel3D.cardShadow(on)
+  if not (active and activeShader) then return end
+  pcall(activeShader.send, activeShader, "sunCard", on and 1 or 0)
 end
 
 function Voxel3D.endGhost()
