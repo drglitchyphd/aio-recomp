@@ -919,8 +919,24 @@ return function(host)
     { id = "travel", name = "FLY / DIG / ROPE" }, { id = "quick", name = "QUICK MENU" },
   }
   local DEFAULT_HUD = "gear,dex,bike,items"
-  function M.hudOrder()
-    local raw = tostring(opt("hudButtons", DEFAULT_HUD) or DEFAULT_HUD)
+  -- read the editor's value where the editor writes it (the live game's
+  -- option tables) before the host reader, which can lag behind it
+  local function stored(game, key)
+    local function from(t)
+      local b = type(t) == "table" and t[mod.id]
+      return type(b) == "table" and b[key] or nil
+    end
+    if type(game) == "table" then
+      local v = from(game.mods and game.mods.modOptions)
+      if v == nil then v = from(game.save and game.save.options and game.save.options.modOptions) end
+      if v == nil then v = from(game.options and game.options.modOptions) end
+      if v ~= nil then return v end
+    end
+    return opt(key, nil)
+  end
+  function M.hudOrder(game)
+    local raw = stored(game or rawget(mod, "game"), "hudButtons")
+    raw = tostring(raw or DEFAULT_HUD)
     local out, seen = {}, {}
     for id in raw:gmatch("[%w_]+") do
       for _, b in ipairs(M.HUD_BUTTONS) do
@@ -961,7 +977,7 @@ return function(host)
   -- Shared by the overworld HUD; retain the game's availability and item paths.
   function M.hudActions(game)
     local actions = {}
-    for _, id in ipairs(M.hudOrder()) do
+    for _, id in ipairs(M.hudOrder(game)) do
       local ok, a = pcall(hudAction, game, id)
       if ok and a then actions[#actions + 1] = a end
     end
@@ -989,7 +1005,7 @@ return function(host)
   end
   M.MAX_HUD = 6
   function M.setHudPlace(game, id, place)
-    local order = M.hudOrder()
+    local order = M.hudOrder(game)
     for i = #order, 1, -1 do if order[i] == id then table.remove(order, i) end end
     if place then
       place = math.max(1, math.min(place, #order + 1, M.MAX_HUD))
@@ -1002,7 +1018,7 @@ return function(host)
     local rows = {}
     for _, b in ipairs(M.HUD_BUTTONS) do
       local function place()
-        for i, id in ipairs(M.hudOrder()) do if id == b.id then return i end end
+        for i, id in ipairs(M.hudOrder(game)) do if id == b.id then return i end end
         return nil
       end
       local row = { id = "kimArena.hud." .. b.id, label = b.name,
@@ -1010,7 +1026,7 @@ return function(host)
       row.value = function() local p = place(); return p and ("#" .. p) or "OFF" end
       row.step = function(g, dir)
         g = g or game
-        local n = #M.hudOrder()
+        local n = #M.hudOrder(g)
         local p = place()
         local options = { false }
         for i = 1, math.min(M.MAX_HUD, p and n or n + 1) do options[#options + 1] = i end

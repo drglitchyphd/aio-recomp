@@ -1,10 +1,22 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.59)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.60)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.60 (2026-10-28)
+
+- User's nurse screenshot "quick false (default)" was taken on 0.9.58 (before
+  the qt_qt_ fix); bundle harness confirms 0.9.59 hub rows write
+  qt_quick_nurse. Re-check on 0.9.60.
+- quick_menu M.hudOrder(game) reads hudButtons from the live game's option
+  tables (mods / save.options / options modOptions) before the host reader;
+  the editor wrote correctly but the read could lag (harness reproduced).
+- touch/main.lua: touchHotbar (KEY BAR (...)) moves L.hotbar off-screen in
+  the TouchControls.layout wrap (the engine's "..." hotbar; its own option
+  opts.hotbar is only applied by TouchControls:applyOptions at boot).
 
 ## 0.9.59 (2026-10-28) — real nurse cause
 
