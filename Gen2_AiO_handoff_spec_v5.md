@@ -1,10 +1,34 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.57)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.58)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.58 (2026-10-28)
+
+- Device diag on 0.9.57 showed "nurse interact: quick false, turn false" with
+  the rows ON: the wraps ran, the SETTING read false. qoltoggles sessionGet now
+  looks for an explicitly stored value (Game.mods.modOptions, save.options /
+  options modOptions under mod.id, prefixed qt_ or bare, then own storage)
+  before the default-returning public getter. Diag prints the source.
+  If it still fails, the source tells which store the row writes.
+- MeshStore: report() on every lookup/save ("disk cache": state, hits,
+  misses, saves, failures, files for this build tag (+old), last event, last
+  worker error). ChunkMesher: Budget.tick in persist/restore copy loops
+  (flatQuads, model verts, cut stamps, meshFromFlat index), and "voxel slow"
+  for any single resume >50 ms with its phase (lookup/restore/geometry/
+  persist). Device 0.9.57 showed a 1515 ms peak slice. The header loadstring
+  in MeshStore.unpack and Structures analysis are not sliced yet; if "voxel
+  slow" blames restore or geometry after this, look there next.
+- quick_menu: HUD_BUTTONS catalog + hudOrder (option hudButtons, default
+  "gear,dex,bike,items", max 6) + HUD BUTTONS editor (Hub.extras.ui chained
+  after theme_picker; QUICK MENU row). New actions: pokedex
+  (pushStartMenuItem), heal (M.quickHeal via ItemEffects.useOnMon +
+  consumeItem; HERBS excluded), travel (FLY in TOWN/ROUTE; DIG / ESCAPE ROPE
+  in CAVE/DUNGEON with ctx.canEscapeRope), quick. tests/hud_buttons.lua.
+- Settings overhaul (#1): audit in progress; awaiting user answers.
 
 ## START HERE — prepared 0.9.57 (2026-10-26)
 
