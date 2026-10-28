@@ -1,10 +1,23 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.64)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.65)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.65 (2026-10-28)
+
+- Battle-card self-shadow stripes fixed (gmarc). On GLES the pixel stage
+  defaults to mediump, so Voxel3D's `vSun` and the shadow compare ran in
+  fp16: about one shadow texel of quantisation, and a dFdx/dFdy plane
+  gradient that underflowed. Fixes:
+  - `vSun`, `sunBias`, `sunTexel`, the compare locals and ShadowMap's
+    `vDepth` and pack are now `LOVE_HIGHP_OR_MEDIUMP`.
+  - New `Voxel3D.cardShadow(on)` (uniform `sunCard`): a card receiver
+    skips the cast layer (blue channel) and compares without extrapolation.
+    BattleScene wraps the mon-card draws in it.
+- Touches gmarc/lib, so the build-id changes and caches rebuild once.
 
 ## 0.9.64 (2026-10-28)
 
