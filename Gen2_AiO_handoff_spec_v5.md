@@ -1,10 +1,20 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.58)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.59)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.59 (2026-10-28) — real nurse cause
+
+- main.lua built the hub's QoL Toggles rows with copy.key = "qt_" .. row.key,
+  but namespaced().define had already renamed row.key to "qt_<key>" in place,
+  so the hub read/wrote "qt_qt_<key>" for all 40 switches. Fixed; qoltoggles
+  storedIn also reads the legacy "qt_qt_" value (correct key wins).
+  tests/qoltoggles_relaunch.lua session 3 covers it.
+- Settings audit (203 rows, proposed 9 pages, removals/merges, questions):
+  docs/settings_audit.md. Overhaul waits on the user's answers.
 
 ## 0.9.58 (2026-10-28)
 

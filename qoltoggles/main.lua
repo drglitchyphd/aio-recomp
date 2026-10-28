@@ -679,7 +679,11 @@ return function(mod)
     if type(bucket) ~= "table" then return nil end
     local prefix = rawget(mod, "_kimKeyPrefix") or ""
     if bucket[prefix .. key] ~= nil then return bucket[prefix .. key] end
-    return bucket[key]
+    if bucket[key] ~= nil then return bucket[key] end
+    -- 0.9.58 and earlier: the hub saved these as "qt_qt_<key>"; honour a
+    -- choice made there until the row is changed again (it now writes qt_)
+    if prefix ~= "" then return bucket[prefix .. prefix .. key] end
+    return nil
   end
   local lastSource = {}
   local function sessionGet(key)

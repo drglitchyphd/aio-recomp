@@ -966,7 +966,10 @@ return function(mod)
       for i, row in ipairs(schema) do
         local copy = {}
         for k, v in pairs(row) do copy[k] = v end
-        copy.key = "qt_" .. row.key
+        -- define() already renamed the row to "qt_<key>" in place; adding
+        -- the prefix again stored every hub QoL Toggles switch as
+        -- "qt_qt_<key>", which the component never read (0.9.59)
+        copy.key = row.key:sub(1, 3) == "qt_" and row.key or ("qt_" .. row.key)
         rowsSchema[i] = copy
       end
       local IGO = loadOwn("lib/gen2_aio/ingame_options.lua")
