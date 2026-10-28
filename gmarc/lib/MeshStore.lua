@@ -101,14 +101,39 @@ local function ensureThread()
     thread = love.thread.newThread(WORKER)
     thread:start(toWorker, fromWorker)
   end)
-  if not ok then disabled = true; thread = nil; return false end
+  if not ok then disabled = true; thread = nil; offReason = "no worker thread"; report(); return false end
+  -- count what survived from earlier plays: this build's files are the
+  -- ones a revisit can hit; old builds' files are swept below
+  pcall(function()
+    local tag = MeshStore.tag()
+    fileCount, oldCount = 0, 0
+    for _, name in ipairs(love.filesystem.getDirectoryItems(root .. "/" .. DIR) or {}) do
+      if name:sub(1, #tag) == tag then fileCount = fileCount + 1 else oldCount = oldCount + 1 end
+    end
+  end)
   -- old builds' files go: keep only names that start with this build's tag
   toWorker:push({ op = "sweep", dir = root .. "/" .. DIR, keep = MeshStore.tag() })
   return true
 end
 
+-- gen2-aio 0.9.58: what DIAGNOSTICS says about the cache. Published on
+-- every lookup and save (a run of nothing but misses used to say nothing),
+-- with the files on storage for this build and for older builds.
+local lastEvent, lastError, fileCount, oldCount, offReason = "-", nil, nil, nil, nil
+local function report()
+  local mod = V and V.mod
+  local d = mod and rawget(mod, "_kimArenaDiag")
+  if not d then return end
+  local st = MeshStore.stats
+  local state = disabled and ("OFF" .. (offReason and (" (" .. offReason .. ")") or ""))
+    or (MeshStore.enabled() and "on" or "OFF (setting)")
+  pcall(d, "disk cache", ("%s; hits %d, misses %d, saves %d, failures %d; files %s (+%s old); last %s%s"):format(
+    state, st.hits, st.misses, st.saves, st.failures, tostring(fileCount or "?"),
+    tostring(oldCount or "?"), lastEvent, lastError and ("; error " .. lastError) or ""))
+end
+
 local function poll()
-  if not fromWorker then return end
+  if not fromWorker then report(); return end
   while true do
     local msg = fromWorker:pop()
     if not msg then break end
@@ -116,17 +141,17 @@ local function poll()
       local p = pending[msg.id]
       if p then p.done = true; p.blob = msg.ok and msg.data or false end
     elseif msg.op == "saved" then
-      if msg.ok then MeshStore.stats.saves = MeshStore.stats.saves + 1
-      else MeshStore.stats.failures = MeshStore.stats.failures + 1 end
+      if msg.ok then
+        MeshStore.stats.saves = MeshStore.stats.saves + 1
+        fileCount = (fileCount or 0) + 1
+      else
+        MeshStore.stats.failures = MeshStore.stats.failures + 1
+        lastError = tostring(msg.err):sub(1, 60)
+      end
     end
     if thread and thread:getError() then disabled = true end
   end
-  local d = hostFn("_kimArenaDiag")
-  if d then
-    local st = MeshStore.stats
-    pcall(d, "disk cache", ("%s hits %d, misses %d, saves %d, failures %d"):format(
-      disabled and "OFF" or "on", st.hits, st.misses, st.saves, st.failures))
-  end
+  report()
 end
 MeshStore.poll = poll
 
@@ -179,7 +204,14 @@ local function pathOf(name) return root .. "/" .. DIR .. "/" .. name end
 function MeshStore.begin(name)
   if not MeshStore.enabled() or not ensureThread() then return nil end
   local info = love.filesystem.getInfo(pathOf(name))
-  if not info then MeshStore.stats.misses = MeshStore.stats.misses + 1; return nil end
+  local short = name:match("^[^-]*%-(.-)_%x+%x*%.kms$") or name
+  if not info then
+    MeshStore.stats.misses = MeshStore.stats.misses + 1
+    lastEvent = "miss " .. short
+    poll()
+    return nil
+  end
+  lastEvent = "load " .. short
   nextId = nextId + 1
   local ticket = { id = nextId, started = love.timer.getTime() }
   pending[nextId] = ticket
@@ -222,6 +254,8 @@ function MeshStore.save(name, data)
     pcall(data.release, data); return false
   end
   toWorker:push({ op = "save", id = 0, path = pathOf(name), dir = root .. "/" .. DIR, data = data })
+  lastEvent = "save " .. (name:match("^[^-]*%-(.-)_%x+%x*%.kms$") or name)
+  poll()
   return true
 end
 

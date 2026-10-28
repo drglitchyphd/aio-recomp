@@ -667,15 +667,38 @@ return function(mod)
     return false
   end
 
+  -- gen2-aio 0.9.58: the public getter answers a key nobody stored with its
+  -- schema DEFAULT (false for most toggles), so a value saved anywhere else
+  -- -- the save's options, the live loader, an unprefixed key, this mod's
+  -- own storage -- was never reached: on device QUICK NURSE read false while
+  -- its settings row showed ON. Look for an explicitly STORED value in every
+  -- place one can live first; only then fall back to the defaults.
+  local function storedIn(t, key)
+    if type(t) ~= "table" then return nil end
+    local bucket = t[mod.id]
+    if type(bucket) ~= "table" then return nil end
+    local prefix = rawget(mod, "_kimKeyPrefix") or ""
+    if bucket[prefix .. key] ~= nil then return bucket[prefix .. key] end
+    return bucket[key]
+  end
+  local lastSource = {}
   local function sessionGet(key)
-    local value = publicOption(key)
-    if value ~= nil then return value end
+    local live = Game and Game.mods
+    local save = Game and Game.save
+    local places = {
+      { "loader", live and live.modOptions },
+      { "save", save and save.options and save.options.modOptions },
+      { "options", Game and Game.options and Game.options.modOptions },
+    }
+    for _, place in ipairs(places) do
+      local value = storedIn(place[2], key)
+      if value ~= nil then lastSource[key] = place[1]; return value end
+    end
     local saved = loadStoredSettings()
-    if saved and saved[key] ~= nil then return saved[key] end
-    local loader = Game.mods
-    local bucket = loader and loader.modOptions and loader.modOptions[mod.id]
-    value = bucket and bucket[key]
-    if value ~= nil then return value end
+    if saved and saved[key] ~= nil then lastSource[key] = "storage"; return saved[key] end
+    local value = publicOption(key)
+    if value ~= nil then lastSource[key] = "default"; return value end
+    lastSource[key] = "fallback"
     return mod.exports.defaultFor(key)
   end
 
@@ -689,6 +712,7 @@ return function(mod)
   local LIVE = Runtime._qolTogglesLive or {}
   Runtime._qolTogglesLive = LIVE
   LIVE.get, LIVE.exports = sessionGet, mod.exports
+  LIVE.source = function(key) return lastSource[key] or "?" end
   LIVE.diag = mod._kimArenaDiag
   LIVE.lastMachine = nil
   local function get(key) return LIVE.get(key) end
@@ -4104,7 +4128,9 @@ return function(mod)
         if vanillaInteract then
           World2._qolTogglesQuickNurseInstalled = true
           World2.interactBody = function(self)
-            nurseDiag("interact","quick "..tostring(get("quick_nurse"))..", turn "..tostring(get("turn_away_nurse")))
+            local q, t = get("quick_nurse"), get("turn_away_nurse")
+            nurseDiag("interact","quick "..tostring(q).." ("..LIVE.source("quick_nurse").."), turn "
+              ..tostring(t).." ("..LIVE.source("turn_away_nurse").."), id "..tostring(mod.id))
             if self._aioQuickNurse then return true end
             if get("quick_nurse") then
               local npc = LIVE.exports.nurseAt(self)

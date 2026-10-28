@@ -95,6 +95,14 @@ return function(host)
       G.rectangle("line", 3, 3, 18, 18, 2, 2)
       G.line(12, 4, 12, 20); G.line(6, 8, 9, 8); G.line(6, 12, 9, 12)
       G.circle("line", 16.5, 12, 2.5)
+    elseif id == "pokedex" then
+      G.rectangle("line", 4, 2, 16, 20, 2, 2)
+      G.circle("line", 12, 9, 4); G.line(8, 16, 16, 16); G.line(8, 19, 14, 19)
+    elseif id == "heal" then
+      G.rectangle("line", 3, 3, 18, 18, 4, 4)
+      G.rectangle("fill", 10.5, 7, 3, 10); G.rectangle("fill", 7, 10.5, 10, 3)
+    elseif id == "travel" then
+      G.line(3, 15, 21, 5, 13, 21, 11, 13, 3, 15)
     elseif id == "bike" then
       G.circle("line", 5, 17, 4); G.circle("line", 20, 17, 4)
       G.line(5, 17, 10, 8, 15, 17, 5, 17, 16, 10, 20, 17)

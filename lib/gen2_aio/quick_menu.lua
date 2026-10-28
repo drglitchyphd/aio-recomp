@@ -740,6 +740,10 @@ return function(host)
       activate = function(g) g = g or game; page(g, dayCareRows(g), "DAY-CARE", "ROUTE 34") end }
     rows[#rows + 1] = { id = "kimArena.q.today", label = "TODAY", group = true,
       activate = function(g) g = g or game; page(g, todayRows(g), "TODAY", "EVENTS") end }
+    rows[#rows + 1] = { id = "kimArena.q.heal", label = "QUICK HEAL", group = true,
+      activate = function(g) g = g or game; closeToWorld(g); later(M.quickHeal) end }
+    rows[#rows + 1] = { id = "kimArena.q.hud", label = "HUD BUTTONS", group = true,
+      activate = function(g) M.openHudEditor(g or game) end }
     rows[#rows + 1] = { id = "kimArena.q.items", label = "KEY ITEMS", group = true,
       activate = function(g) g = g or game
         local p = page(g, keyItemRows(g), "KEY ITEMS", "USE")
@@ -750,22 +754,298 @@ return function(host)
     return p ~= nil
   end
 
+  -- ------------------------------------------------------------ QUICK HEAL
+  -- gen2-aio 0.9.58: heal the party from the bag the cheapest way through
+  -- the engine's own item effects (ItemEffects.useOnMon + consumeItem, the
+  -- PACK's path): revive the fainted, cure each status with the cheapest
+  -- matching cure, then top up HP with the item that covers the missing HP
+  -- for the least money (or the biggest one when none covers it). Bitter
+  -- herbs (they lower friendship) are never used.
+  local HERBS = { ENERGYPOWDER = true, ENERGY_ROOT = true, HEAL_POWDER = true, REVIVAL_HERB = true }
+  local function itemCount(game, id)
+    local inv = game.save and game.save.inventory or {}
+    return tonumber(inv[id]) or (inv[id] and 1) or 0
+  end
+  local function priceOf(game, id)
+    local def = data(game).items and data(game).items[id]
+    return tonumber(def and def.price) or 9999
+  end
+  local function cheapest(game, ids)
+    local best
+    for _, id in ipairs(ids) do
+      if not HERBS[id] and itemCount(game, id) > 0
+         and (not best or priceOf(game, id) < priceOf(game, best)) then best = id end
+    end
+    return best
+  end
+  local function statusClass(mon)
+    local st = mon.status
+    if type(st) == "table" then st = st.kind or st.id or st[1] end
+    st = st and tostring(st):lower() or nil
+    if not st or st == "" or st == "none" or st == "ok" then return nil end
+    local IE = req("src.core.gen2.ItemEffects")
+    local known = IE and IE.STATUS_CLASS and IE.STATUS_CLASS[st]
+    if known then return known end
+    for _, k in ipairs({ "psn", "brn", "frz", "slp", "par" }) do
+      if st:find(k, 1, true) then return k end
+    end
+    if st:find("poison") or st:find("tox") then return "psn" end
+    if st:find("burn") then return "brn" end
+    if st:find("freez") then return "frz" end
+    if st:find("sleep") then return "slp" end
+    if st:find("paral") then return "par" end
+    return "other"
+  end
+  local function maxHpOf(mon)
+    return tonumber(mon.maxHp or (mon.stats and mon.stats.hp)) or tonumber(mon.hp) or 0
+  end
+  function M.healPlan(game)
+    local IE = req("src.core.gen2.ItemEffects")
+    local party = game.save and game.save.party or {}
+    if not IE then return nil end
+    local function needs(mon)
+      if mon.isEgg then return false end
+      return (tonumber(mon.hp) or 0) <= 0 or (tonumber(mon.hp) or 0) < maxHpOf(mon) or statusClass(mon) ~= nil
+    end
+    local any = false
+    for _, mon in ipairs(party) do if needs(mon) then any = true end end
+    return any, IE
+  end
+  function M.quickHeal(game)
+    local any, IE = M.healPlan(game)
+    if any == nil then return end
+    if not any then say(game, "Your POKeMON are\nalready healthy."); return end
+    local used, order = {}, {}
+    local function apply(id, mon)
+      local ok, res = pcall(IE.useOnMon, id, mon, game.data, { game = game })
+      if not (ok and type(res) == "table" and res.used) then return false end
+      if not res.keep and type(game.consumeItem) == "function" then game:consumeItem(id) end
+      if not used[id] then order[#order + 1] = id end
+      used[id] = (used[id] or 0) + 1
+      return true
+    end
+    local revives, cures, potions = {}, {}, {}
+    for id in pairs(IE.REVIVE or {}) do revives[#revives + 1] = id end
+    for id in pairs(IE.HEAL_HP or {}) do potions[#potions + 1] = id end
+    for _, mon in ipairs(game.save and game.save.party or {}) do
+      if not mon.isEgg then
+        if (tonumber(mon.hp) or 0) <= 0 then
+          local id = cheapest(game, revives)
+          if id then apply(id, mon) end
+        end
+        local cls = (tonumber(mon.hp) or 0) > 0 and statusClass(mon)
+        if cls then
+          local exact, all = {}, {}
+          for id, kind in pairs(IE.HEAL_STATUS or {}) do
+            if kind == cls then exact[#exact + 1] = id elseif kind == "all" then all[#all + 1] = id end
+          end
+          local id = cheapest(game, exact) or cheapest(game, all)
+          if id then apply(id, mon) end
+        end
+        for _ = 1, 30 do
+          local hp, max = tonumber(mon.hp) or 0, maxHpOf(mon)
+          if hp <= 0 or hp >= max then break end
+          local missing, cover, biggest = max - hp, nil, nil
+          for _, id in ipairs(potions) do
+            local amt = IE.HEAL_HP[id]
+            if not HERBS[id] and itemCount(game, id) > 0 and amt then
+              if amt >= missing then
+                if not cover or priceOf(game, id) < priceOf(game, cover)
+                   or (priceOf(game, id) == priceOf(game, cover) and amt < IE.HEAL_HP[cover]) then
+                  cover = id
+                end
+              elseif not biggest or amt > IE.HEAL_HP[biggest] then
+                biggest = id
+              end
+            end
+          end
+          local id = cover or biggest
+          if not (id and apply(id, mon)) then break end
+        end
+      end
+    end
+    if #order == 0 then say(game, "You have no items\nthat can heal them."); return end
+    local parts = {}
+    for _, id in ipairs(order) do parts[#parts + 1] = ("%s x%d"):format(itemName(game, id), used[id]) end
+    local left = M.healPlan(game) and "\nSome still need care." or ""
+    say(game, "Used " .. table.concat(parts, ", ") .. "." .. left)
+  end
+
+  -- ------------------------------------------------------- FLY / DIG / ROPE
+  -- outdoors: FLY; in a cave or dungeon you can leave: DIG, else ESCAPE ROPE
+  local function fieldCtx(game)
+    local w = game.world
+    if not (w and type(w.fieldContext) == "function") then return nil end
+    local ok, c = pcall(w.fieldContext, w, nil)
+    return ok and c or nil
+  end
+  local function moveUser(game, moveId, ctx)
+    local FM = req("src.world.gen2.FieldMoves")
+    if not FM then return nil end
+    local ok, mon = pcall(FM.partyMoveUser, game.save and game.save.party or {}, moveId, ctx)
+    return ok and mon or nil
+  end
+  function M.travelAction(game)
+    local ctx = fieldCtx(game)
+    if not ctx then return nil end
+    local env = ctx.environment
+    if env == "TOWN" or env == "ROUTE" then
+      if moveUser(game, "FLY", ctx) then return "FLY", function(g) fly(g) end end
+      return nil
+    end
+    if (env == "CAVE" or env == "DUNGEON") and ctx.canEscapeRope then
+      local digger = moveUser(game, "DIG", ctx)
+      if digger then
+        return "DIG", function(g)
+          local r = g.world:useFieldMove("DIG", digger)
+          if type(r) == "table" and r.ok == false and r.text then say(g, r.text) end
+        end
+      end
+      if itemCount(game, "ESCAPE_ROPE") > 0 and type(game.world.useEscapeRope) == "function" then
+        return "ROPE", function(g) g.world:useEscapeRope("ESCAPE_ROPE") end
+      end
+    end
+    return nil
+  end
+
+  -- ------------------------------------------------------------ HUD ACTIONS
+  -- 0.9.58: every button the HUD can show; HUD BUTTONS (the editor below)
+  -- picks which appear and in what order. A chosen button still only shows
+  -- while it can do something.
+  M.HUD_BUTTONS = {
+    { id = "gear", name = "POKeGEAR" }, { id = "dex", name = "AREA DEX" },
+    { id = "bike", name = "BICYCLE" }, { id = "items", name = "KEY ITEMS" },
+    { id = "pokedex", name = "POKeDEX" }, { id = "heal", name = "QUICK HEAL" },
+    { id = "travel", name = "FLY / DIG / ROPE" }, { id = "quick", name = "QUICK MENU" },
+  }
+  local DEFAULT_HUD = "gear,dex,bike,items"
+  function M.hudOrder()
+    local raw = tostring(opt("hudButtons", DEFAULT_HUD) or DEFAULT_HUD)
+    local out, seen = {}, {}
+    for id in raw:gmatch("[%w_]+") do
+      for _, b in ipairs(M.HUD_BUTTONS) do
+        if b.id == id and not seen[id] then out[#out + 1] = id; seen[id] = true end
+      end
+    end
+    return out
+  end
+  local function hudAction(game, id)
+    if id == "gear" then
+      return hasPokegear(game) and { id = "gear", label = "GEAR", run = openPokegear } or nil
+    elseif id == "dex" then
+      return { id = "dex", label = "AREA", run = M.openAreaDex }
+    elseif id == "bike" then
+      return selectable(game, "BICYCLE") and { id = "bike", label = "BIKE",
+        run = function(g) useItem(g, "BICYCLE") end } or nil
+    elseif id == "items" then
+      return (opt("keyWheel", true) ~= false and #M.keyItems(game) > 0)
+        and { id = "items", label = "ITEMS", run = M.wheelOpen } or nil
+    elseif id == "pokedex" then
+      local SM = req("src.ui.gen2.StartMenu")
+      local okA, a = false, nil
+      if SM and SM.availability then okA, a = pcall(SM.availability, { save = game.save, game = game }) end
+      if okA and type(a) == "table" and a.pokedex == false then return nil end
+      return { id = "pokedex", label = "DEX", run = function(g)
+        if type(g.pushStartMenuItem) == "function" then g:pushStartMenuItem("pokedex") end
+      end }
+    elseif id == "heal" then
+      return M.healPlan(game) and { id = "heal", label = "HEAL", run = M.quickHeal } or nil
+    elseif id == "travel" then
+      local label, run = M.travelAction(game)
+      return label and { id = "travel", label = label, run = run } or nil
+    elseif id == "quick" then
+      return opt("quickMenu", true) ~= false and { id = "quick", label = "QUICK", run = M.openQuick } or nil
+    end
+    return nil
+  end
   -- Shared by the overworld HUD; retain the game's availability and item paths.
   function M.hudActions(game)
-    -- 0.9.56: no QUICK button -- holding START already opens the QUICK MENU
     local actions = {}
-    if hasPokegear(game) then
-      actions[#actions + 1] = { id = "gear", label = "GEAR", run = openPokegear }
-    end
-    actions[#actions + 1] = { id = "dex", label = "AREA", run = M.openAreaDex }
-    if selectable(game, "BICYCLE") then
-      actions[#actions + 1] = { id = "bike", label = "BIKE",
-        run = function(g) useItem(g, "BICYCLE") end }
-    end
-    if opt("keyWheel", true) ~= false and #M.keyItems(game) > 0 then
-      actions[#actions + 1] = { id = "items", label = "ITEMS", run = M.wheelOpen }
+    for _, id in ipairs(M.hudOrder()) do
+      local ok, a = pcall(hudAction, game, id)
+      if ok and a then actions[#actions + 1] = a end
     end
     return actions
+  end
+
+  -- HUD BUTTONS editor: one row per button, LEFT/RIGHT (or A) cycles
+  -- OFF -> 1 -> 2 ... ; a number is that button's place in the row.
+  local function setOpt(game, key, value)
+    local opts = game and ((game.save and game.save.options) or game.options)
+    if not opts then return false end
+    opts.modOptions = opts.modOptions or {}
+    opts.modOptions[mod.id] = opts.modOptions[mod.id] or {}
+    opts.modOptions[mod.id][key] = value
+    if game.mods then
+      game.mods.modOptions = game.mods.modOptions or {}
+      game.mods.modOptions[mod.id] = game.mods.modOptions[mod.id] or {}
+      game.mods.modOptions[mod.id][key] = value
+    end
+    pcall(function() require("src.mods.Runtime").emit("mod.options_changed",
+      { mod = mod.id, key = key, value = value }) end)
+    if game.writeOptions then pcall(game.writeOptions, game)
+    elseif game.persistOptions then pcall(game.persistOptions, game) end
+    return true
+  end
+  M.MAX_HUD = 6
+  function M.setHudPlace(game, id, place)
+    local order = M.hudOrder()
+    for i = #order, 1, -1 do if order[i] == id then table.remove(order, i) end end
+    if place then
+      place = math.max(1, math.min(place, #order + 1, M.MAX_HUD))
+      table.insert(order, place, id)
+      while #order > M.MAX_HUD do table.remove(order) end
+    end
+    return setOpt(game, "hudButtons", table.concat(order, ","))
+  end
+  local function hudRows(game)
+    local rows = {}
+    for _, b in ipairs(M.HUD_BUTTONS) do
+      local function place()
+        for i, id in ipairs(M.hudOrder()) do if id == b.id then return i end end
+        return nil
+      end
+      local row = { id = "kimArena.hud." .. b.id, label = b.name,
+        help = "Shows this button on the overworld HUD. Left / right picks OFF or its place in the row (1 = leftmost). Buttons only appear while usable." }
+      row.value = function() local p = place(); return p and ("#" .. p) or "OFF" end
+      row.step = function(g, dir)
+        g = g or game
+        local n = #M.hudOrder()
+        local p = place()
+        local options = { false }
+        for i = 1, math.min(M.MAX_HUD, p and n or n + 1) do options[#options + 1] = i end
+        local at = 1
+        for i, v in ipairs(options) do if v == (p or false) then at = i end end
+        local nextV = options[(at - 1 + (dir or 1)) % #options + 1]
+        return M.setHudPlace(g, b.id, nextV or nil)
+      end
+      row.activate = function(g) return row.step(g, 1) end
+      rows[#rows + 1] = row
+    end
+    rows[#rows + 1] = { id = "kimArena.hud.reset", label = "RESET TO DEFAULT", group = true,
+      help = "GEAR, AREA DEX, BICYCLE and KEY ITEMS, in that order.",
+      activate = function(g) setOpt(g or game, "hudButtons", DEFAULT_HUD) end }
+    return rows
+  end
+  function M.openHudEditor(game)
+    return page(game, hudRows(game), "HUD BUTTONS", "OVERWORLD")
+  end
+  do
+    local H = hub()
+    if H and H.extras then
+      local prev = H.extras.ui
+      H.extras.ui = function(game)
+        local rows = {}
+        if type(prev) == "function" then
+          local ok, list = pcall(prev, game)
+          if ok and type(list) == "table" then rows = list end
+        end
+        rows[#rows + 1] = { id = "kimArena.hud.editor", label = "HUD BUTTONS", group = true,
+          help = "Choose which buttons the overworld HUD shows and in what order.",
+          activate = function(g) M.openHudEditor(g or game) end }
+        return rows
+      end
+    end
   end
 
   function M.hudActivate(game, id)
