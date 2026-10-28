@@ -57,6 +57,15 @@ GitHub and overlay patches are not the updater's install package. The custom
 index is independent of the community index; a community listing would require
 a separate submission.
 
+## 0.9.65 changes
+
+- 3D battles: the player's Pokemon no longer shows dark diagonal stripes
+  ("self-shadowing"). On Android the shadow check ran at low precision, so a
+  large on-screen battle card shaded itself. The check now runs at high
+  precision, and a battle card ignores its own shadow while trees and
+  terrain can still shade it. Its shadow on the ground is unchanged.
+- Voxel engine change: each map's 3D cache rebuilds once on first visit.
+
 ## 0.9.64 changes
 
 - Menu close / back button: much easier to hit. Its tap area used to stop

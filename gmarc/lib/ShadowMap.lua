@@ -117,7 +117,9 @@ ShadowMap.SLOPE = 3.1
 ShadowMap.slack = ShadowMap.BIAS
 
 local SHADER = [[
-  varying float vDepth;
+  // highp: the pixel stage is mediump on GLES, and an fp16 depth keeps ~11
+  // of the 16 bits the pack below stores (see Voxel3D's vSun)
+  varying LOVE_HIGHP_OR_MEDIUMP float vDepth;
 #ifdef VERTEX
   uniform mat4 lightVP;
   uniform mat4 model;
@@ -142,7 +144,7 @@ local SHADER = [[
     // Blue says WHAT cast this, which costs a channel that was zero anyway
     // and lets a surface decline one kind of caster -- water does, for the
     // people (see Water's sunLit).
-    float d = clamp(vDepth, 0.0, 1.0) * 255.0;
+    LOVE_HIGHP_OR_MEDIUMP float d = clamp(vDepth, 0.0, 1.0) * 255.0;
     return vec4(floor(d) / 255.0, fract(d), sprite, 1.0);
   }
 #endif

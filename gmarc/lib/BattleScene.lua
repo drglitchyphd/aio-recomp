@@ -775,12 +775,17 @@ function BattleScene.render(state, arena, textures, token)
     -- and no glass either: the cards wear the battle screen, not the
     -- tileset atlas, so the mask's coordinates mean nothing on them
     Voxel3D.glass(false)
+    -- and a card never shades itself (Voxel3D.cardShadow): the world's
+    -- shadows still land on it, the cast layer -- its own silhouette among
+    -- it -- does not
+    Voxel3D.cardShadow(true)
     for _, card in ipairs(monCards(arena, groundY, textures)) do
       -- the sun stored this card snugged (castShadows), so its own shadow
       -- lookup must read the same snugged transform -- see ShadowMap.snug
       Voxel3D.draw(BattleBillboard.mesh(), card.tex, card.model,
                    BattleBillboard.PULL, ShadowMap.snug(card.model))
     end
+    Voxel3D.cardShadow(false)
     for _,side in ipairs({'player','enemy'})do
       local actor=textures and textures.models and textures.models[side]
       if actor then
