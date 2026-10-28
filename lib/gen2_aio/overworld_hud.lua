@@ -29,14 +29,29 @@ return function(host)
     local gap = math.max(4, math.min(W, H) * .008)
     local size = math.min(80, math.max(44, math.min(W, H) * .075), (W * .75) / math.max(1, #actions) - gap)
     local width = #actions * (size + gap) - gap
-    local safeTop = 0
+    local safeTop, safeBottom = 0, 0
     if love.window and type(love.window.getSafeArea) == "function" then
-      local _, top = love.window.getSafeArea()
+      local _, top, _, sh = love.window.getSafeArea()
       safeTop = tonumber(top) or 0
+      -- only a safe area that matches this screen (it can lag a resize)
+      sh = tonumber(sh)
+      if sh and sh > H * .5 and safeTop + sh <= H then safeBottom = H - (safeTop + sh) end
+    end
+    -- 0.9.64: HUD POSITION. Columns: left / middle / right; rows: top (the
+    -- buttons above the clock panel) or bottom (the clock panel at the
+    -- bottom edge, the buttons above it).
+    local opt = rawget(mod, "_kimArenaOpt")
+    local pos = tostring(opt and opt("hudPosition", "tr") or "tr")
+    local col, row = pos:sub(2, 2), pos:sub(1, 1)
+    local function colX(wide)
+      if col == "l" then return gap * 2 end
+      if col == "c" then return math.floor((W - wide) / 2) end
+      return W - wide - gap * 2
     end
     -- Keep clear of the launcher's top-right menu without tying placement
     -- to tall-screen height (10% was 252px down on the Fold cover).
-    local x, y = W - width - gap * 2, safeTop + math.max(gap * 2, math.min(W,H) * .055)
+    local edge = math.max(gap * 2, math.min(W,H) * .055)
+    local x, y = colX(width), safeTop + edge
     local cells = {}
     for i, a in ipairs(actions) do
       cells[i] = { x = x + (i - 1) * (size + gap), y = y, w = size, h = size, action = a }
@@ -58,19 +73,25 @@ return function(host)
     else
       -- Wide row: spread the slots over the space after the clock.
       step = room
-      radius = math.min(clockPx * .3, step * .36)
+      radius = math.min(clockPx * .36, step * .42)
     end
     statusW = math.min(W - gap * 4, statusW)
     -- 0.9.62: the clock + party panel is a tap target too (opens POKeMON)
-    local statusY = y + size + gap
     local statusH = font(clockPx):getHeight() + padding * 2
+    local statusY = y + size + gap
+    if row == "b" then
+      statusY = H - safeBottom - edge - statusH
+      y = statusY - gap - size
+      for _, c in ipairs(cells) do c.y = y end
+    end
+    local statusX = colX(statusW)
     local targets = {}
     for i, c in ipairs(cells) do targets[i] = c end
-    targets[#targets + 1] = { x = W - math.min(W - gap * 4, statusW) - gap * 2, y = statusY,
-      w = math.min(W - gap * 4, statusW), h = statusH, action = { id = "party", label = "PARTY" } }
+    targets[#targets + 1] = { x = statusX, y = statusY,
+      w = statusW, h = statusH, action = { id = "party", label = "PARTY" } }
     return { cells = cells, targets = targets, x = x, y = y, w = width, size = size, gap = gap, W = W, H = H,
       clockPx = clockPx, padding = padding, radius = radius, step = step, clockW = clockW,
-      statusW = statusW, statusX = W - statusW - gap * 2 }
+      statusW = statusW, statusX = statusX, statusY = statusY, pos = pos }
   end
   local function color(c, alpha) G.setColor(c[1], c[2], c[3], alpha or c[4] or 1) end
   local function theme()
@@ -140,7 +161,7 @@ return function(host)
     local f = font(l.clockPx)
     local padding = l.padding
     local h = f:getHeight() + padding * 2
-    local y = l.y + l.size + l.gap
+    local y = l.statusY or (l.y + l.size + l.gap)
     panel(l.statusX, y, l.statusW, h, th)
     local w, time = game.world, ""
     if type(w.hour) == "function" and type(w.minute) == "function" then
@@ -155,19 +176,35 @@ return function(host)
     for i = 1, 6 do
       local mon = party[i]
       local x = dotsX + (i - 1) * l.step
+      -- 0.9.64: a Poke Ball per slot. The top half carries the HP colour
+      -- (green / yellow / red, grey when fainted); an empty slot is a faint
+      -- outline of a ball.
+      local cy = y + h / 2
+      local lw = math.max(1.2, radius * .16)
       if not mon then
-        color(th.muted or th.text, .55)
-        G.setLineWidth(math.max(1.5, radius * .25))
-        G.circle("line", x, y + h / 2, radius - .5)
+        color(th.muted or th.text, .45)
+        G.setLineWidth(lw)
+        G.circle("line", x, cy, radius - lw * .5)
+        G.line(x - radius + lw, cy, x + radius - lw, cy)
+        G.circle("line", x, cy, radius * .3)
       else
         local hp = tonumber(mon.hp) or 0
         local max = tonumber(mon.maxHp or (mon.stats and mon.stats.hp)) or math.max(1, hp)
-        -- Fainted is a solid grey dot so it is not mistaken for an empty slot.
         if hp <= 0 then G.setColor(.42, .44, .48, 1)
         elseif hp / math.max(1, max) <= .2 then G.setColor(1, .34, .32, 1)
         elseif hp / math.max(1, max) <= .5 then G.setColor(1, .76, .27, 1)
         else G.setColor(.34, .88, .59, 1) end
-        G.circle("fill", x, y + h / 2, radius)
+        G.arc("fill", x, cy, radius, math.pi, math.pi * 2)       -- top half
+        G.setColor(.94, .95, .96, hp <= 0 and .7 or 1)
+        G.arc("fill", x, cy, radius, 0, math.pi)                 -- bottom half
+        G.setColor(.08, .09, .11, 1)
+        G.setLineWidth(lw)
+        G.circle("line", x, cy, radius)
+        G.line(x - radius, cy, x + radius, cy)                    -- band
+        G.setColor(.94, .95, .96, 1)
+        G.circle("fill", x, cy, radius * .3)                      -- button
+        G.setColor(.08, .09, .11, 1)
+        G.circle("line", x, cy, radius * .3)
       end
     end
   end

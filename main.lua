@@ -704,6 +704,15 @@ return function(mod)
     { key = "overworldHud", label = "OVERWORLD HUD", type = "toggle", default = true,
       help = "Show tappable POKEGEAR, AREA DEX, BIKE and KEY ITEMS icons, the game clock "
         .. "and party health on the overworld. Hidden during dialogue, menus and battles." },
+    { key = "hudPosition", label = "HUD POSITION", type = "choice", default = "tr",
+      choices = { { "TOP RIGHT", "tr" }, { "TOP MIDDLE", "tc" }, { "TOP LEFT", "tl" },
+        { "BOTTOM MIDDLE", "bc" }, { "BOTTOM LEFT", "bl" }, { "BOTTOM RIGHT", "br" } },
+      help = "Where the overworld HUD's buttons and clock / party panel sit. Bottom "
+        .. "positions put the clock panel at the bottom edge with the buttons above it." },
+    { key = "menuClosePos", label = "MENU BUTTON", type = "choice", default = "tr",
+      choices = { { "TOP RIGHT", "tr" }, { "BOTTOM RIGHT", "br" }, { "BOTTOM LEFT", "bl" } },
+      help = "Corner of every menu window for its close (X) / back (arrow) button. "
+        .. "The bottom corners sit in the footer, easier to reach one-handed." },
     { key = "quickInStart", label = "QUICK IN START MENU", type = "toggle", default = true,
       help = "Also list QUICK in the START menu, so the QUICK MENU works with any controller." },
     { key = "keyWheel", label = "KEY ITEM WHEEL", type = "toggle", default = true,

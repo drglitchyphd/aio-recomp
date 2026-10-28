@@ -1,10 +1,23 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.63)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.64)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.64 (2026-10-28)
+
+- Close button hit rect was {by - 0.9s .. by + 0.5s}: the lower half missed.
+  Now centred and larger (tr: x -0.7s..+1.9s, y -1.1s..+1.5s; footer corners
+  +-0.7s). Option menuClosePos tr / br / bl: bottom corners sit in the footer
+  band (Style.closeCorner, footerReserve shifts info / hints; closeReserve()
+  is 0 there). Top-left not offered: every screen draws its title there.
+- overworld_hud: option hudPosition tr/tc/tl/bc/bl/br (row t/b, column
+  l/c/r); bottom puts the status panel at the edge, buttons above; layout
+  exposes statusY; safe-area bottom only trusted when consistent. Party slots
+  drawn as Poke Balls (HP colour top half). Tests: overworld_hud 103,
+  menu_chrome adds corner + lower-edge tap checks.
 
 ## 0.9.63 (2026-10-28) — menu chrome
 
