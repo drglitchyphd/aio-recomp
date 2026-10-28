@@ -72,15 +72,15 @@ end
 -- defaults: GEAR, AREA (BIKE / ITEMS need the items)
 check(ids() == "gear,dex", "default HUD is GEAR, AREA without a bike or key items")
 q.setHudPlace(game, "heal", 1)
-check(table.concat(q.hudOrder(), ",") == "heal,gear,dex,bike,items", "editor inserts at a place")
+check(table.concat(q.hudOrder(game), ",") == "heal,gear,dex,bike,items", "editor inserts at a place")
 check(game.options.modOptions["gen2-aio"].hudButtons == "heal,gear,dex,bike,items", "editor persists to options")
 check(ids() == "gear,dex", "QUICK HEAL hidden while the party is healthy")
 q.setHudPlace(game, "gear", nil)
-check(table.concat(q.hudOrder(), ",") == "heal,dex,bike,items", "editor removes a button")
+check(table.concat(q.hudOrder(game), ",") == "heal,dex,bike,items", "editor removes a button")
 q.setHudPlace(game, "pokedex", 2); q.setHudPlace(game, "travel", 9)
-check(table.concat(q.hudOrder(), ",") == "heal,pokedex,dex,bike,items,travel", "places clamp to the row")
+check(table.concat(q.hudOrder(game), ",") == "heal,pokedex,dex,bike,items,travel", "places clamp to the row")
 q.setHudPlace(game, "quick", 3)
-check(#q.hudOrder() == 6, "row holds at most six buttons")
+check(#q.hudOrder(game) == 6, "row holds at most six buttons")
 
 -- FLY / DIG / ROPE
 env, fliers = "ROUTE", true
