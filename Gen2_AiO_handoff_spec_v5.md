@@ -1,10 +1,36 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.71)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.72)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.72 (2026-10-29)
+
+- Nuzlocke tracker `_aioModernData` returns kind "tracker" with:
+  - tabs, `setTab`, `counts`, `cap` and `empty`;
+  - rows {label, species, shiny, status}.
+- Status logic:
+  - party / caught: the catch's `pokemonId` matches a live mon
+    (Identity.allCurrentMons, pokemonIdentity).
+  - lost: `nuzlockeDead`, or the id is in `nuzlocke_history`.
+  - failed: `encounter_states[area].status == "FAILED"`.
+  - open: anything else.
+- The tracker's scroll limit uses `self._aioVisible`, which the presenter
+  publishes.
+- `formatAreaDisplayName`: the token pass now only runs on names with no
+  spaces left.
+- modern_pages.lua `drawTracker`:
+  - tab cells use `button = false` (select only), and `cell()` keeps false;
+  - row cells are no-op taps;
+  - the HD menu icon comes from `_kantoInMotionHdMenuIconForModernUi`;
+  - status chips use fixed colours.
+- gen2_modern_battle_ui: THEMES `gen2_aio:type_light` (`typeLightTheme`).
+  Listed in kim_main, theme_picker and the wizard LOOK step.
+- Tests: `tests/encounter_tracker.lua` (18 checks; it reproduces the old
+  name bug). menu_chrome renders the tracker and checks TYPE LIGHT. The
+  harness records registered screens.
 
 ## 0.9.71 (2026-10-29)
 

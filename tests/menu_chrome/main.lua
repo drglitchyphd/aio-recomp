@@ -187,6 +187,19 @@ function love.load()
         rows={{label="LEVEL CAP",value="GYMS",select=function()end},{label="RULES LOCKED",value="OFF"}},
         help="These settings belong to the new game.",footer="A CHOOSE   SELECT HELP   B BACK"}end
       return page end},
+    -- 0.9.72: the Nuzlocke ENCOUNTERS page
+    {"tracker",function()
+      local page={tab=1}
+      function page:_aioModernData()return {kind="tracker",title="ENCOUNTERS",tab=self.tab,tabs={"LOG","MAP"},
+        setTab=function(st,i)st.tab=i end,start=1,counts={caught=3,lost=1,failed=1},
+        cap="LEVEL CAP 16 - BUGSY",footer="UP/DOWN SCROLL   A LOG / MAP   B BACK",
+        rows={{label="New Bark Town",species="CYNDAQUIL",status="party"},
+          {label="Route 29",species="SENTRET",status="lost"},
+          {label="Route 30",species="EXEGGCUTE",status="caught",shiny=true},
+          {label="Dark Cave Violet Entrance",species="GEODUDE",status="caught"},
+          {label="Route 31",species="BELLSPROUT",status="failed"},
+          {label="Route 32",status="open"}}}end
+      return page end},
     {"areadex",function()
       local game=gameFor({})
       game.stack.states={}
@@ -216,7 +229,7 @@ function love.load()
       local close=rawget(mod,"_kimMenuClose")
       results[sc[1]..dims[1]]={draws=drawn,close=close,state=state}
       if not renderOnly then
-        if sc[1]=="nuzlocke" or sc[1]=="pokedex" then
+        if sc[1]=="nuzlocke" or sc[1]=="pokedex" or sc[1]=="tracker" then
           -- pages without footer assertions of their own below
         end
         if sc[1]=="clock" then
@@ -319,6 +332,28 @@ function love.load()
     local choice=setmetatable({items={"YES","NO"},index=1},classes["src.ui.ChoiceBox"])
     pcall(frame,choice,"yesno")
     check(rawget(mod,"_kimMenuClose")==nil,"YES/NO prompt publishes no close button")
+
+    -- 0.9.72 TYPE LIGHT: a Fire-type lead tints light panels
+    do
+      -- the themes live with the battle UI; load it for this check only
+      local wasThemes=rawget(mod,"_kantoInMotionGen2Themes")
+      local okB,errB=pcall(run,"lib/gen2_modern_battle_ui.lua",mod)
+      check(okB and rawget(mod,"_kantoInMotionGen2Themes")~=nil,"battle UI themes load ("..tostring(errB)..")")
+      local wasGame=rawget(mod,"_kantoInMotionActiveGame")
+      rawset(mod,"_kantoInMotionActiveGame",{save={party={{species="CYNDAQUIL"}}},
+        data={pokemon={CYNDAQUIL={types={"FIRE"}}}},stack={states={}}})
+      opts.gen2UiTheme="gen2_aio:type_light"
+      local S=mod._kantoInMotionGen2Ui
+      local th=S.theme()
+      check(th.surface[1]>0.9 and th.text[1]<0.3,"TYPE LIGHT: light panels, dark text")
+      check(th.frame[1]>th.frame[3],"TYPE LIGHT: a Fire lead tints the frame warm")
+      for _,sc in ipairs(screens) do
+        if sc[1]=="options-help" then frame(sc[2](),"typelight") end
+      end
+      opts.gen2UiTheme=nil
+      rawset(mod,"_kantoInMotionActiveGame",wasGame)
+      rawset(mod,"_kantoInMotionGen2Themes",wasThemes)
+    end
 
     -- 0.9.69: touch controls up: the footer drops its B BACK hint
     mod.exports.touch={active=function()return true end}
