@@ -20,6 +20,8 @@ CacheBuilder.__index = CacheBuilder
 
 local HOPS = 2          -- World's NEIGHBOR_HOPS (Gen2Compat.neighborHops)
 local BACKLOG = 2       -- packed maps waiting for the writer before we wait
+-- (gen2-aio 0.9.84: MeshStore writes through mod.cache as each build
+-- finishes, so its backlog is always 0 and the file exists at once)
 
 local function neighbourWalk()
   local okW, World = pcall(require, "src.world.gen2.World")

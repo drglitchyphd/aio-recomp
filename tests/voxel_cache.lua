@@ -167,4 +167,42 @@ off.activate(game)
 check(#stack.states == before, "an OFF row opens nothing")
 S.whyOff = function() return nil end
 check(Hub.extras.voxelCache(game)[1].value() ~= "OFF", "back on once the cache works")
+-- 0.9.84: BUILD 3D CACHE over the REAL MeshStore. The device's sandbox has
+-- no ffi and no love.filesystem; what the store needs is mod.cache (reached
+-- through the voxel proxy's __index) and love.data -- with those the row is
+-- available, without them it is OFF and says why.
+local function realStore(mod)
+  return assert(loadfile("gmarc/lib/MeshStore.lua"))({ mod = mod })
+end
+local function realCB(S2)
+  return assert(loadfile("gmarc/lib/CacheBuilder.lua"))({ require = function(name)
+    if name == "MeshStore" then return S2 end
+    return V.require(name)
+  end })
+end
+local files = {}
+local fakeCache = {
+  write = function(_, rel, bytes) assert(type(bytes) == "string"); files[rel] = bytes; return true end,
+  read = function(_, rel) return files[rel] end,
+  info = function(_, rel) return files[rel] and { type = "file", size = #files[rel] } or nil end,
+  exists = function(_, rel) return files[rel] ~= nil end,
+  delete = function(_, rel) files[rel] = nil; return true end,
+}
+local mainMod = { id = "gen2-aio", cache = fakeCache }
+local proxy = setmetatable({}, { __index = mainMod })
+proxy._kimArenaBuildId = function() return "b1" end
+local noData = realStore(proxy)
+check(noData.whyOff():find("love.data", 1, true), "no love.data: OFF with the reason: " .. tostring(noData.whyOff()))
+check(realCB(noData).whyNot(world) == noData.whyOff(), "BUILD 3D CACHE gives the store's reason")
+love.data = { pack = function() return "" end, compress = function(_, _, s) return s end,
+  newByteData = function() return {} end }
+local real = realStore(proxy)
+check(real.whyOff() == nil, "mod.cache + love.data: the cache works without ffi: " .. tostring(real.whyOff()))
+check(realCB(real).available(world), "BUILD 3D CACHE is available")
+check(real.save("b1-A_body_1.kms", "blob") and files["voxel/b1-A_body_1.kms"] == "blob", "writes through mod.cache")
+check(real.exists("b1-A_body_1.kms") and real.load("b1-A_body_1.kms") == "blob", "and reads back")
+check(files["voxel/index.txt"] == "b1-A_body_1.kms\n", "the index lists it for the old-build sweep")
+local bare = realStore(setmetatable({}, { __index = { id = "gen2-aio" } }))
+check(bare.whyOff():find("no mod.cache", 1, true), "no mod.cache: OFF with the reason: " .. tostring(bare.whyOff()))
+love.data = nil
 print(("voxel cache: %d checks PASS"):format(n))
