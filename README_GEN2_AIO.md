@@ -57,6 +57,18 @@ GitHub and overlay patches are not the updater's install package. The custom
 index is independent of the community index; a community listing would require
 a separate submission.
 
+## 0.9.78 changes
+
+- DIAGNOSTICS now shows where a slow area's time goes, on two new lines:
+  - `voxel frame`: the 3D world's update and draw times (average / peak
+    over the last second), draw calls, shader and canvas switches, and
+    texture memory.
+  - `voxel churn`: how many characters the area is running, mesh rebuilds
+    in the last second (and which map asked), builds so far (and how many
+    came from the disk cache), and builds still queued.
+  This is for tracking down slowdown in specific areas such as Azalea
+  Town; nothing changes with DIAGNOSTICS off.
+
 ## 0.9.77 changes
 
 - Poke Mart: QUICK SELL. When you sell, a SELL VALUABLES button sells every
