@@ -120,4 +120,16 @@ check(inv.ENERGYPOWDER == 9 and inv.HEAL_POWDER == 9, "bitter herbs never used")
 check(said and said:find("Used") ~= nil, "result message shown")
 q.quickHeal(game)
 check(said:find("already healthy") ~= nil, "healthy party reports so")
+-- 0.9.74 TRACKER: Nuzlocke's ENCOUNTERS page
+q.setHudPlace(game, "tracker", 1)
+check(off("tracker"), "TRACKER dimmed without the Nuzlocke component")
+local rule = true
+mod.exports.nuzlocke = { getRule = function(k) if k == "nuzlocke_enabled" then return rule end end }
+local pushedScreen
+mod.ui = { push = function(_, id) pushedScreen = id end }
+check(not off("tracker"), "TRACKER live in a Nuzlocke run")
+for _, a in ipairs(q.hudActions(game)) do if a.id == "tracker" then a.run(game) end end
+check(pushedScreen == "NuzlockeTrackerScreen", "TRACKER opens the ENCOUNTERS page")
+rule = false
+check(off("tracker"), "TRACKER dimmed when the run has no Nuzlocke rules")
 print(("HUD buttons, quick heal and travel: %d checks PASS"):format(count))

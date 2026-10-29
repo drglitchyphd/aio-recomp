@@ -926,6 +926,8 @@ return function(host)
     { id = "bike", name = "BICYCLE" }, { id = "items", name = "KEY ITEMS" },
     { id = "pokedex", name = "POKeDEX" }, { id = "heal", name = "QUICK HEAL" },
     { id = "travel", name = "FLY / DIG / ROPE" }, { id = "quick", name = "QUICK MENU" },
+    -- 0.9.74: Nuzlocke's ENCOUNTERS page
+    { id = "tracker", name = "NUZLOCKE TRACKER" },
   }
   local DEFAULT_HUD = "gear,dex,bike,items"
   -- read the editor's value where the editor writes it (the live game's
@@ -1000,6 +1002,19 @@ return function(host)
     elseif id == "quick" then
       return opt("quickMenu", true) ~= false and { id = "quick", label = "QUICK", run = M.openQuick }
         or off("quick", "QUICK", "QUICK MENU is\nturned off in settings.")
+    elseif id == "tracker" then
+      -- 0.9.74: the run's ENCOUNTERS page (nuzlocke/main.lua NuzlockeTrackerScreen)
+      local nz = mod.exports and mod.exports.nuzlocke
+      if type(nz) ~= "table" then
+        return off("tracker", "TRACK", "NUZLOCKE is turned\noff (ADVANCED).")
+      end
+      local okR, on = pcall(nz.getRule or function() return nil end, "nuzlocke_enabled")
+      if okR and on == false then
+        return off("tracker", "TRACK", "This run has no\nNuzlocke rules.")
+      end
+      return { id = "tracker", label = "TRACK", run = function(g)
+        if mod.ui and mod.ui.push then pcall(mod.ui.push, g, "NuzlockeTrackerScreen") end
+      end }
     end
     return nil
   end
