@@ -1,10 +1,22 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.68)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.69)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.69 (2026-10-29)
+
+- gen2_modern_style:
+  - `footerHeight` grows when `closeCorner() ~= "tr"`.
+  - `footerClose(y,h)` (size, side inset, top) is shared by `closeMetrics`
+    and `footerReserve`. The button is 80% of the band at most, placed a
+    little above centre.
+  - `Style.footer` drops B hints while `mod.exports.touch.active()`.
+- touch: the `touchHotbar` row was removed and the bar is never hidden.
+  REPEAT_INTERVAL is 0.24.
+- qoltoggles `holdNav` defaults: delay 22, rate 8 frames.
 
 ## 0.9.68 (2026-10-29)
 

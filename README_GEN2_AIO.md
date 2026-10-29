@@ -57,6 +57,19 @@ GitHub and overlay patches are not the updater's install package. The custom
 index is independent of the community index; a community listing would require
 a separate submission.
 
+## 0.9.69 changes
+
+- Menu close / back button in a bottom corner (MENU BUTTON = BOTTOM RIGHT /
+  BOTTOM LEFT): the footer band is taller and the button sits inside it with
+  a margin, clear of the footer's line and the window's rounded corner.
+- With the touch controls up, menu footers no longer show "B BACK". The
+  floating B is hidden there; the window's close / back button does it.
+- Removed TOUCH CONTROLS -> KEY BAR. The engine's own KEY BAR setting (in
+  OPTION) works, so the duplicate is gone and no longer hides the bar.
+- Holding a direction in menus scrolls more slowly. The touch joystick
+  repeats about 4 rows a second (was 5.5). HOLD TO SCROLL repeats about 7
+  rows a second (was 15) and waits a little longer before it starts.
+
 ## 0.9.68 changes
 
 - Title screen: no separate Nuzlocke SETUP row. The SETUP WIZARD at NEW GAME

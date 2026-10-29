@@ -320,6 +320,19 @@ function love.load()
     pcall(frame,choice,"yesno")
     check(rawget(mod,"_kimMenuClose")==nil,"YES/NO prompt publishes no close button")
 
+    -- 0.9.69: touch controls up: the footer drops its B BACK hint
+    mod.exports.touch={active=function()return true end}
+    local packT=setmetatable({pocketIndex=1,index=1,scroll=0,rows={{id="POTION",name="POTION",count=1,showCount=true}},
+      items={POTION={description="x"}}},classes["src.ui.gen2.PackMenu"])
+    local drawnT=frame(packT,"touch-hints")
+    local sawBack,sawChoose=false,false
+    for _,d in ipairs(drawnT) do
+      if d.text=="BACK" then sawBack=true end
+      if d.text=="CHOOSE" then sawChoose=true end
+    end
+    check(sawChoose and not sawBack,"touch up: footer keeps A CHOOSE, drops B BACK")
+    mod.exports.touch=nil
+
     -- MODERN UI off: native screens, nothing published
     opts.gen2IntegratedModernUi=false
     local pack=setmetatable({pocketIndex=1,index=1,rows={}},classes["src.ui.gen2.PackMenu"])

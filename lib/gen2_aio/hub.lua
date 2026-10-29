@@ -92,7 +92,7 @@ return function(host)
     } },
     { id = "touch", label = "TOUCH CONTROLS", rows = {
       "touchFloating", "touchHand", "touchButtonHeight", "touchSize", "touchOpacity",
-      "touchDeadzone", "touchBattleTap", "touchLongPress", "touchHotbar", "touchRunDrag",
+      "touchDeadzone", "touchBattleTap", "touchLongPress", "touchRunDrag",
     } },
     { id = "advanced", label = "ADVANCED", rows = {
       "setupWizard", "perfMode", "voxelPrecache", "voxelDiskCache",
