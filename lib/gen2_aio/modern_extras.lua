@@ -267,7 +267,7 @@ return function(host)
     end
     for i,w in ipairs(st.words or {}) do rows[i]={label=clean(w),select=function(s) s.index=i end} end
     return {title="BUENA'S PASSWORD",prompt="Which word is today's password?",rows=rows,selected=st.index,
-      sig="password",close=false,hints={{"UD","CHOOSE"},{"A","ANSWER"}}}
+      sig="password",close=false,strict=true,hints={{"UD","CHOOSE"},{"A","ANSWER"}}}
   end
 
   -- Cianwood photo studio: the portrait card. A or B (or the close button)
@@ -386,7 +386,11 @@ return function(host)
     local drawn=d.sig
     local taps={state=st,kind="generic",generic=true,cells={},phase=st.phase,time=now(),
       -- a tap counts only while the screen is still in the step it was drawn for
-      mode=function(state) local nd=describe(state); return nd and nd.sig==drawn and "list" or nil end}
+      -- (0.9.75: a "strict" step -- Buena's password, where a stray tap would
+      -- answer with the highlighted word -- ignores taps that miss a cell)
+      mode=function(state) local nd=describe(state)
+        if not (nd and nd.sig==drawn) then return nil end
+        return nd.strict and "sub" or "list" end}
     local function cell(cx,cy,cw,ch,sel,button,label)
       if button==nil then button="a" end
       taps.cells[#taps.cells+1]={kind="row",index=#taps.cells+1,x=cx,y=cy,w=cw,h=ch,select=sel,button=button,label=label}

@@ -173,7 +173,8 @@ function love.load()
   -- the touch module's own generic tap: select, then the cell's button
   local function tapCell(s,t,label)
     local c=assert(cellNamed(t,label),"no cell "..label)
-    assert(t.mode(s)=="list","stale cells for "..label)
+    local m=t.mode(s)
+    assert(m=="list" or m=="sub","stale cells for "..label)
     if c.select then c.select(s) end
     local b=c.button;if b==nil then b="a" end
     if b then press(s,b) end
@@ -468,7 +469,9 @@ function love.load()
   end
   do
     local s,game,ans=buena("password")
-    local t=frame(s,game);tapCell(s,t,"CHIKORITA")
+    local t=frame(s,game)
+    check(t.mode(s)=="sub","buena: a tap that misses every word answers nothing (0.9.75)")
+    tapCell(s,t,"CHIKORITA")
     check(ans()==2,"buena: the third word answers index 2")
     s,game,ans=buena("prize")
     t=frame(s,game);tapCell(s,t,"RARE CANDY")
