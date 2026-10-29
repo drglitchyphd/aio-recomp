@@ -1,10 +1,32 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.72)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.73)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.73 (2026-10-29)
+
+- gen2_modern_core_menus `drawBoxPcModern` was replaced by a paged box view.
+  - It is built in its own function scope, because the presenter file hit
+    Lua's 200-local limit.
+  - A wrapper on `BoxMenu.update` handles the grid cursor and paging.
+- Drags map onto BoxMenu's own operations: `doDeposit`, `doWithdraw`,
+  `beginMove`, `checkSpaceInDestination` and `insertMon`. A tap runs
+  BoxMenu's `act()` and its `submenuRows` / `chooseSubmenu`.
+- Engine limits:
+  - MOVE inserts in front of a mon, so dropping past the last mon takes two
+    MOVEs.
+  - A withdraw dropped on a party slot stays appended when the party has
+    fewer than 3 mons or holds mail.
+  - `save.currentBox` is never changed.
+- touch: generic "drag cells" any Modern screen can publish.
+- gen2_modern_style `closeIsBack`: BoxMenu's submenu and move step show the
+  back arrow.
+- Tests: `tests/box_pc` (76 checks against the engine's real BoxMenu, Boxes
+  and Mail; needs AIO_ENGINE_SRC, otherwise it SKIPs). menu_chrome renders
+  the box screen.
 
 ## 0.9.72 (2026-10-29)
 

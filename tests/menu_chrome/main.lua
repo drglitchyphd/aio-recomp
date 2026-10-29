@@ -22,7 +22,7 @@ end
 for _,name in ipairs({"src.render.TextBox","src.ui.ChoiceBox","src.ui.gen2.MartMenu",
   "src.ui.gen2.StartMenu","src.ui.gen2.PackMenu","src.ui.gen2.TrainerCard","src.ui.gen2.SaveMenu",
   "src.ui.gen2.OptionsMenu","src.ui.gen2.Pokegear","src.ui.gen2.PartyMenu","src.ui.gen2.SummaryMenu",
-  "src.ui.gen2.PokedexMenu","src.ui.gen2.HeldItemMenu","src.ui.gen2.InitClock"}) do class(name) end
+  "src.ui.gen2.PokedexMenu","src.ui.gen2.HeldItemMenu","src.ui.gen2.InitClock","src.ui.gen2.BoxMenu"}) do class(name) end
 package.preload["src.ui.gen2.Chrome"]=function()return {} end
 local Typer={text=function(s,page)return page end,typing=function(s)return s.typing==true end}
 package.preload["src.ui.gen2.Typer"]=function()return Typer end
@@ -177,6 +177,10 @@ function love.load()
       {name="ESCAPE ROPE",price=550},{name="PARLYZ HEAL",price=200}},
       selected=function(s)return s.entries[s.index]end,description=function()return "Escape from a cave.<NEXT>Useful on a long journey."end,
       money=function()return 12345 end},Mart)end},
+    -- 0.9.72: BILL'S PC as one paged grid (behaviour: tests/box_pc)
+    {"boxpc",function()return setmetatable({mode="withdraw",boxIndex=1,game={data={}},
+      save={currentBox=1,party=mons,boxes={{mons[1],mons[3]}}},
+      prompt=function()return "Choose a <PK><MN>." end},classes["src.ui.gen2.BoxMenu"])end},
     {"summary",function()return setmetatable({mon=mons[1],page=1,pokemon={}},Summary)end},
     {"start",function()return setmetatable({items={{label="POKéDEX",desc={"Pokemon","database"}},{label="POKéMON"},
       {label="PACK"},{label="POKéGEAR",value="pokegear"},{label="STEVEN"},{label="SAVE"},{label="OPTION"},{label="EXIT"}},
@@ -280,7 +284,7 @@ function love.load()
     end
     for _,w in ipairs({1080,2184}) do
       local ref
-      for _,name in ipairs({"party","pack","card","gear","options","quick","mart","areadex","summary","nuzlocke"}) do
+      for _,name in ipairs({"party","pack","card","gear","options","quick","mart","areadex","summary","nuzlocke","boxpc"}) do
         local b=footerOf(name,w)
         check(b~=nil,name.." "..w.." footer ends in B BACK")
         if b then
