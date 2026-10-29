@@ -364,6 +364,17 @@ function love.load()
     -- the generous hit area: just above the button
     tlog={}; send("pressed",cx,close.y-close.h*.4); T=T+0.08; send("released",cx,close.y-close.h*.4)
     check(table.concat(tlog,",")=="tap:b","touch: tap just above close = B (got "..table.concat(tlog,",")..")")
+    -- 0.9.71: a key of the screen under the margin wins (naming keyboard's
+    -- top-right letters); the button's own square still means B
+    local realTargets=mod.exports.screenTapTargets
+    local keyY=close.y-close.h*.4
+    mod.exports.screenTapTargets=function()return {state=partyState,kind="generic",generic=true,mode="list",time=T,
+      cells={{kind="row",index=1,x=cx-40,y=keyY-20,w=80,h=40}}}end
+    tlog={}; send("pressed",cx,keyY); T=T+0.08; send("released",cx,keyY)
+    check(not table.concat(tlog,","):find("b"),"touch: key under the close margin is not B (got "..table.concat(tlog,",")..")")
+    tlog={}; send("pressed",cx,cy); T=T+0.08; send("released",cx,cy)
+    check(table.concat(tlog,",")=="tap:b","touch: the button's own square is still B (got "..table.concat(tlog,",")..")")
+    mod.exports.screenTapTargets=realTargets
     -- 0.9.64: the lower half of the button counts too (it used to miss)
     tlog={}; send("pressed",cx,close.y+close.h*.9); T=T+0.08; send("released",cx,close.y+close.h*.9)
     check(table.concat(tlog,",")=="tap:b","touch: tap on the button's lower edge = B (got "..table.concat(tlog,",")..")")
@@ -377,7 +388,8 @@ function love.load()
     check(table.concat(tlog,",")=="tap:a","touch: open space still A (got "..table.concat(tlog,",")..")")
     -- 0.9.68: with a close button showing, the floating B is gone; START /
     -- SELECT stay on PARTY (SELECT switches) but not on, say, the MART
-    local shown=tmod.exports.shownButtons(game)
+    local _,gameP=frame(partyState,"touch-party-buttons")
+    local shown=tmod.exports.shownButtons(gameP)
     check(shown.b==nil and shown.start~=nil and shown.select~=nil,"touch: PARTY hides B, keeps START / SELECT")
     local martState=setmetatable({phase="buy",index=1,entries={{name="POTION",price=300}},
       selected=function(s)return s.entries[s.index]end,description=function()return ""end,

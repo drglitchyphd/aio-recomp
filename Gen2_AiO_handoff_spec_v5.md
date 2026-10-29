@@ -1,10 +1,20 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.70)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.71)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.71 (2026-10-29)
+
+- touch `shownButtons` returns {} when the top state is a
+  src.ui.gen2.NamingScreen. The modern keyboard paints the whole screen
+  over the overlay, so the hidden buttons still hit-tested.
+- touch onPressed: inside the close rect's padded hit area, a screen tap
+  cell under the finger wins. Only the button's drawn square always closes.
+- Tests: quick_ball_button covers the naming screen (18 checks);
+  menu_chrome checks the key under the close margin.
 
 ## 0.9.70 (2026-10-29)
 

@@ -57,6 +57,16 @@ GitHub and overlay patches are not the updater's install package. The custom
 index is independent of the community index; a community listing would require
 a separate submission.
 
+## 0.9.71 changes
+
+- Naming keyboard (touch): the floating B, START and SELECT no longer show
+  there. They used to sit hidden under the keyboard and still catch taps,
+  so the R key on the Fold's inner screen in portrait could not be pressed.
+  The keyboard's own lower / DEL / END keys do their jobs.
+- Menu close (X) button: its enlarged tap area now gives way to a key or
+  row of the screen under it. Only the button's own square always means
+  close.
+
 ## 0.9.70 changes
 
 - Touch: a Poke Ball button in wild battles. While you can throw (the
