@@ -57,6 +57,18 @@ GitHub and overlay patches are not the updater's install package. The custom
 index is independent of the community index; a community listing would require
 a separate submission.
 
+## 0.9.74 changes
+
+- Encounter tracker: Pokemon you caught no longer all show FAINTED.
+  Nuzlocke's history logs every catch as well as every death; only a death
+  counts now.
+- Battle HUD: the party rows (yours above your card, the opponent's under
+  theirs) are little Poke Balls drawn like the overworld HUD's. The top half
+  is in the HP colour (yellow for a status, grey when fainted) and an empty
+  slot is a faint outline. They are a little larger too.
+- HUD BUTTONS: new TRACKER button (clipboard icon) that opens the Nuzlocke
+  ENCOUNTERS page. It is dimmed, and says why, when Nuzlocke is off.
+
 ## 0.9.73 changes
 
 New PC box screen (Bill's PC: WITHDRAW, DEPOSIT and MOVE PKMN), with MODERN UI on.

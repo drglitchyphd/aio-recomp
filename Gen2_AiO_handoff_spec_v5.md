@@ -1,10 +1,23 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.73)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.74)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.74 (2026-10-29)
+
+- Tracker "lost": the latest `nuzlocke_history` entry per pokemonId must
+  have status LOST. The history also logs ALIVE (catches), CREATED and
+  HATCHED.
+- modern_hud `partyBalls` draws the overworld HUD's ball, coloured by HP and
+  status, with r = 2.9*fit and step r*2.5.
+- quick_menu `HUD_BUTTONS` gains "tracker". It pushes NuzlockeTrackerScreen,
+  and is off when there is no nuzlocke export or `nuzlocke_enabled` is
+  false. overworld_hud has a clipboard icon for it.
+- Tests: encounter_tracker covers ALIVE history entries; hud_buttons now
+  has 28 checks.
 
 ## 0.9.73 (2026-10-29)
 

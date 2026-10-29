@@ -177,19 +177,42 @@ return function(host)
     G.circle("fill", cx, cy, r * 0.32)
   end
 
+  -- 0.9.74: the party rows are little Poke Balls, drawn like the overworld
+  -- HUD's (lib/gen2_aio/overworld_hud.lua): the top half in the HP colour
+  -- (yellow for a status, grey when fainted), a white bottom, black band and
+  -- button; an empty slot is a faint outline of a ball
   local function partyBalls(party, x, y, r, step, theme)
+    local lw = math.max(1, r * 0.16)
     for i = 1, 6 do
       local mon = type(party) == "table" and party[i] or nil
       local cx = x + (i - 1) * step
       if mon then
-        local fainted = (tonumber(mon.hp) or 0) <= 0
+        local hp = tonumber(mon.hp) or 0
+        local max = tonumber(mon.maxHp or (mon.stats and mon.stats.hp)) or math.max(1, hp)
         local statused = mon.status ~= nil and mon.status ~= false and mon.status ~= ""
-        setColor(fainted and { 0.35, 0.36, 0.40, 1 } or statused and HP_YELLOW or HP_GREEN)
-        G.circle("fill", cx, y, r)
+        if hp <= 0 then setColor({ 0.42, 0.44, 0.48, 1 })
+        elseif statused then setColor(HP_YELLOW)
+        elseif hp / math.max(1, max) <= 0.2 then setColor({ 1, 0.34, 0.32, 1 })
+        elseif hp / math.max(1, max) <= 0.5 then setColor(HP_YELLOW)
+        else setColor(HP_GREEN) end
+        G.arc("fill", cx, y, r, math.pi, 2 * math.pi)
+        setColor({ 0.94, 0.95, 0.96, hp <= 0 and 0.7 or 1 })
+        G.arc("fill", cx, y, r, 0, math.pi)
+        setColor({ 0.08, 0.09, 0.11, 1 })
+        G.setLineWidth(lw)
+        G.circle("line", cx, y, r)
+        G.line(cx - r, y, cx + r, y)
+        setColor({ 0.94, 0.95, 0.96, 1 })
+        G.circle("fill", cx, y, r * 0.3)
+        setColor({ 0.08, 0.09, 0.11, 1 })
+        G.circle("line", cx, y, r * 0.3)
+      else
+        setColor(theme.muted or theme.text, 0.45)
+        G.setLineWidth(lw)
+        G.circle("line", cx, y, r - lw * 0.5)
+        G.line(cx - r + lw, y, cx + r - lw, y)
+        G.circle("line", cx, y, r * 0.3)
       end
-      setColor(theme.divider or theme.muted, 0.9)
-      G.setLineWidth(math.max(1, r * 0.3))
-      G.circle("line", cx, y, r)
     end
   end
 
@@ -342,9 +365,9 @@ return function(host)
     local enemyShown = state.showEnemyHud
     local eh = enemyShown and card(state, "enemy", px + margin, topY, cardW, fit, theme) or nil
     if state.ballRows and state.ballRows.enemy then
-      local r = 2.2 * fit
+      local r = 2.9 * fit
       partyBalls(party and party.enemyParty, px + margin + r + 2 * fit,
-        topY + (eh or 0) + r + 2.5 * fit, r, r * 2.8, theme)
+        topY + (eh or 0) + r + 2.5 * fit, r, r * 2.5, theme)
     end
     -- player: right, ending just above KIM's lower battle panel wherever
     -- KIM placed it this frame; the estimate is only a fallback
@@ -376,9 +399,9 @@ return function(host)
     }
     local ph2 = state.showPlayerHud and card(state, "player", playerX, playerY, cardW, fit, theme) or nil
     if state.ballRows and state.ballRows.player then
-      local r = 2.2 * fit
-      partyBalls(party and party.party, playerX + cardW - r - 2 * fit - r * 2.8 * 5,
-        playerY - r - 2.5 * fit, r, r * 2.8, theme)
+      local r = 2.9 * fit
+      partyBalls(party and party.party, playerX + cardW - r - 2 * fit - r * 2.5 * 5,
+        playerY - r - 2.5 * fit, r, r * 2.5, theme)
     end
     end)
     G.pop()

@@ -5862,8 +5862,11 @@ return function(mod)
                   local okI,id=pcall(Identity.pokemonIdentity,mon)
                   if okI and id then alive[id]=mon end
               end
+              -- the history logs catches (ALIVE) as well as deaths (LOST):
+              -- a Pokemon counts as lost when its latest entry says so
+              -- (0.9.74; 0.9.72-0.9.73 called every logged catch FAINTED)
               for _,h in ipairs(type(mod.save:get("nuzlocke_history"))=="table" and mod.save:get("nuzlocke_history") or {}) do
-                  if type(h)=="table" and h.pokemonId then lost[h.pokemonId]=true end
+                  if type(h)=="table" and h.pokemonId then lost[h.pokemonId]=(h.status=="LOST") end
               end
               local inParty={}
               for _,mon in ipairs(save and save.party or {}) do inParty[mon]=true end

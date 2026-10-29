@@ -36,7 +36,10 @@ store[prefix .. "tracker_log"] = {
   ROUTE_30 = { { species = "PIDGEY", pokemonId = "id-9" } },
 }
 store[prefix .. "encounter_states"] = { ROUTE_31 = { status = "FAILED", species = "BELLSPROUT" } }
-store[prefix .. "nuzlocke_history"] = { { pokemonId = "id-9" } }
+-- the history logs every catch as ALIVE; only a LOST entry is a death
+store[prefix .. "nuzlocke_history"] = { { pokemonId = "id-1", status = "ALIVE" },
+  { pokemonId = "id-3", status = "ALIVE" }, { pokemonId = "id-9", status = "ALIVE" },
+  { pokemonId = "id-9", status = "LOST" } }
 -- a Crystal map named the way the game data names it, run together
 game.data.maps = { DarkCaveVioletEntrance = { name = "DarkCaveVioletEntrance" } }
 store[prefix .. "tracker_log"].DarkCaveVioletEntrance = { { species = "ZUBAT", pokemonId = "id-4" } }

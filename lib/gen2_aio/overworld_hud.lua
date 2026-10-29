@@ -131,6 +131,12 @@ return function(host)
       G.rectangle("fill", 10.5, 7, 3, 10); G.rectangle("fill", 7, 10.5, 10, 3)
     elseif id == "travel" then
       G.line(3, 15, 21, 5, 13, 21, 11, 13, 3, 15)
+    elseif id == "tracker" then
+      -- a clipboard with ticked rows
+      G.rectangle("line", 4, 3, 16, 19, 2, 2)
+      G.rectangle("fill", 9, 1.5, 6, 3, 1, 1)
+      G.line(7, 10, 8.5, 11.5, 11, 8.5); G.line(13, 10, 17, 10)
+      G.line(7, 16, 8.5, 17.5, 11, 14.5); G.line(13, 16, 17, 16)
     elseif id == "bike" then
       G.circle("line", 5, 17, 4); G.circle("line", 20, 17, 4)
       G.line(5, 17, 10, 8, 15, 17, 5, 17, 16, 10, 20, 17)
