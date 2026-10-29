@@ -1260,7 +1260,9 @@ return function(mod)
   for _, rel in ipairs({ "lib/gen2_aio/modern_moves.lua", "lib/gen2_aio/modern_services.lua",
       "lib/gen2_aio/modern_extras.lua", "lib/gen2_aio/modern_story.lua",
       -- 0.9.76: STOP EVOLUTION / a B press that is remembered
-      "lib/gen2_aio/evolution_stop.lua" }) do
+      "lib/gen2_aio/evolution_stop.lua",
+      -- a traded mon's first "won't obey!" says why (OT ID + badge cap)
+      "lib/gen2_aio/obedience_hint.lua" }) do
     local f = loadOwn(rel)
     if type(f) == "function" then
       local okM, err = pcall(f, { mod = mod })
