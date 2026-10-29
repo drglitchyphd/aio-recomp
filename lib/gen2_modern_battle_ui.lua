@@ -443,7 +443,10 @@ return function(mod)
     ["stop-learning"] = true,
     ["ask-shift"] = true,
     ["ask-next-mon"] = true,
-    ["stats-box"] = true,
+    -- gen2-aio: "stats-box" is NOT here.  Its "grew to level" line stays in
+    -- this panel, exactly where the line itself was drawn, and the dialog
+    -- presenter adds only the STATS card; handing the whole phase over made
+    -- the line jump into a second, higher panel (the level-up "shown twice").
   }
 
   local function hasMessage(state)
