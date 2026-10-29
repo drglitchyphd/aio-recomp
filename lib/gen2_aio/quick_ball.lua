@@ -1,4 +1,5 @@
--- gen2-aio: Quick Poke Ball on SELECT.
+-- gen2-aio: Quick Poke Ball on SELECT, and (0.9.70) on KIM Touch's own
+-- Poke Ball button, which shows in wild battles while a throw is possible.
 --
 -- Wild battles, battle command menu (phase "menu") only: in the move list
 -- SELECT swaps moves, so it is never taken there. The throw goes through
@@ -12,7 +13,16 @@ return function(host)
   local mod = host.mod
   local ok, BS = pcall(require, "src.ui.gen2.BattleState")
   if not ok or type(BS) ~= "table" or type(BS.update) ~= "function" then return nil end
-  if BS._kimArenaQuickBall then return BS._kimArenaQuickBall end
+  -- Engine modules outlive a session (Android relaunches in the same Lua
+  -- state): BattleState is wrapped once per process; the session's mod (its
+  -- save, its exports) is swapped in through `live` on every launch.
+  local live = rawget(BS, "_kimArenaQuickBallLive") or {}
+  rawset(BS, "_kimArenaQuickBallLive", live)
+  live.mod = mod
+  if BS._kimArenaQuickBall then
+    BS._kimArenaQuickBall.export(mod)
+    return BS._kimArenaQuickBall
+  end
 
   -- Best first. Crystal's Apricorn balls sit between GREAT and POKE: each is
   -- a conditional multiplier, so they are spent before the plain POKE BALL
@@ -24,12 +34,14 @@ return function(host)
   local KEY = "quickBallLast"
 
   local function lastBall()
-    local okS, v = pcall(mod.save.get, mod.save, KEY)
+    local m = live.mod
+    local okS, v = pcall(m.save.get, m.save, KEY)
     return okS and type(v) == "string" and v or nil
   end
   local function setLast(id)
     if id == "MASTER_BALL" or id == "PARK_BALL" then return end
-    pcall(mod.save.set, mod.save, KEY, id)
+    local m = live.mod
+    pcall(m.save.set, m.save, KEY, id)
   end
 
   local function isBall(state, id)
@@ -77,37 +89,68 @@ return function(host)
     end
   end
 
+  local function ready(state)
+    return eligible(state) and state.slideFrame and state.slideFrame >= 72
+  end
+  local function throw(self)
+    local id = pick(self)
+    if id then
+      if type(self.playSfx) == "function" then pcall(self.playSfx, self, "Sfx_ReadText2") end
+      return self:useItem(id)
+    end
+    local inv = self.save and self.save.inventory or {}
+    local text = (tonumber(inv.MASTER_BALL) or 0) > 0
+      and "Only a MASTER BALL is left. Throw it from the PACK."
+      or "No POKé BALLS left."
+    if type(self.refuseMenu) == "function" then self:refuseMenu(text) end
+  end
+
   local origUpdate = BS.update
   BS.update = function(self, ...)
     local input = self.game and self.game.input
-    if input and eligible(self) and self.slideFrame
-        and self.slideFrame >= 72 and input:wasPressed("select") then
-      local id = pick(self)
-      if id then
-        if type(self.playSfx) == "function" then pcall(self.playSfx, self, "Sfx_ReadText2") end
-        return self:useItem(id)
-      end
-      local inv = self.save and self.save.inventory or {}
-      local text = (tonumber(inv.MASTER_BALL) or 0) > 0
-        and "Only a MASTER BALL is left. Throw it from the PACK."
-        or "No POKé BALLS left."
-      if type(self.refuseMenu) == "function" then self:refuseMenu(text) end
-      return
+    -- a tap on the touch ball button, queued for this battle's own update
+    local queued = rawget(self, "_aioQuickBallPending")
+    if queued then self._aioQuickBallPending = nil end
+    if ready(self) and (queued or (input and input:wasPressed("select"))) then
+      return throw(self)
     end
     return origUpdate(self, ...)
   end
 
-  -- KIM Touch relabels its SELECT pill to BALL while this is armed.
-  mod._kimArenaQuickBallReady = function()
-    local G = rawget(mod, "_kantoInMotionActiveGame")
+  local function topBattle()
+    local G = rawget(live.mod, "_kantoInMotionActiveGame")
     local game = type(G) == "function" and G() or G
     local stack = type(game) == "table" and game.stack
     local top = stack and stack.top and stack:top()
-    return type(top) == "table" and getmetatable(top) and top.battle ~= nil
-      and eligible(top) or false
+    if type(top) == "table" and getmetatable(top) and top.battle ~= nil then return top end
+    return nil
   end
+  -- the session's hooks for KIM Touch's ball button
+  local function export(m)
+    -- whether to show it
+    m._kimArenaQuickBallReady = function()
+      local top = topBattle()
+      return top ~= nil and ready(top) or false
+    end
+    -- { id, count } of the ball a throw would use (id nil: none to throw)
+    m._kimArenaQuickBallInfo = function()
+      local top = topBattle()
+      if not (top and ready(top)) then return nil end
+      local id = pick(top)
+      local inv = top.save and top.save.inventory or {}
+      return { id = id, count = id and (tonumber(inv[id]) or 0) or 0 }
+    end
+    -- throw (or say why not) on the battle's next update
+    m._kimArenaQuickBallThrow = function()
+      local top = topBattle()
+      if not (top and ready(top)) then return false end
+      top._aioQuickBallPending = true
+      return true
+    end
+  end
+  export(mod)
 
-  local api = { pick = pick, eligible = eligible }
+  local api = { pick = pick, eligible = eligible, ready = ready, export = export }
   BS._kimArenaQuickBall = api
   return api
 end

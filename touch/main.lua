@@ -275,7 +275,7 @@ return function(mod)
   end
 
   local function hit(z, x, y)
-    if z.kind == "circle" then
+    if z.kind == "circle" or z.kind == "ball" then
       local dx, dy = x - z.x, y - z.y
       local rr = z.r * 1.15
       return dx * dx + dy * dy <= rr * rr
@@ -406,10 +406,58 @@ return function(mod)
     end
     return false
   end
+  -- 0.9.70: in a wild battle's command menu, a Poke Ball button beside B
+  -- throws the quick ball (lib/gen2_aio/quick_ball.lua) -- the touch
+  -- version of SELECT there
+  local function ballZone(b)
+    local ready = mod._kimArenaQuickBallReady
+    if type(ready) ~= "function" then return nil end
+    local okR, on = pcall(ready)
+    if not (okR and on) then return nil end
+    local left = opt("touchHand", "right") == "left"
+    local r = b.r * 0.9
+    local gap = b.r * 0.45
+    local W, H = love.graphics.getDimensions()
+    -- the first spot clear of the battle HUD's cards and command panel:
+    -- beside B, above the START / SELECT pills, below B
+    local side = left and 1 or -1
+    local pillTop = b.y - b.r - math.min(W, H) * 0.035 - b.r * 0.84
+    local spots = {
+      { b.x + side * (b.r + gap + r), b.y },
+      { b.x, pillTop - gap - r },
+      { b.x, b.y + b.r + gap + r },
+    }
+    -- (published on the bundle's own mod; this one only inherits it)
+    local R = mod._kimArenaHudRects
+    local fresh = type(R) == "table" and R.W == W and R.H == H
+    local function clear(cx, cy)
+      if cx - r < 0 or cx + r > W or cy - r < 0 or cy + r > H then return false end
+      if not fresh then return true end
+      for _, k in ipairs({ "enemy", "player" }) do
+        local q = R[k]
+        if type(q) == "table" and cx + r > q.x and cx - r < q.x + q.w
+            and cy + r > q.y and cy - r < q.y + q.h then return false end
+      end
+      -- the command panel (FIGHT / PKMN / PACK / RUN) from panelTop down,
+      -- except where B itself already sits below it (tall screens)
+      if R.panelTop and cy + r > R.panelTop and b.y - b.r < R.panelTop then return false end
+      return true
+    end
+    for _, s in ipairs(spots) do
+      if clear(s[1], s[2]) then
+        return { kind = "ball", btn = "ball", label = "BALL", x = s[1], y = s[2], r = r }
+      end
+    end
+    local s = spots[1]
+    return { kind = "ball", btn = "ball", label = "BALL", x = s[1], y = s[2], r = r }
+  end
   local function shownButtons(game)
     local all = buttons()
     local cr, state = closeTarget(game)
-    if not cr then return all end
+    if not cr then
+      all.ball = ballZone(all.b)
+      return all
+    end
     local keep = usesStartSelect(state)
     return { start = keep and all.start or nil, select = keep and all.select or nil }
   end
@@ -618,7 +666,16 @@ return function(mod)
       return
     end
     for _, z in pairs(shownButtons(game)) do
-      if hit(z, x, y) then
+      if z.kind == "ball" and hit(z, x, y) then
+        local throw = mod._kimArenaQuickBallThrow
+        if type(throw) == "function" then pcall(throw) end
+        pointers[ev.id] = { kind = "swallow", ball = true }
+        buzz()
+        return
+      end
+    end
+    for _, z in pairs(shownButtons(game)) do
+      if z.kind ~= "ball" and hit(z, x, y) then
         -- 0.9.46: on the open overworld START and SELECT wait for the finger:
         -- a tap is the button, a hold opens the QUICK MENU / KEY ITEM WHEEL
         local deferred = (z.btn == "start" or z.btn == "select")
@@ -973,6 +1030,54 @@ return function(mod)
     return false
   end
 
+  local drawBallButton
+  -- the quick-ball button: the ball a throw would use (its HD item icon, or
+  -- a drawn Poke Ball), with how many are left; dimmed when there are none
+  drawBallButton = function(G, z, a, th)
+    local info
+    local fn = mod._kimArenaQuickBallInfo
+    if type(fn) == "function" then
+      local okI, v = pcall(fn); info = okI and v or nil
+    end
+    local id = info and info.id
+    local dim = id == nil
+    local aa = dim and a * 0.45 or a
+    G.setColor(th.surface[1], th.surface[2], th.surface[3], aa * 0.85)
+    G.circle("fill", z.x, z.y, z.r)
+    G.setColor(th.frame[1], th.frame[2], th.frame[3], aa)
+    G.setLineWidth(math.max(2, z.r * 0.08)); G.circle("line", z.x, z.y, z.r)
+    local iconFn = mod._kimArenaBallIcon
+    local img, quad
+    if type(iconFn) == "function" then
+      local okC, i, q = pcall(iconFn, id or "POKE_BALL"); if okC then img, quad = i, q end
+    end
+    local size = z.r * 1.25
+    if img and quad then
+      G.setColor(1, 1, 1, aa)
+      G.draw(img, quad, z.x, z.y, 0, size / 18, size / 18, 9, 9)
+    else
+      local br = size / 2
+      G.setColor(0.86, 0.2, 0.2, aa); G.arc("fill", z.x, z.y, br, math.pi, 2 * math.pi)
+      G.setColor(0.96, 0.96, 0.96, aa); G.arc("fill", z.x, z.y, br, 0, math.pi)
+      G.setColor(0.1, 0.1, 0.12, aa)
+      G.setLineWidth(math.max(2, br * 0.16)); G.line(z.x - br, z.y, z.x + br, z.y)
+      G.circle("line", z.x, z.y, br)
+      G.setColor(0.96, 0.96, 0.96, aa); G.circle("fill", z.x, z.y, br * 0.28)
+    end
+    -- the count in a badge at the lower right
+    local n = info and info.count or 0
+    local label = dim and "0" or tostring(n)
+    local bf = font(z.r * 0.42)
+    local bw = math.max(bf:getWidth(label) + z.r * 0.3, z.r * 0.62)
+    local bh = bf:getHeight() * 1.05
+    local bx, by = z.x + z.r * 0.95 - bw, z.y + z.r * 0.95 - bh
+    G.setColor(th.frame[1], th.frame[2], th.frame[3], aa)
+    G.rectangle("fill", bx, by, bw, bh, bh / 2, bh / 2)
+    G.setFont(bf)
+    G.setColor(th.surface[1], th.surface[2], th.surface[3], math.min(1, aa + 0.15))
+    G.printf(label, bx, by + (bh - bf:getHeight()) / 2, bw, "center")
+  end
+
   local function draw(game)
     local G = love.graphics
     local alpha = math.max(0.2, math.min(1, (tonumber(opt("touchOpacity", 70)) or 70) / 100))
@@ -985,7 +1090,9 @@ return function(mod)
       local fill = on and (th.selected or th.accent) or th.surface
       G.setColor(fill[1], fill[2], fill[3], a * 0.85)
       local f
-      if z.kind == "circle" then
+      if z.kind == "ball" then
+        drawBallButton(G, z, a, th)
+      elseif z.kind == "circle" then
         G.circle("fill", z.x, z.y, z.r)
         G.setColor(th.frame[1], th.frame[2], th.frame[3], a)
         G.setLineWidth(math.max(2, z.r * 0.08)); G.circle("line", z.x, z.y, z.r)
@@ -998,18 +1105,11 @@ return function(mod)
         G.rectangle("line", z.x - z.w / 2, z.y - z.h / 2, z.w, z.h, rr, rr)
         f = font(z.h * 0.38)
       end
-      G.setFont(f)
-      G.setColor(th.text[1], th.text[2], th.text[3], math.min(1, a + 0.1))
-      -- gen2-aio: the SELECT pill reads BALL while SELECT throws a quick ball
-      local label = z.label
-      if z.btn == "select" then
-        local qb = mod._kimArenaQuickBallReady
-        if type(qb) == "function" then
-          local okQ, ready = pcall(qb)
-          if okQ and ready then label = "BALL" end
-        end
+      if f then
+        G.setFont(f)
+        G.setColor(th.text[1], th.text[2], th.text[3], math.min(1, a + 0.1))
+        G.printf(z.label, z.x - 200, z.y - f:getHeight() / 2, 400, "center")
       end
-      G.printf(label, z.x - 200, z.y - f:getHeight() / 2, 400, "center")
     end
     if popup then
       local W, H = G.getDimensions()
