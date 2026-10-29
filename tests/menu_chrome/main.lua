@@ -22,7 +22,7 @@ end
 for _,name in ipairs({"src.render.TextBox","src.ui.ChoiceBox","src.ui.gen2.MartMenu",
   "src.ui.gen2.StartMenu","src.ui.gen2.PackMenu","src.ui.gen2.TrainerCard","src.ui.gen2.SaveMenu",
   "src.ui.gen2.OptionsMenu","src.ui.gen2.Pokegear","src.ui.gen2.PartyMenu","src.ui.gen2.SummaryMenu",
-  "src.ui.gen2.PokedexMenu","src.ui.gen2.HeldItemMenu"}) do class(name) end
+  "src.ui.gen2.PokedexMenu","src.ui.gen2.HeldItemMenu","src.ui.gen2.InitClock"}) do class(name) end
 package.preload["src.ui.gen2.Chrome"]=function()return {} end
 local Typer={text=function(s,page)return page end,typing=function(s)return s.typing==true end}
 package.preload["src.ui.gen2.Typer"]=function()return Typer end
@@ -166,6 +166,10 @@ function love.load()
       {label="STEP BY STEP",group=true,help="Choose each part yourself."},
       {label="SKIP",group=true,help="Start with the settings as they are."},
       {label="BACK",cancel=true}}},Opt)end},
+    -- 0.9.68: NEW GAME clock; "DAY 12 o'clock" wrapped onto the arrows
+    {"clock",function()return setmetatable({phase="hour",mode="clock",
+      question=function()return "What time is it?" end,
+      display=function()return "DAY 12 o'clock" end},classes["src.ui.gen2.InitClock"])end},
     {"quick",function()return setmetatable({title="QUICK MENU",kimSubtitle="HOLD START",index=1,scroll=0,rows={
       {label="POKeGEAR",group=true},{label="FLY",group=true},{label="AREA DEX",group=true},
       {label="DAY-CARE",group=true},{label="TODAY",group=true},{label="QUICK HEAL",group=true}}},Opt)end},
@@ -215,8 +219,24 @@ function love.load()
         if sc[1]=="nuzlocke" or sc[1]=="pokedex" then
           -- pages without footer assertions of their own below
         end
+        if sc[1]=="clock" then
+          -- not a menu window: no close button; the hour reads on one line,
+          -- clear of the footer below it
+          check(close==nil,"clock "..dims[1].." has no close button")
+          local value,footer
+          for _,d in ipairs(drawn) do
+            if d.text=="DAY 12 o'clock" then value=d end
+            if tostring(d.text):find("UP/DOWN",1,true) then footer=d end
+          end
+          check(value and footer,"clock "..dims[1].." draws the hour and the footer")
+          if value and footer then
+            check(value.font:getWidth(value.text)<=(value.w or 1e9)+1,"clock "..dims[1].." hour fits on one line")
+            check(value.y+value.font:getHeight()<=footer.y,"clock "..dims[1].." hour clear of the footer")
+          end
+        else
         check(close and close.state==state,sc[1].." "..dims[1].." publishes a close button")
-        if close then
+        end
+        if close and sc[1]~="clock" then
           -- clear of every text on the window
           for _,t in ipairs(drawn) do
             local f=t.font
@@ -342,8 +362,22 @@ function love.load()
     -- open space is still A
     tlog={}; send("pressed",dims[1]/2,dims[2]*.95); T=T+0.08; send("released",dims[1]/2,dims[2]*.95)
     check(table.concat(tlog,",")=="tap:a","touch: open space still A (got "..table.concat(tlog,",")..")")
+    -- 0.9.68: with a close button showing, the floating B is gone; START /
+    -- SELECT stay on PARTY (SELECT switches) but not on, say, the MART
+    local shown=tmod.exports.shownButtons(game)
+    check(shown.b==nil and shown.start~=nil and shown.select~=nil,"touch: PARTY hides B, keeps START / SELECT")
+    local martState=setmetatable({phase="buy",index=1,entries={{name="POTION",price=300}},
+      selected=function(s)return s.entries[s.index]end,description=function()return ""end,
+      money=function()return 100 end},Mart)
+    local _,mgame=frame(martState,"touch-mart")
+    local ms=tmod.exports.shownButtons(mgame)
+    check(ms.b==nil and ms.start==nil and ms.select==nil,"touch: MART hides B, START and SELECT")
+    local _,game2=frame(partyState,"touch-party2")
+    game=game2
     -- a stale rect (half a second old, or another state on top) is ignored
     T=T+1
+    local stale=tmod.exports.shownButtons(game)
+    check(stale.b~=nil and stale.start~=nil,"touch: no live close button = all buttons back")
     tlog={}; send("pressed",cx,cy); T=T+0.08; send("released",cx,cy)
     check(table.concat(tlog,",")=="tap:a","touch: stale close rect ignored (got "..table.concat(tlog,",")..")")
   end

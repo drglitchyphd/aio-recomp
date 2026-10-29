@@ -57,6 +57,20 @@ GitHub and overlay patches are not the updater's install package. The custom
 index is independent of the community index; a community listing would require
 a separate submission.
 
+## 0.9.68 changes
+
+- Title screen: no separate Nuzlocke SETUP row. The SETUP WIZARD at NEW GAME
+  picks the run's Nuzlocke rules, and GEN2-AIO -> NUZLOCKE & RULES -> RUN
+  RULES fine-tunes them.
+- Touch: while a menu shows its own close (X) / back button, the floating B
+  is hidden; that button does the same. START and SELECT are hidden too,
+  except in the PACK, POKeMON and POKeDEX screens, which use them for
+  moving items, switching Pokemon and Pokedex search / options. They all
+  come back in the overworld, in battle and in dialogue.
+- NEW GAME clock: the hour ("DAY 12 o'clock") is one line again on the Fold
+  cover screen instead of wrapping over the arrow and the footer. The card
+  is also wider on narrow screens.
+
 ## 0.9.67 changes
 
 New SETUP WIZARD. It opens when you start a NEW GAME, and at any time from

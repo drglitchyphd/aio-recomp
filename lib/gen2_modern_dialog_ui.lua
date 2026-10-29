@@ -813,7 +813,7 @@ return function(mod)
     end
 
     if phase=="hour" or phase=="minute" or phase=="day" then
-      local cardW=math.min(sw*.44,520*scale)
+      local cardW=math.min(sw*.72,520*scale)
       local cardH=190*scale
       local cardX=sx+(sw-cardW)/2
       local freeBottom=dialogY-14*scale
@@ -822,7 +822,10 @@ return function(mod)
       drawText(phase=="day" and "DAY" or "TIME",title,
         cardX+22*scale,cardY+15*scale,cardW-44*scale,"left",c.accent)
       drawVerticalArrow(cardX+cardW*.5,cardY+53*scale,math.max(12*scale,small:getHeight()*.7),"up",c.muted)
-      drawText(tostring(display or ""),body,
+      -- gen2-aio 0.9.68: one line, shrunk to fit ("DAY 12 o'clock" wrapped
+      -- on the Fold's cover screen, its second line over the arrow / footer)
+      local shown=tostring(display or ""):gsub("%s*\n%s*"," ")
+      drawFittedText(shown,30*scale,
         cardX+24*scale,cardY+79*scale,cardW-48*scale,"center",c.text)
       drawVerticalArrow(cardX+cardW*.5,cardY+132*scale,math.max(12*scale,small:getHeight()*.7),"down",c.muted)
       drawFittedText("UP/DOWN CHANGE   A CONFIRM",18*scale,

@@ -1,10 +1,26 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.67)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.68)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.68 (2026-10-29)
+
+- Nuzlocke's title-menu SETUP row is skipped when
+  `rawget(mod, "_kimArenaNoTitleSetup")`. main.lua sets it on the nz
+  proxy.
+- touch/main.lua `shownButtons(game)` (also exported as
+  `mod.exports.shownButtons`):
+  - With a live close rect (`closeTarget`), B is dropped.
+  - START / SELECT are dropped too, unless the top state is PackMenu,
+    PartyMenu or PokedexMenu.
+  - Used by both drawing and hit testing. `draw(game)` now takes the game.
+- gen2_modern_dialog_ui `drawInitClock`: the value is drawn with
+  drawFittedText on one line, and cardW is min(sw*.72, 520*scale).
+- Tests: menu_chrome gains clock and button-hiding checks. setup_wizard
+  checks that the title menu has no SETUP row.
 
 ## 0.9.67 (2026-10-28)
 
