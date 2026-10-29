@@ -1258,7 +1258,9 @@ return function(mod)
   -- Game Corner counters, contest, Battle Tower, decorations, elevators,
   -- Buena and the photo studio, and the story screens
   for _, rel in ipairs({ "lib/gen2_aio/modern_moves.lua", "lib/gen2_aio/modern_services.lua",
-      "lib/gen2_aio/modern_extras.lua", "lib/gen2_aio/modern_story.lua" }) do
+      "lib/gen2_aio/modern_extras.lua", "lib/gen2_aio/modern_story.lua",
+      -- 0.9.76: STOP EVOLUTION / a B press that is remembered
+      "lib/gen2_aio/evolution_stop.lua" }) do
     local f = loadOwn(rel)
     if type(f) == "function" then
       local okM, err = pcall(f, { mod = mod })

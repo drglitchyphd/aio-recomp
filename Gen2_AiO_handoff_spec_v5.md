@@ -1,10 +1,23 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.75)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.76)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.76 (2026-10-29)
+
+- `lib/gen2_aio/evolution_stop.lua` (loaded in the main.lua module loop):
+  - wraps `EvolutionAnim.cancelPressed` to honour `_aioStop` (never when
+    `force` is set);
+  - wraps `update` to latch a B press in the evolving / cry / flash phases.
+  - It is installed once per process.
+- core_menus `drawGen2Evolution` draws the STOP EVOLUTION button (a KimTap
+  cell with `button = false` that sets `_aioStop`); "evolution" is now in
+  `tapKinds`.
+- Tests: `tests/evolution_stop.lua` runs the engine's real EvolutionAnim and
+  needs AIO_ENGINE. menu_chrome renders the evolution window.
 
 ## 0.9.75 (2026-10-29)
 
