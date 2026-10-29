@@ -130,6 +130,39 @@ mod.ui = { push = function(_, id) pushedScreen = id end }
 check(not off("tracker"), "TRACKER live in a Nuzlocke run")
 for _, a in ipairs(q.hudActions(game)) do if a.id == "tracker" then a.run(game) end end
 check(pushedScreen == "NuzlockeTrackerScreen", "TRACKER opens the ENCOUNTERS page")
+-- 0.9.77: the TRACK dot while the current area's encounter is still open
+local function badge(id) for _, a in ipairs(q.hudActions(game)) do if a.id == id then return a.badge end end end
+check(not badge("tracker"), "no TRACK dot without Nuzlocke's area answer")
+local areaOpen = true
+mod.exports.nuzlocke.currentAreaOpen = function(g) assert(g == game); return areaOpen, "ROUTE 29" end
+check(badge("tracker") == true, "TRACK dot while this area's encounter is open")
+areaOpen = false
+check(not badge("tracker"), "no TRACK dot once the area is used")
+mod.exports.nuzlocke.currentAreaOpen = function() error("boom") end
+check(not badge("tracker") and not off("tracker"), "a failing area check only drops the dot")
+mod.exports.nuzlocke.currentAreaOpen = function() return true end
 rule = false
 check(off("tracker"), "TRACKER dimmed when the run has no Nuzlocke rules")
+check(not badge("tracker"), "no TRACK dot when the run has no Nuzlocke rules")
+
+-- 0.9.77 BOX: Bill's PC storage from the HUD
+local boxPush
+package.preload["src.core.gen2.Boxes"] = function()
+  return { canUsePc = function(save) return #save.party > 0, "need a mon" end }
+end
+package.preload["src.ui.Screens"] = function()
+  return { push = function(g, name, o) boxPush = { g = g, name = name, opts = o } end }
+end
+local popped = 0
+game.stack = { pop = function() popped = popped + 1 end }
+q.setHudPlace(game, "box", 1)
+check(q.hudOrder(game)[1] == "box", "BOX can be placed on the HUD")
+check(not off("box"), "BOX live with a party")
+for _, a in ipairs(q.hudActions(game)) do if a.label == "BOX" then a.run(game) end end
+check(boxPush and boxPush.name == "Gen2BoxMenu" and boxPush.opts.mode == "withdraw"
+  and boxPush.opts.save == game.save, "BOX opens Bill's PC box screen on this save")
+boxPush.opts.onClose(); check(popped == 1, "closing the box screen pops it")
+local keep = game.save.party; game.save.party = {}
+check(off("box"), "BOX dimmed with an empty party (the PC's own gate)")
+game.save.party = keep
 print(("HUD buttons, quick heal and travel: %d checks PASS"):format(count))

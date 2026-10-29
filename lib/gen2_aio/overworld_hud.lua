@@ -137,6 +137,12 @@ return function(host)
       G.rectangle("fill", 9, 1.5, 6, 3, 1, 1)
       G.line(7, 10, 8.5, 11.5, 11, 8.5); G.line(13, 10, 17, 10)
       G.line(7, 16, 8.5, 17.5, 11, 14.5); G.line(13, 16, 17, 16)
+    elseif id == "box" then
+      -- a PC box: lidded crate with a Poke Ball on its face
+      G.rectangle("line", 3, 8, 18, 13, 2, 2)
+      G.line(2, 8, 4, 4, 20, 4, 22, 8)
+      G.circle("line", 12, 14.5, 3.6)
+      G.line(8.4, 14.5, 15.6, 14.5); G.circle("fill", 12, 14.5, 1.1)
     elseif id == "bike" then
       G.circle("line", 5, 17, 4); G.circle("line", 20, 17, 4)
       G.line(5, 17, 10, 8, 15, 17, 5, 17, 16, 10, 20, 17)
@@ -163,6 +169,14 @@ return function(host)
       local f = font(r.w * .16)
       G.setFont(f); color(dim and (th.muted or th.text) or th.text, dim)
       G.printf(r.action.label, r.x + 2, r.y + r.h * .72, r.w - 4, "center")
+      -- 0.9.77: a dot in the corner = something to do here (TRACK: this
+      -- area's encounter is still open)
+      if r.action.badge and not dim then
+        local rad = math.max(3, r.w * .085)
+        local bx, by = r.x + r.w - rad - r.w * .07, r.y + rad + r.h * .07
+        G.setColor(1, .34, .32, 1); G.circle("fill", bx, by, rad)
+        color(th.surface); G.setLineWidth(math.max(1, rad * .3)); G.circle("line", bx, by, rad)
+      end
     end
     local f = font(l.clockPx)
     local padding = l.padding
