@@ -630,6 +630,8 @@ return function(mod)
   if opt("nuzlockeMod", true) ~= false then
     local nz = subMod("nuzlocke")
     namespaced(nz, "nz_")
+    -- no title-screen SETUP row: the SETUP WIZARD sets the run's rules
+    rawset(nz, "_kimArenaNoTitleSetup", true)
     nz.find = find
     nuzlockeOk = runComponent("Nuzlocke", nz, "nuzlocke/main.lua")
     mod.exports.nuzlocke = nz.exports

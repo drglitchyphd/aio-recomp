@@ -122,4 +122,11 @@ MainMenu.choose(menu, "new"); row("RECOMMENDED").activate(game); row("START GAME
 if nz and nz.getRuleFor then
   check(nz.getRuleFor("nuzlocke_enabled", true) == false, "RECOMMENDED starts without Nuzlocke")
 end
+-- 0.9.68: no separate Nuzlocke SETUP row on the title menu
+local items = H.Runtime.call("ui.title_menu.items", function(_, it) return it end, game,
+  { { label = "CONTINUE", value = "continue" }, { label = "NEW GAME", value = "new" },
+    { label = "OPTION", value = "option" } })
+local names = {}
+for _, it in ipairs(items) do names[#names + 1] = it.label end
+check(not table.concat(names, ","):find("SETUP"), "title menu has no SETUP row: " .. table.concat(names, ","))
 print(("setup wizard: %d checks PASS"):format(n))

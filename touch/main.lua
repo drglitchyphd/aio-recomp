@@ -391,6 +391,31 @@ return function(mod)
     if now() - (tonumber(r.time) or 0) > 0.5 then return nil end
     return r, state
   end
+  -- gen2-aio 0.9.68: while a menu window shows its own close / back button,
+  -- the floating B (that button does the same) and START / SELECT go away.
+  -- START / SELECT stay where Crystal uses them inside the screen: PACK
+  -- (SELECT moves an item), POKeMON (SELECT switches) and POKeDEX (START
+  -- search, SELECT options).
+  local KEEP_START_SELECT = { "src.ui.gen2.PackMenu", "src.ui.gen2.PartyMenu",
+    "src.ui.gen2.PokedexMenu" }
+  local function usesStartSelect(state)
+    local mt = getmetatable(state)
+    for _, name in ipairs(KEEP_START_SELECT) do
+      local ok, Class = pcall(require, name)
+      if ok and type(Class) == "table" and mt and (mt == Class or mt.__index == Class) then
+        return true
+      end
+    end
+    return false
+  end
+  local function shownButtons(game)
+    local all = buttons()
+    local cr, state = closeTarget(game)
+    if not cr then return all end
+    local keep = usesStartSelect(state)
+    return { start = keep and all.start or nil, select = keep and all.select or nil }
+  end
+  mod.exports.shownButtons = function(game) return shownButtons(game) end
   local function inClose(r, x, y)
     local h = type(r.hit) == "table" and r.hit or r
     return x >= h.x and x <= h.x + h.w and y >= h.y and y <= h.y + h.h
@@ -593,7 +618,7 @@ return function(mod)
       pcall(q.wheelHover, x, y)
       return
     end
-    for _, z in pairs(buttons()) do
+    for _, z in pairs(shownButtons(game)) do
       if hit(z, x, y) then
         -- 0.9.46: on the open overworld START and SELECT wait for the finger:
         -- a tap is the button, a hold opens the QUICK MENU / KEY ITEM WHEEL
@@ -949,13 +974,13 @@ return function(mod)
     return false
   end
 
-  local function draw()
+  local function draw(game)
     local G = love.graphics
     local alpha = math.max(0.2, math.min(1, (tonumber(opt("touchOpacity", 70)) or 70) / 100))
     local th = theme()
     G.push("all")
     G.origin()
-    for _, z in pairs(buttons()) do
+    for _, z in pairs(shownButtons(game)) do
       local on = held(z.btn)
       local a = alpha * (on and 1 or 0.85)
       local fill = on and (th.selected or th.accent) or th.surface
@@ -1053,7 +1078,7 @@ return function(mod)
     if on then pcall(checkLong, game) else popup = nil end
     local visible = on and not TouchControls.controllerHidden
     if visible then
-      local drawn, err = pcall(draw)
+      local drawn, err = pcall(draw, game)
       if not drawn then log("warn", "KIM Touch draw: %s", tostring(err)) end
     end
     return (table.unpack or unpack)(result)

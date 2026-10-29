@@ -6117,6 +6117,10 @@ return function(mod)
               break
           end
       end
+      -- gen2-aio 0.9.68: the bundle's SETUP WIZARD picks the run's rules at
+      -- NEW GAME (and GEN2-AIO -> RUN RULES edits them), so the host can ask
+      -- for no separate SETUP row on the title screen
+      if rawget(mod, "_kimArenaNoTitleSetup") then newGameRow = nil end
       if newGameRow then
           if type(newGameRow.onSelect) == "function" then
               -- Preserve the established R/B/Y behavior: SETUP is shown only
