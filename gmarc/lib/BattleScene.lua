@@ -188,11 +188,46 @@ end
 -- card; the card scales about its feet anchor, so it grows in place. The sun
 -- pass draws the same model, so its shadow follows.
 local function sideSize(side)
+  if side == "player" then return BattleScene.playerFit or 1 end
   local fn = side == "enemy" and V.mod and rawget(V.mod, "_kimArenaEnemyScale")
   if type(fn) ~= "function" then return 1 end
   local ok, v = pcall(fn)
   v = ok and tonumber(v) or 1
   return math.max(0.5, math.min(2, v))
+end
+
+-- gen2-aio 0.9.77: YOUR Pokemon on tall screens. On a Fold's cover screen
+-- (1080x2520) the shot is so tall that your Pokemon's spot lands low and
+-- close to the lens: its back sprite came out several times the foe's size
+-- and ran off the left edge. On a screen clearly taller than wide the near
+-- card is shrunk (never grown) about its feet until its pic is at most
+-- `ratio` times the foe's own 100% pic (the inner screen shows 1.2-1.5), at
+-- most `width` of the screen wide and, where its spot is near the left edge,
+-- until no more than `overhang` of it is off screen -- but never below the
+-- foe's own 100% pic for that last one. Wide and near-square screens (the
+-- Fold's inner 2184x1968, desktops) always get 1. Measured per frame from the camera
+-- that draws it, so it holds for every BATTLE BACKGROUND and camera.
+BattleScene.PLAYER_FIT = { tall = 1.2, ratio = 1.5, width = 0.6, overhang = 0.1, min = 0.3 }
+BattleScene.playerFit = 1
+function BattleScene.fitPlayer(vp, arena, groundY, pw, ph)
+  local F = BattleScene.PLAYER_FIT
+  if not (vp and arena and arena.player and arena.enemy) or ph <= pw * F.tall then return 1 end
+  -- a 7x7-tile pic standing on the cell, in window pixels
+  local tall = BattleBillboard.FULL_W
+  local function pic(cell)
+    local fx, fy = BattleScene.toGB(vp, cell[1], groundY, cell[2], 0, 0, 1, pw, ph)
+    local _, hy = BattleScene.toGB(vp, cell[1], groundY + tall, cell[2], 0, 0, 1, pw, ph)
+    if not (fx and hy) or fy - hy <= 0 then return nil end
+    return fy - hy, fx
+  end
+  local mine, feetX = pic(arena.player)
+  local foe = pic(arena.enemy)
+  if not (mine and foe) then return 1 end
+  -- the pic is about as wide as it is tall, centred on its feet
+  local f = math.min(1, F.ratio * foe / mine, F.width * pw / mine)
+  local edge = math.max(0, feetX) / ((0.5 - F.overhang) * mine)
+  if edge < f then f = math.max(edge, math.min(f, foe / mine)) end
+  return math.max(F.min, f)
 end
 
 -- Every mon that has something to show this frame, as (texture, matrix).
@@ -616,6 +651,12 @@ function BattleScene.render(state, arena, textures, token)
     end)
     if not okFit then kimPlate.fit = nil end
   end
+  -- gen2-aio 0.9.77: fitted where the cards will actually stand
+  BattleScene.playerFit = 1
+  if kimVp then
+    local okP, f = pcall(BattleScene.fitPlayer, kimVp, arena, groundY, pw, ph)
+    if okP and tonumber(f) then BattleScene.playerFit = f end
+  end
   if kimPlate then
     if type(kimPlate.render) == "function" then
       local okRender, rendered = pcall(kimPlate.render, {
@@ -662,6 +703,7 @@ function BattleScene.render(state, arena, textures, token)
           local len = math.sqrt(vx * vx + vz * vz)
           if fx and len > 1e-6 then
             local rxW = (tonumber(sh.rx) or 0) * k
+              * (side == "player" and BattleScene.playerFit or 1)
             local ox, oz = -vz / len * rxW, vx / len * rxW
             local gx, gy = BattleScene.toGB(kimVp, cell[1] + ox, groundY, cell[2] + oz, 0, 0, 1, 1, 1)
             if gx then

@@ -89,6 +89,20 @@ function love.load()
  game.save.inventory.BICYCLE=nil; check(cell('bike') and cell('bike').action.disabled,'unowned bike dimmed'); game.save.inventory.BICYCLE=1
  tap('items'); check(q.wheelActive(),'items opens wheel'); check(hud.layout(game)==nil,'wheel hides hud')
  send('pressed',0,0); send('released',0,0); check(not q.wheelActive(),'mouse closes wheel')
+ -- 0.9.77: BOX button, and TRACK's dot while this area's encounter is open
+ mod.exports.nuzlocke={getRule=function() return true end,currentAreaOpen=function() return true end}
+ opts.hudButtons='gear,dex,box,tracker,items'
+ check(cell('box') and not cell('box').action.disabled,'BOX button on the HUD')
+ check(cell('tracker') and cell('tracker').action.badge==true,'TRACK carries the open-area dot')
+ do
+  local tr=cell('tracker'); local c=love.graphics.newCanvas(dims[1],dims[2])
+  love.graphics.setCanvas(c); love.graphics.clear(0,0,0,1); hud.draw(game); love.graphics.setCanvas()
+  local img=c:newImageData(); local red=0
+  for y=math.floor(tr.y),math.floor(tr.y+tr.h*.3) do for x=math.floor(tr.x+tr.w*.7),math.floor(tr.x+tr.w)-1 do
+   local r,g,b=img:getPixel(x,y); if r>.9 and g<.45 and b<.45 then red=red+1 end
+  end end
+  check(red>10,'the dot is drawn in TRACK\'s corner')
+ end
  for _,d in ipairs({{1080,2520},{2184,1968},{1280,720},{360,640}}) do
   dims=d
   local l=hud.layout(game)

@@ -61,4 +61,31 @@ local d3 = screen:_aioModernData()
 local failed
 for _, r in ipairs(d3.rows) do if r.status == "failed" then failed = r end end
 check(failed == nil or failed.species == "BELLSPROUT", "MAP tab: a failed area shows what got away")
+-- 0.9.77: currentAreaOpen, the HUD TRACK button's dot
+local nz = mod.exports.nuzlocke
+check(type(nz) == "table" and type(nz.currentAreaOpen) == "function", "currentAreaOpen exported")
+game.data.encounters = { ROUTE_32 = { grass = { { species = "BELLSPROUT" } } },
+  CHERRYGROVE_CITY = { water = { { species = "TENTACOOL" } } }, ROUTE_31 = { grass = { { species = "BELLSPROUT" } } } }
+local function at(map) game.world = { map = { id = map } }; return nz.currentAreaOpen(game) end
+local open, name = at("ROUTE_32")
+check(open == true and type(name) == "string", "fresh route with wild Pokemon: open")
+check(at("ROUTE_31") == false, "failed encounter: used")
+check(at("ROUTE_29") == false, "no wild data for the map: no dot")
+check(at("ELMS_LAB") == false, "indoors: no dot")
+check(at("CHERRYGROVE_CITY") == false, "town without TOWN CATCHES: no dot")
+store[prefix .. "town_catches"] = true
+check(at("CHERRYGROVE_CITY") == true, "town with TOWN CATCHES: open")
+store[prefix .. "caught_areas"] = { ROUTE_32 = "BELLSPROUT" }
+check(at("ROUTE_32") == false, "caught here: used")
+store[prefix .. "caught_areas"] = {}
+store[prefix .. "nuzlocke_enabled"] = false
+check(at("CHERRYGROVE_CITY") == false, "Nuzlocke off: no dot")
+store[prefix .. "nuzlocke_enabled"] = nil
+-- 0.9.77: START has no RULES row (GEN2-AIO -> RULES -> RUN RULES has them)
+game.save.player = { name = "KRIS" }
+local items = H.Runtime.call("ui.start_menu.items", function(_, list) return list end, game,
+  { { label = "POKeDEX" }, { label = "KRIS" }, { label = "OPTION" }, { label = "EXIT" } })
+local labels = {}
+for _, it in ipairs(items) do labels[it.label] = true end
+check(labels.TRACKER and labels["GEN2-AIO"] and not labels.RULES, "START: TRACKER, GEN2-AIO, no RULES")
 print(("encounter tracker: %d checks PASS"):format(n))
