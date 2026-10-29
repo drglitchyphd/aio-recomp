@@ -3013,77 +3013,684 @@ return function(mod)
     chromeFooter(x,y,w,h,c,nil,{{"A","CHOOSE"},{"B","BACK"}})
   end
 
-  local function drawBoxPcModern(s)
-    local c=theme(); local sx,sy,sw,sh=playfield(); local scale=uiScale(sw,sh)
-    local w=math.min(sw*.78,980*scale); local h=math.min(sh*.82,620*scale)
-    local x=sx+(sw-w)/2; local y=sy+(sh-h)/2; panel(x,y,w,h,c,.96)
-    closeButton(x,y,w,h,c)
-    local title=type(s.title)=="function" and s:title() or "POKéMON STORAGE"
-    drawPcHeader(x,y,w,scale,c,normalizeUiText(title),normalizeUiText(type(s.prompt)=="function" and s:prompt() or "Choose a POKéMON."))
-    local body=font(22*scale); local small=font(17*scale); local tiny=font(15*scale)
-    local listX=x+22*scale; local listY=y+92*scale; local listW=w*.49; local listH=h-150*scale
-    local detailX=x+w*.52; local detailW=w*.45
-    color(c.divider,.65); G.rectangle("fill",x+w*.505,listY,1,listH)
-    local list=type(s.list)=="function" and s:list() or {}
-    local first=(tonumber(s.scroll) or 0)+1; local rows=6; local rh=listH/rows
-    for r=1,rows do
-      local i=first+r-1; local mon=list[i]; local yy=listY+(r-1)*rh
-      local isCancel=(not mon and type(s.total)=="function" and i==s:total())
-      if mon or isCancel then
-        local sel=i==(s.index or 1)
-        if s.phase~="submenu" and not s.message then
-          KimTap.add(listX,yy,listW,rh-4*scale,function(st) st.index=i end)
-        end
-        if sel then color(c.selected,.96); G.rectangle("fill",listX,yy,listW,rh-4*scale,5,5) end
-        if mon then
-          local icon=pcHdIcon(s.game,mon); local isz=math.min(42*scale,rh-8*scale)
-          if icon then drawFitImage(icon,listX+7*scale,yy+(rh-isz)/2,isz,isz,1.7) end
-          text(pcMonName(s,mon),body,listX+56*scale,yy+(rh-body:getHeight())*.42,listW-64*scale,"left",sel and c.text or c.muted)
-        else
-          text("CANCEL",body,listX+18*scale,yy+(rh-body:getHeight())*.42,listW-36*scale,"left",sel and c.text or c.muted)
-        end
-      end
+  ---------------------------------------------------------------------------
+  -- gen2-aio 0.9.72: BILL'S PC as ONE paged grid.
+  --
+  -- WITHDRAW, DEPOSIT and MOVE PKMN W/O MAIL all open the same Modern screen:
+  -- the party as a strip on top, one 5x4 page per Crystal box under it (page
+  -- numbers only, no box names) and the mon under the cursor beside / below
+  -- the grid. BoxMenu stays the owner of every rule and every save write:
+  --   * a tap or A on a mon points the state's own cursor at it (mode, box,
+  --     index) and runs its own act(), so the context menu is BoxMenu's own
+  --     submenuRows / chooseSubmenu (WITHDRAW / DEPOSIT / MOVE / STATS /
+  --     RELEASE / CANCEL, whatever the cart offers for that mon);
+  --   * a drag runs the same calls those rows make: party -> box is
+  --     doDeposit, box -> party is doWithdraw, anything else is MOVE's
+  --     beginMove + checkSpaceInDestination + insertMon. Box full, last
+  --     healthy mon, mail and any hook on those calls keep applying.
+  -- The cursor (page, party/box, slot) lives here, keyed by the state; the
+  -- state's own boxIndex/index are only aimed right before one of its calls.
+  -- (Built inside its own function: this presenter is at Lua's 200-local
+  -- limit.)
+  local drawBoxPcModern=(function()
+  local okMail,Mail=pcall(require,"src.core.gen2.Mail")
+  local okMonPalettes,MonPalettes=pcall(require,"src.world.gen2.Palettes")
+  local okPartyClass,PartyClass=pcall(require,"src.ui.gen2.PartyMenu")
+  local BOX_COLS,BOX_ROWS=5,4
+  local BoxUi=setmetatable({},{__mode="k"})      -- state -> {home,page,area,slot}
+  local BoxDrag=setmetatable({},{__mode="k"})    -- state -> the finger's drag
+  local BoxToast=setmetatable({},{__mode="k"})   -- state -> {text,t}
+  local BoxIconShim=setmetatable({},{__mode="k"})
+  local boxQuads=setmetatable({},{__mode="k"})
+  -- Crystal's own refusal for a party move while a letter rides in the party
+  -- (PcMenu's MON_HOLDING_MAIL): sPartyMail is keyed by party SLOT, and an
+  -- insert into the middle of the party would leave the letters behind.
+  local BOX_MAIL_REFUSAL="There is a POKéMON\nholding MAIL.\fPlease remove the\nMAIL."
+  local function boxCount() return (okBoxes and Boxes and tonumber(Boxes.NUM_BOXES)) or 14 end
+  local function partyCap() return (okBoxes and Boxes and tonumber(Boxes.PARTY_SIZE)) or 6 end
+  local function boxNow() return love.timer and love.timer.getTime and love.timer.getTime() or 0 end
+  -- Read-only views of the save: Boxes.box would create a box's table just
+  -- by looking at its page.
+  local function boxParty(s) return (s.save and s.save.party) or {} end
+  local function boxPage(s,page)
+    local boxes=s.save and s.save.boxes
+    return type(boxes)=="table" and type(boxes[page])=="table" and boxes[page] or {}
+  end
+  local function boxMonAt(s,area,page,slot)
+    if area=="party" then return boxParty(s)[slot] end
+    return boxPage(s,page)[slot]
+  end
+  local function boxUi(s)
+    local u=BoxUi[s]
+    if not u then
+      local home=tostring(s.mode or "withdraw")
+      local page=tonumber(s.boxIndex) or 0
+      if page<1 or page>boxCount() then page=tonumber(s.save and s.save.currentBox) or 1 end
+      u={home=home,page=math.max(1,math.min(boxCount(),page)),
+        area=(home=="deposit") and "party" or "box",slot=1}
+      BoxUi[s]=u
     end
-    local mon=type(s.selected)=="function" and s:selected() or nil
-    if mon then
-      local preview=pcFullSprite(mon)
-      local box=math.min(detailW*.48,150*scale)
-      if preview then drawFitImage(preview,detailX+(detailW-box)/2,listY+4*scale,box,box) end
-      local ty=listY+box+12*scale
-      text(pcMonName(s,mon),body,detailX,ty,detailW,"center",c.text); ty=ty+30*scale
-      local levelText=("Lv %d"):format(tonumber(mon.level) or 1)
-      text(levelText,small,detailX,ty,detailW*.48,"left",c.muted)
-      local gender=pcGender(s,mon)
-      if gender then
-        local symbolSize=small:getHeight()*.78
-        local gx=detailX+small:getWidth(levelText)+7*scale+symbolSize*.36
-        local gy=ty+small:getHeight()*.50
-        local gc=(gender=="male") and {0.28,0.66,1,1} or {1,0.40,0.66,1}
-        pcGenderSymbol(gx,gy,symbolSize,gender,gc)
-      end
-      local hp=tonumber(mon.hp) or 0; local maxHp=tonumber(mon.maxHp or (mon.stats and mon.stats.hp)) or hp
-      text(("HP %d/%d"):format(hp,maxHp),small,detailX+detailW*.48,ty,detailW*.52,"right",c.text); ty=ty+29*scale
-      for _,mv in ipairs(mon.moves or {}) do
-        local id=type(mv)=="table" and mv.id or mv
-        local def=s.game and s.game.data and s.game.data.moves and s.game.data.moves[id]
-        text(tostring((def and def.name) or id or ""),tiny,detailX+8*scale,ty,detailW-16*scale,"left",c.muted)
-        ty=ty+22*scale
-      end
+    return u
+  end
+  local function boxIdle(s)
+    return s.phase==nil and not s.message and not s.cryWait and not s.messageFrames
+  end
+  local function turnBoxPage(u,delta)
+    local n=boxCount()
+    u.page=(u.page-1+delta)%n+1
+  end
+  -- Between actions the state is put back the way PcMenu opened it, aimed at
+  -- the page in view, so MODERN UI switched off mid-screen leaves Crystal's
+  -- own list in a sane place.
+  local function boxHome(s,u)
+    s.mode=u.home
+    if s.boxIndex~=u.page then s.boxIndex=u.page; s.index=1; s.scroll=0 end
+  end
+  -- D-pad over the party strip (one row of six) and the 5x4 page; LEFT /
+  -- RIGHT off a page edge turns the page, the way the cart's MOVE screen
+  -- walks its boxes.
+  local function boxStep(u,dir)
+    local pc=partyCap()
+    if u.area=="party" then
+      if dir=="left" then u.slot=math.max(1,u.slot-1)
+      elseif dir=="right" then u.slot=math.min(pc,u.slot+1)
+      elseif dir=="down" then u.area="box"; u.slot=math.min(BOX_COLS,math.floor((u.slot-1)*BOX_COLS/pc)+1) end
+      return
     end
-    if s.phase=="submenu" and type(s.submenuRows)=="function" then
-      local subs=s:submenuRows(); local mw=math.min(260*scale,w*.30); local mh=#subs*48*scale+28*scale
-      local mx=x+w-mw-24*scale; local my=y+105*scale
-      panel(mx,my,mw,mh,c,.99)
-      drawPcRows(mx+10*scale,my+12*scale,mw-20*scale,mh-24*scale,subs,s.submenuIndex or 1,scale,c,
-        function(i) return function(st) st.submenuIndex=i end end)
-    end
-    if s.message then
-      local mw=w*.64; local mh=125*scale; local mx=x+(w-mw)/2; local my=y+h-mh-18*scale
-      panel(mx,my,mw,mh,c,.99); text(normalizeUiText(s.message),small,mx+22*scale,my+20*scale,mw-44*scale,"left",c.text)
-    else
-      chromeFooter(x,y,w,h,c,nil,{{"A","CHOOSE"},{"B","BACK"}})
+    local row=math.floor((u.slot-1)/BOX_COLS); local col=(u.slot-1)%BOX_COLS
+    if dir=="left" then
+      if col>0 then u.slot=u.slot-1 else turnBoxPage(u,-1); u.slot=row*BOX_COLS+BOX_COLS end
+    elseif dir=="right" then
+      if col<BOX_COLS-1 then u.slot=u.slot+1 else turnBoxPage(u,1); u.slot=row*BOX_COLS+1 end
+    elseif dir=="up" then
+      if row>0 then u.slot=u.slot-BOX_COLS
+      else u.area="party"; u.slot=math.min(pc,math.floor(col*pc/BOX_COLS)+1) end
+    elseif dir=="down" then
+      if row<BOX_ROWS-1 then u.slot=u.slot+BOX_COLS end
     end
   end
+  local function boxSay(s,src)
+    local value=src
+    if okStrings and Strings then
+      local ok,v=pcall(Strings,src)
+      if ok and v~=nil then value=v end
+    end
+    s.message=value; s.messagePage=1
+  end
+  local function boxRefuse(s,src)
+    if type(s.playRefusalSfx)=="function" then pcall(s.playRefusalSfx,s,"Sfx_Wrong") end
+    boxSay(s,src)
+  end
+  -- The context menu: exactly BoxMenu's A on that mon. The menu it opens
+  -- follows the screen PcMenu opened: MOVE PKMN keeps MOVE / STATS / CANCEL
+  -- for every mon (party = its box 0); from WITHDRAW or DEPOSIT a party mon
+  -- gets DEPOSIT's rows (into the page in view) and a boxed one WITHDRAW's.
+  local function boxOpenMenu(s,u)
+    local mon=boxMonAt(s,u.area,u.page,u.slot)
+    if not mon or type(s.act)~="function" then return false end
+    if u.home=="move" then
+      s.mode="move"; s.boxIndex=(u.area=="party") and 0 or u.page
+    else
+      s.mode=(u.area=="party") and "deposit" or "withdraw"; s.boxIndex=u.page
+    end
+    s.index=u.slot; s.scroll=0
+    s:act()
+    return s.phase=="submenu"
+  end
+  local function partyHasMail(s)
+    return okMail and Mail and type(Mail.anyMonHoldingMail)=="function"
+      and Mail.anyMonHoldingMail(s.save) and true or false
+  end
+  -- One MOVE PKMN W/O MAIL, run through BoxMenu itself, that leaves the mon
+  -- at position `want` of toBox (box 0 = the party, as on the cart's MOVE
+  -- screen): beginMove (last mon / no usable mon / mail refusals),
+  -- checkSpaceInDestination ("There's no room!"), insertMon (the write and
+  -- the deposited mon's PP restore). The cart only inserts IN FRONT of the
+  -- mon under its cursor, so "after the last one" is that insert plus a
+  -- second MOVE of the old last mon back in front of it.
+  -- quiet: a follow-up placement -- a refusal changes nothing and says
+  -- nothing. keep: a refused insert stays on the insert cursor (the cart's
+  -- `.no_space`); otherwise it backs out.
+  local function boxEngineMove(s,fromBox,fromSlot,toBox,want,quiet,keep)
+    if toBox==0 and partyHasMail(s) then
+      if s.moveFrom and not keep then s:cancelMove() end
+      if not quiet then boxRefuse(s,BOX_MAIL_REFUSAL) end
+      return false
+    end
+    if not s.moveFrom then
+      s.mode="move"; s.boxIndex=fromBox; s.index=fromSlot; s.scroll=0
+      if quiet and not s:checkMailPreventBlackout() then return false end
+      s:beginMove()
+      if s.phase~="insert" or not s.moveFrom then return false end
+    end
+    fromBox,fromSlot=s.moveFrom.box,s.moveFrom.slot
+    local n=#s:listAt(toBox)
+    local index,fix
+    if fromBox==toBox then
+      want=math.max(1,math.min(want,n))
+      if want==fromSlot then s:cancelMove(); return true,toBox,want end
+      if want<fromSlot then index=want elseif want<n then index=want+1 else index=n; fix=true end
+    else
+      want=math.max(1,math.min(want,n+1))
+      if want<=n then index=want elseif n==0 then index=1 else index=n; fix=true end
+    end
+    s.boxIndex=toBox; s.index=index; s:clampInsert()
+    local ok,reason=s:checkSpaceInDestination()
+    if not ok then
+      if not keep then s:cancelMove() end
+      if not quiet then boxRefuse(s,reason) end
+      return false
+    end
+    s:insertMon()
+    if fix then
+      local said=s.message
+      s.message=nil
+      local last=#s:listAt(toBox)
+      boxEngineMove(s,toBox,last,toBox,last-1,true)
+      s.message=said
+    end
+    return true,toBox,want
+  end
+  -- A follow-up MOVE after a deposit / withdraw (the drop slot): the
+  -- deposit's own "Stored X!" hold and cry carry on untouched.
+  local function boxQuietPlace(s,box,from,want)
+    local keep={s.message,s.messagePage,s.messageFrames,s.panelCleared,s.mode}
+    s.message,s.messageFrames=nil,nil
+    local ok,_,at=boxEngineMove(s,box,from,box,want,true)
+    s.message,s.messagePage,s.messageFrames,s.panelCleared,s.mode=keep[1],keep[2],keep[3],keep[4],keep[5]
+    s.phase=nil
+    return ok and at or from
+  end
+  local function boxToast(s,text) BoxToast[s]={text=text,t=boxNow()} end
+  -- A finger dropped a mon. from/to: {area="party"|"box", page, slot[, mon]}.
+  local function boxDrop(s,from,to)
+    BoxDrag[s]=nil
+    if type(from)~="table" or type(to)~="table" or not boxIdle(s) then return end
+    if boxMonAt(s,from.area,from.page,from.slot)~=from.mon then return end   -- stale
+    local u=boxUi(s)
+    if to.area==from.area and to.slot==from.slot and (to.area=="party" or to.page==from.page) then
+      -- picked up and put back: the tap's context menu
+      u.area,u.slot=from.area,from.slot
+      if from.area=="box" and from.page then u.page=from.page end
+      boxOpenMenu(s,u)
+      return
+    end
+    local done,area,page,at=false
+    if from.area=="party" and to.area=="box" then
+      -- DEPOSIT, into the page it was dropped on (BoxMenu:doDeposit)
+      local before=#boxParty(s)
+      s.mode="deposit"; s.boxIndex=to.page; s.index=from.slot; s.scroll=0
+      s:doDeposit()
+      if #boxParty(s)<before then
+        local n=#boxPage(s,to.page)
+        at=(to.slot<n) and boxQuietPlace(s,to.page,n,to.slot) or n
+        done,area,page=true,"box",to.page
+      end
+    elseif from.area=="box" and to.area=="party" then
+      -- WITHDRAW (BoxMenu:doWithdraw): "You can't take any more" when full
+      local before=#boxParty(s)
+      s.mode="withdraw"; s.boxIndex=from.page; s.index=from.slot; s.scroll=0
+      s:doWithdraw()
+      local n=#boxParty(s)
+      if n>before then
+        at=(to.slot<n) and boxQuietPlace(s,0,n,to.slot) or n
+        done,area=true,"party"
+      end
+    else
+      -- reorder inside the party or a page, or page to page: MOVE
+      local fb=(from.area=="party") and 0 or from.page
+      local tb=(to.area=="party") and 0 or to.page
+      local moved,dest,where=boxEngineMove(s,fb,from.slot,tb,to.slot)
+      if moved then
+        -- the grid shows where it went; the cart's "Saving… Leave ON!" (its
+        -- only confirmation on a list) would just cost another tap here
+        s.message=nil
+        done,area,page,at=true,(dest==0) and "party" or "box",(dest~=0) and dest or nil,where
+        if fb~=tb then boxToast(s,dest==0 and "MOVED TO PARTY" or ("MOVED TO PAGE "..tostring(dest))) end
+      end
+    end
+    if done then
+      u.area=area; if page then u.page=page end; u.slot=at or 1
+    end
+    if boxIdle(s) then boxHome(s,u) end
+  end
+
+  if okBoxPc and BoxMenu and type(BoxMenu.update)=="function" and not BoxMenu.__kimBoxGridV0972 then
+    local oldBoxUpdate=BoxMenu.update
+    BoxMenu.update=function(self,dt,...)
+      local input=self and self.game and self.game.input
+      if not (presenterEnabled("pokemon") and input and self.save) then return oldBoxUpdate(self,dt,...) end
+      -- messages, the cry / "Stored" hold and the context menu stay BoxMenu's
+      if self.message or self.cryWait or self.messageFrames or (self.phase~=nil and self.phase~="insert") then
+        return oldBoxUpdate(self,dt,...)
+      end
+      local u=boxUi(self)
+      local inserting=self.phase=="insert"
+      if not inserting then boxHome(self,u) end
+      for _,dir in ipairs({"up","down","left","right"}) do
+        if input:wasPressed(dir) then boxStep(u,dir); return end
+      end
+      if input:wasPressed("l") then turnBoxPage(u,-1); return end
+      if input:wasPressed("r") then turnBoxPage(u,1); return end
+      if input:wasPressed("a") then
+        if inserting then
+          -- MOVE's insert cursor: A drops the mon on the slot under it
+          local moved,dest,where=boxEngineMove(self,nil,nil,(u.area=="party") and 0 or u.page,u.slot,false,true)
+          if moved and dest then u.area=(dest==0) and "party" or "box"; u.slot=where or u.slot end
+        else
+          boxOpenMenu(self,u)
+        end
+        return
+      end
+      if input:wasPressed("b") then
+        if inserting then self:cancelMove()
+        elseif self.onClose then self.onClose() end
+      end
+    end
+    BoxMenu.__kimBoxGridV0972=true
+  end
+
+  local function boxFit(img,x,y,w,h,alpha)
+    if not img or type(img.getDimensions)~="function" then return false end
+    local iw,ih=img:getDimensions(); iw,ih=math.max(1,iw or 1),math.max(1,ih or 1)
+    local sc=math.min(w/iw,h/ih)
+    G.setColor(1,1,1,alpha or 1); G.draw(img,x+(w-iw*sc)/2,y+(h-ih*sc)/2,0,sc,sc)
+    return true
+  end
+  local function gbcShade(colors,trueColor)
+    return colors and okGbcPalette and GbcPalette and type(GbcPalette.available)=="function"
+      and GbcPalette.available() and not (trueColor and GbcPalette.mode=="gbc")
+  end
+  -- Crystal's own 16x16 party icon (PartyMenu:iconFor on a borrowed view of
+  -- this state), in the party menu's colours.
+  local function drawNativeBoxIcon(s,mon,x,y,size,alpha)
+    if not (okPartyClass and type(PartyClass)=="table" and type(PartyClass.iconFor)=="function") then return false end
+    local shim=BoxIconShim[s]
+    if not shim then
+      local data=s.game and s.game.data or {}
+      shim=setmetatable({game=s.game,icons=s.icons or data.gen2Icons,palettes=s.palettes,
+        iconCache={},clock=0,index=0},{__index=PartyClass})
+      BoxIconShim[s]=shim
+    end
+    local ok,img,_,trueColor=pcall(shim.iconFor,shim,mon)
+    if not ok or not img or type(img.getDimensions)~="function" then return false end
+    local iw,ih=img:getDimensions()
+    local q=boxQuads[img]
+    if not q then q=G.newQuad(0,0,math.min(16,iw),math.min(16,ih),iw,ih); boxQuads[img]=q end
+    local sc=size/16
+    if sc>=1 then sc=math.floor(sc) end
+    local pals=s.palettes and s.palettes.partyMenu
+    local colors=type(pals)=="table" and pals[1] or nil
+    local shade=gbcShade(colors,trueColor) and type(GbcPalette.use)=="function"
+    local previous=G.getShader and G.getShader() or nil
+    G.setColor(1,1,1,alpha or 1)
+    if shade then pcall(GbcPalette.use,colors) end
+    G.draw(img,q,x+(size-16*sc)/2,y+(size-16*sc)/2,0,sc,sc)
+    if shade then G.setShader(previous) end
+    return true
+  end
+  -- A mon in a grid cell: KIM's HD menu sprite (the party / summary / dex
+  -- art) while MENU SPRITES is KIM, else -- or where HD art is missing --
+  -- the HD menu icon when POKéMON ICONS is on, then Crystal's own icon.
+  local function drawBoxMon(s,mon,x,y,w,h,alpha)
+    if type(mon)~="table" then return end
+    if tostring(opt("gen2MenuSpriteSource","kim"))~="vanilla" and not mon.isEgg then
+      if boxFit(pcFullSprite(mon),x,y,w,h,alpha) then return end
+    end
+    if type(mod._kantoInMotionHdMenuIconForModernUi)=="function" then
+      local ok,path=pcall(mod._kantoInMotionHdMenuIconForModernUi,s.game,mon)
+      if ok and boxFit(pcLoadImage(path),x,y,w,h,alpha) then return end
+    end
+    local size=math.min(w,h)
+    if drawNativeBoxIcon(s,mon,x+(w-size)/2,y+(h-size)/2,size,alpha) then return end
+    if not mon.isEgg then boxFit(pcHdIcon(s.game,mon),x,y,w,h,alpha) end
+  end
+  -- The big picture: HD sprite, or Crystal's own front pic (BoxMenu:picFor,
+  -- so a stored Unown shows its own letter) on its paper in its colours.
+  local function drawBoxPreview(s,mon,x,y,w,h,c)
+    if tostring(opt("gen2MenuSpriteSource","kim"))~="vanilla" and not mon.isEgg then
+      if boxFit(pcFullSprite(mon),x,y,w,h) then return end
+    end
+    if not mon.isEgg and type(s.picFor)=="function" then
+      local ok,img,trueColor=pcall(s.picFor,s,mon)
+      if ok and img and type(img.getDimensions)=="function" then
+        local size=math.min(w,h)
+        local px,py=x+(w-size)/2,y+(h-size)/2
+        color({.97,.97,.94,1}); G.rectangle("fill",px,py,size,size,6,6)
+        local colors
+        if okMonPalettes and MonPalettes and type(MonPalettes.monColors)=="function" then
+          local okc,v=pcall(MonPalettes.monColors,s.palettes,mon.species,mon.shiny and true or false)
+          if okc then colors=v end
+        end
+        local function body() boxFit(img,px+size*.06,py+size*.06,size*.88,size*.88) end
+        if gbcShade(colors,trueColor) and type(GbcPalette.with)=="function" then GbcPalette.with(colors,body) else body() end
+        return
+      end
+    end
+    drawBoxMon(s,mon,x,y,w,h)
+  end
+  local function boxMonTypes(s,mon)
+    local def=s.game and s.game.data and s.game.data.pokemon and s.game.data.pokemon[mon.species]
+    local out,seen={},{}
+    for _,t in ipairs(def and type(def.types)=="table" and def.types or {}) do
+      local n=tostring(t):upper():gsub("_TYPE$",""):gsub("^CURSE$","???")
+      if n~="" and not seen[n] then seen[n]=true; out[#out+1]=n end
+    end
+    return table.concat(out," / ")
+  end
+  -- Name, level, gender, HP, types and moves of the mon under the cursor
+  -- (or in the hand). wide: picture on top; else picture at the left.
+  local function drawBoxDetail(s,mon,x,y,w,h,scale,c,wide)
+    if type(mon)~="table" then
+      text("EMPTY",fittedFont(20*scale,"EMPTY",w),x,y+h*.4,w,"center",c.muted)
+      return
+    end
+    local pic,ix,iy,iw
+    if wide then
+      pic=math.min(w*.6,h*.38); drawBoxPreview(s,mon,x+(w-pic)/2,y,pic,pic,c)
+      ix,iy,iw=x,y+pic+10*scale,w
+    else
+      pic=math.min(h,w*.34); drawBoxPreview(s,mon,x,y+(h-pic)/2,pic,pic,c)
+      ix,iy,iw=x+pic+16*scale,y+4*scale,w-pic-16*scale
+    end
+    local name=pcMonName(s,mon)
+    local nf=fittedFont(26*scale,name,iw)
+    text(name,nf,ix,iy,iw,"left",c.text); iy=iy+nf:getHeight()+4*scale
+    if mon.isEgg then return end
+    local small=font(18*scale)
+    local lv=("Lv %d"):format(tonumber(mon.level) or 1)
+    text(lv,small,ix,iy,iw*.4,"left",c.muted)
+    local gender=pcGender(s,mon)
+    if gender then
+      local gs=small:getHeight()*.78
+      pcGenderSymbol(ix+small:getWidth(lv)+7*scale+gs*.36,iy+small:getHeight()*.5,gs,gender,
+        gender=="male" and {.28,.66,1,1} or {1,.40,.66,1})
+    end
+    local hp=tonumber(mon.hp) or 0; local maxHp=tonumber(mon.maxHp or (mon.stats and mon.stats.hp)) or hp
+    local hpText=("HP %d/%d"):format(hp,maxHp)
+    text(hpText,small,ix+iw*.4,iy,iw*.6,"right",c.text); iy=iy+small:getHeight()+4*scale
+    local f=maxHp>0 and math.max(0,math.min(1,hp/maxHp)) or 0
+    local bh=math.max(4,6*scale)
+    color(c.raised); G.rectangle("fill",ix,iy,iw,bh,bh*.5,bh*.5)
+    color(f<=.2 and {.93,.2,.18,1} or f<=.5 and {.96,.7,.16,1} or {.16,.78,.38,1})
+    G.rectangle("fill",ix+1,iy+1,math.max(0,(iw-2)*f),bh-2,bh*.4,bh*.4)
+    iy=iy+bh+6*scale
+    local types=boxMonTypes(s,mon)
+    if types~="" then text(types,fittedFont(17*scale,types,iw),ix,iy,iw,"left",c.accent); iy=iy+small:getHeight()+2*scale end
+    local tiny=font(16*scale)
+    local cols=wide and 1 or 2
+    local mw=iw/cols
+    for i,mv in ipairs(mon.moves or {}) do
+      if i>4 then break end
+      local id=type(mv)=="table" and mv.id or mv
+      local def=s.game and s.game.data and s.game.data.moves and s.game.data.moves[id]
+      local label=tostring((def and def.name) or id or ""):gsub("_"," ")
+      local col=(i-1)%cols; local row=math.floor((i-1)/cols)
+      local my=iy+row*(tiny:getHeight()+4*scale)
+      if my+tiny:getHeight()<=y+h then
+        text(label,fittedFont(16*scale,label,mw-8*scale),ix+col*mw,my,mw-8*scale,"left",c.muted)
+      end
+    end
+  end
+
+  return function(s)
+    local c=theme(); local sx,sy,sw,sh=playfield(); local scale=uiScale(sw,sh)
+    local u=boxUi(s)
+    local buf=KimTap.buf
+    if buf and buf.state~=s then buf=nil end
+    local idle=boxIdle(s)
+    local talking=s.message or s.cryWait or s.messageFrames
+    local inserting=s.phase=="insert" and not talking
+    local submenu=s.phase=="submenu" and not talking
+    if not idle then BoxDrag[s]=nil end
+    local drag=BoxDrag[s]
+    local party=boxParty(s); local page=boxPage(s,u.page)
+    local pcap=partyCap()
+
+    -- layout: the party strip, the page bar and the 5x4 page stacked in one
+    -- column; the detail under it on a tall (Fold outer) screen, beside it
+    -- on a wide one (Fold inner, desktop)
+    local tall=sh>sw*1.18
+    local mobile=mobileHost()
+    local pad=math.max(10,18*scale); local gap=math.max(4,8*scale)
+    local headerH=84*scale
+    local lf=font(17*scale); local labelH=lf:getHeight()+6*scale
+    local footH=chromeFooterH()
+    local w,cell,pcell,arrow,detailH
+    local function partyCell(avail) return (avail-(pcap-1)*gap)/pcap end
+    local function stackH() return headerH+labelH+pcell+gap*2+arrow+gap+BOX_ROWS*(cell+gap) end
+    local total
+    if tall then
+      w=sw*.94; local inner=w-pad*2
+      cell=(inner-(BOX_COLS-1)*gap)/BOX_COLS; pcell=math.min(cell,partyCell(inner))
+      total=function() arrow=math.max(40*scale,cell*.42); detailH=math.max(cell*1.3,190*scale)
+        return stackH()+detailH+gap+footH+pad end
+      while total()>sh*.94 and cell>24 do cell=cell*.94; pcell=math.min(pcell,cell) end
+    else
+      w=sw*(mobile and .92 or .86); local leftW=w*.62-pad
+      cell=(leftW-(BOX_COLS-1)*gap)/BOX_COLS; pcell=math.min(cell,partyCell(leftW))
+      total=function() arrow=math.max(40*scale,cell*.36); return stackH()+footH+pad end
+      while total()>sh*(mobile and .92 or .88) and cell>24 do cell=cell*.94; pcell=math.min(pcell,cell) end
+    end
+    local h=total()
+    local x=sx+(sw-w)/2; local y=sy+(sh-h)/2
+    panel(x,y,w,h,c,.96)
+    closeButton(x,y,w,h,c)
+    local prompt=normalizeUiText(type(s.prompt)=="function" and s:prompt() or "Choose a POKéMON.")
+    if drag then prompt="Drop it on a slot." end
+    drawPcHeader(x,y,w,scale,c,"BILL'S PC",prompt)
+
+    local gridW=BOX_COLS*cell+(BOX_COLS-1)*gap
+    local partyW=pcap*pcell+(pcap-1)*gap
+    local colW=math.max(gridW,partyW)
+    local colX=tall and x+(w-colW)/2 or x+pad
+    local moveFrom=inserting and s.moveFrom or nil
+    local moveMon=moveFrom and ((moveFrom.box==0) and party[moveFrom.slot] or boxPage(s,moveFrom.box)[moveFrom.slot]) or nil
+    local held=drag and drag.from and drag.from.mon or moveMon
+    local function inside(px,py,rx,ry,rw,rh) return px and py and px>=rx and px<=rx+rw and py>=ry and py<=ry+rh end
+    local tapsOn=buf and (idle or inserting)
+    local function addCell(cx,cy,size,area,slot,mon)
+      if not tapsOn then return end
+      local pageNo=u.page
+      KimTap.add(cx,cy,size,size,function(st)
+        local uu=boxUi(st); uu.area=area; uu.slot=slot
+        if area=="box" then uu.page=pageNo end
+      end,(inserting or mon) and "a" or false)
+      local cellRec=buf.cells[#buf.cells]
+      if idle and cellRec then
+        cellRec.drop={area=area,page=pageNo,slot=slot}
+        if mon then cellRec.drag={area=area,page=pageNo,slot=slot,mon=mon} end
+      end
+    end
+    local function drawCell(cx,cy,size,mon,area,slot,cursor)
+      local r=math.max(4,size*.1)
+      color(c.raised,.55); G.rectangle("fill",cx,cy,size,size,r,r)
+      local hot
+      if drag then hot=inside(drag.x,drag.y,cx,cy,size,size) else hot=cursor end
+      if hot then
+        color(c.selected,.95); G.rectangle("fill",cx,cy,size,size,r,r)
+        color(c.accent,nil,true); G.setLineWidth(math.max(2,size*.035)); G.rectangle("line",cx,cy,size,size,r,r)
+      end
+      if inserting and cursor then
+        -- MOVE's insert cursor: a bar on the slot's leading edge
+        color(c.accent,nil,true); G.rectangle("fill",cx-gap*.5-2,cy+size*.1,math.max(3,4*scale),size*.8,2,2)
+      end
+      if mon then
+        local lifted=held~=nil and mon==held
+        drawBoxMon(s,mon,cx+size*.07,cy+size*.03,size*.86,size*.78,lifted and .28 or 1)
+        if size>=48 then
+          local lv=mon.isEgg and "EGG" or ("Lv"..tostring(tonumber(mon.level) or 1))
+          local lvf=font(math.max(8,math.min(17*scale,size*.15)))
+          text(lv,lvf,cx+size*.06,cy+size-lvf:getHeight()-size*.03,size*.88,"right",lifted and c.muted or c.text)
+        end
+        if mon.item and mon.item~=0 and mon.item~="" then
+          color(c.accent,nil,true); G.circle("fill",cx+size*.86,cy+size*.14,math.max(3,size*.05))
+        end
+        if area=="party" and not mon.isEgg then
+          local hp=tonumber(mon.hp) or 0; local maxHp=tonumber(mon.maxHp or (mon.stats and mon.stats.hp)) or 1
+          local f=math.max(0,math.min(1,hp/math.max(1,maxHp)))
+          local bh=math.max(3,size*.035)
+          color(c.frameShadow or {0,0,0,.4},.6); G.rectangle("fill",cx+size*.08,cy+size*.04,size*.84,bh)
+          color(f<=.2 and {.93,.2,.18,1} or f<=.5 and {.96,.7,.16,1} or {.16,.78,.38,1})
+          G.rectangle("fill",cx+size*.08,cy+size*.04,size*.84*f,bh)
+        end
+      end
+      addCell(cx,cy,size,area,slot,mon)
+    end
+
+    -- the party strip
+    local cy=y+headerH
+    text(("PARTY  %d/%d"):format(#party,pcap),lf,colX,cy,colW*.6,"left",c.muted)
+    text(("%d/%d"):format(#page,(okBoxes and Boxes and tonumber(Boxes.MONS_PER_BOX)) or 20),lf,colX+colW*.6,cy,colW*.4,"right",c.muted)
+    cy=cy+labelH
+    local px0=colX+(colW-partyW)/2
+    for i=1,pcap do
+      drawCell(px0+(i-1)*(pcell+gap),cy,pcell,party[i],"party",i,u.area=="party" and u.slot==i)
+    end
+    cy=cy+pcell+gap*2
+
+    -- the page bar: < PAGE n / 14 >, one dot a page
+    local function arrowBtn(ax,dir,delta)
+      local lit=drag and inside(drag.x,drag.y,ax,cy,arrow,arrow)
+      color(lit and c.selected or c.raised,lit and .95 or .8); G.rectangle("fill",ax,cy,arrow,arrow,arrow*.2,arrow*.2)
+      color(c.accent,nil,true)
+      local mx,my,k=ax+arrow/2,cy+arrow/2,arrow*.18
+      if dir=="left" then G.polygon("fill",mx-k,my,mx+k*.8,my-k*1.1,mx+k*.8,my+k*1.1)
+      else G.polygon("fill",mx+k,my,mx-k*.8,my-k*1.1,mx-k*.8,my+k*1.1) end
+      if tapsOn then KimTap.add(ax,cy,arrow,arrow,function(st) turnBoxPage(boxUi(st),delta) end,false) end
+      -- a drag resting on an arrow turns the page under the finger
+      if drag then
+        if lit then
+          if drag.dwell~=delta then drag.dwell,drag.dwellT=delta,boxNow()
+          elseif boxNow()-(drag.dwellT or 0)>.6 then turnBoxPage(u,delta); drag.dwellT=boxNow() end
+        elseif drag.dwell==delta then drag.dwell=nil end
+      end
+    end
+    arrowBtn(colX,"left",-1); arrowBtn(colX+colW-arrow,"right",1)
+    do
+      local bx=colX+arrow+gap; local bw=colW-2*(arrow+gap)
+      local label=("PAGE %d / %d"):format(u.page,boxCount())
+      local pf=fittedFont(math.min(24*scale,arrow*.42),label,bw)
+      text(label,pf,bx,cy+arrow*.08,bw,"center",c.text)
+      local n=boxCount()
+      local dot=math.max(3,math.min(arrow*.09,bw/(n*3.2)))
+      local step=math.min(bw/n,dot*3.4)
+      local dx0=bx+(bw-step*(n-1))/2
+      local dy=cy+arrow*.78
+      for i=1,n do
+        local cur=i==u.page
+        color(cur and c.accent or c.muted,cur and 1 or .45,true)
+        G.circle("fill",dx0+(i-1)*step,dy,cur and dot*1.35 or dot)
+        if tapsOn then KimTap.add(dx0+(i-1)*step-step/2,cy+arrow*.55,step,arrow*.45,function(st) boxUi(st).page=i end,false) end
+      end
+    end
+    cy=cy+arrow+gap
+
+    -- the page
+    local gx0=colX+(colW-gridW)/2
+    for i=1,BOX_ROWS*BOX_COLS do
+      local r=math.floor((i-1)/BOX_COLS); local col=(i-1)%BOX_COLS
+      drawCell(gx0+col*(cell+gap),cy+r*(cell+gap),cell,page[i],"box",i,u.area=="box" and u.slot==i)
+    end
+    local gridBottom=cy+BOX_ROWS*(cell+gap)
+
+    -- the mon under the cursor, or the one in the hand
+    local focus=held or boxMonAt(s,u.area,u.page,u.slot)
+    if submenu and type(s.selected)=="function" then
+      local ok,v=pcall(s.selected,s); if ok and v then focus=v end
+    end
+    if tall then
+      color(c.divider,.65); G.rectangle("fill",x+pad,gridBottom,w-pad*2,1)
+      drawBoxDetail(s,focus,x+pad,gridBottom+gap,w-pad*2,detailH-gap,scale,c,false)
+    else
+      local dx=colX+colW+pad*1.2
+      color(c.divider,.65); G.rectangle("fill",dx-pad*.6,y+headerH,1,h-headerH-footH-pad*.5)
+      drawBoxDetail(s,focus,dx,y+headerH+gap,x+w-pad-dx,h-headerH-footH-gap*2,scale,c,true)
+    end
+
+    -- a short note after a drag moved a mon to another page / the party
+    local toast=BoxToast[s]
+    if toast and boxNow()-toast.t<1.6 then
+      local tf=font(18*scale); local tw=tf:getWidth(toast.text)+30*scale; local th=tf:getHeight()+14*scale
+      local tx=x+(w-tw)/2; local ty=y+h-footH-th-gap
+      color(c.surface,.98); G.rectangle("fill",tx,ty,tw,th,th*.5,th*.5)
+      color(c.accent,nil,true); G.setLineWidth(2); G.rectangle("line",tx,ty,tw,th,th*.5,th*.5)
+      text(toast.text,tf,tx,ty+7*scale,tw,"center",c.text)
+    elseif toast then BoxToast[s]=nil end
+
+    -- BoxMenu's own context menu (submenuRows), over the screen
+    if submenu and type(s.submenuRows)=="function" then
+      color({0,0,0,1},.35); G.rectangle("fill",x,y,w,h)
+      local labels={}
+      for i,row in ipairs(s:submenuRows()) do
+        local v=row
+        if okStrings and Strings then local ok,t=pcall(Strings,row); if ok and t then v=t end end
+        labels[i]=v
+      end
+      local mw=math.min(w*.8,380*scale); local rh=52*scale
+      local mh=#labels*rh+28*scale+46*scale
+      local mx=x+(w-mw)/2; local my=y+(h-mh)/2
+      panel(mx,my,mw,mh,c,.99)
+      local mon=type(s.selected)=="function" and s:selected() or nil
+      local title=mon and pcMonName(s,mon) or ""
+      text(title,fittedFont(22*scale,title,mw-40*scale),mx+20*scale,my+12*scale,mw-40*scale,"left",c.accent)
+      if buf then buf.mode="sub" end
+      drawPcRows(mx+10*scale,my+46*scale,mw-20*scale,#labels*rh,labels,s.submenuIndex or 1,scale,c,
+        buf and function(i) return function(st) st.submenuIndex=i end end or nil)
+    end
+
+    if talking then
+      -- BoxMenu's message, one page at a time (\f / \v break pages); a tap
+      -- anywhere is A
+      local pages={}
+      if s.message then
+        for part in (tostring(s.message):gsub("\v","\f").."\f"):gmatch("(.-)\f") do pages[#pages+1]=part end
+      end
+      local msg=normalizeUiText(pages[math.max(1,math.min(#pages,s.messagePage or 1))] or "")
+      if msg~="" then
+        local body=font(22*scale)
+        local mw=math.min(w*.86,620*scale); local mh=body:getHeight()*3+40*scale
+        local mx=x+(w-mw)/2; local my=y+h-footH-mh-gap*2
+        panel(mx,my,mw,mh,c,.99)
+        text(msg,body,mx+22*scale,my+20*scale,mw-44*scale,"left",c.text)
+      end
+      if buf then buf.cells={} end
+    end
+
+    -- the mon in the finger
+    if drag and drag.from and drag.from.mon and drag.x then
+      local size=cell*1.1
+      color({0,0,0,1},.25); G.ellipse("fill",drag.x,drag.y+size*.32,size*.32,size*.1)
+      drawBoxMon(s,drag.from.mon,drag.x-size/2,drag.y-size*.7,size,size)
+    end
+
+    local hints
+    if talking then hints={{"A","NEXT"}}
+    elseif submenu then hints={{"A","CHOOSE"},{"B","BACK"}}
+    elseif inserting then hints={{"LR","PAGE"},{"A","PUT HERE"},{"B","BACK"}}
+    else hints={{"LR","PAGE"},{"A","CHOOSE"},{"B","BACK"}} end
+    local info=nil
+    if idle then
+      local touch=mod.exports and mod.exports.touch
+      if type(touch)=="table" and type(touch.active)=="function" then
+        local okT,on=pcall(touch.active); if okT and on==true then info="HOLD TO DRAG" end
+      end
+    end
+    chromeFooter(x,y,w,h,c,info,hints)
+
+    if buf then
+      buf.dragStart=function(st,payload,px,py)
+        if not (boxIdle(st) and type(payload)=="table") then return end
+        BoxDrag[st]={from=payload,x=px,y=py,t=boxNow()}
+        local uu=boxUi(st); uu.area=payload.area; uu.slot=payload.slot
+        if payload.page and payload.area=="box" then uu.page=payload.page end
+      end
+      buf.dragMove=function(st,_,px,py) local d=BoxDrag[st]; if d then d.x,d.y=px,py end end
+      buf.dragDrop=function(st,payload,to) boxDrop(st,payload,to) end
+      buf.dragCancel=function(st) BoxDrag[st]=nil end
+    end
+  end
+  end)()
 
   local function gen2EvolutionSprite(s,species)
     if not species or not (mod.exports and type(mod.exports.getSprite)=="function") then return nil end

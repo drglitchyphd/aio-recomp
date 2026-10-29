@@ -165,7 +165,8 @@ return function(mod)
     { key = "touchLongPress", label = "LONG PRESS", type = "toggle", default = true,
       help = "Hold a move in battle for its type, power, accuracy, PP and description. "
         .. "Hold a Pokemon on the POKeMON screen (outside battle) and drag it to a new slot; "
-        .. "let go on its own row to open its STATS. Hold a battle HUD card or a Pokemon on the "
+        .. "let go on its own row to open its STATS. In the PC, hold (or slide) a Pokemon to drag it "
+        .. "between the party and the box pages. Hold a battle HUD card or a Pokemon on the "
         .. "in-battle party screen for its info; hold a PACK item to pin it to the KEY ITEM WHEEL. "
         .. "On the overworld, hold START for the QUICK MENU and SELECT for the KEY ITEM WHEEL." },
     { key = "touchRunDrag", label = "FAR DRAG HOLDS B", type = "toggle", default = false,
@@ -563,6 +564,30 @@ return function(mod)
       and state.save ~= nil and state.save.party == state.party   -- not a battle copy
   end
 
+  -- gen2-aio 0.9.72: generic DRAG cells (the Modern PC box screen). A screen
+  -- marks a cell it lets the player pick up with `drag` (any value it wants
+  -- back) and a cell that takes a drop with `drop`; its targets table carries
+  -- dragStart / dragMove / dragDrop / dragCancel (state, payload, ...). A
+  -- hold or a small slide picks the cell up, a short tap is still a tap.
+  local function genericDragOk(g, game)
+    local c, t = g and g.cell, g and g.targets
+    return g and g.kind == "screencell" and g.generic and c and c.drag ~= nil
+      and type(t) == "table" and type(t.dragStart) == "function"
+      and type(t.dragDrop) == "function" and topState(game) == g.state
+  end
+  local function startGenericDrag(game, g, x, y)
+    g.long, g.drag = true, "generic"
+    g.t0 = nil
+    pcall(g.targets.dragStart, g.state, g.cell.drag, x, y)
+    if type(g.targets.dragMove) == "function" then pcall(g.targets.dragMove, g.state, g.cell.drag, x, y) end
+    buzz()
+  end
+  local function cancelGenericDrag(g)
+    if g and g.drag == "generic" and g.targets and type(g.targets.dragCancel) == "function" then
+      pcall(g.targets.dragCancel, g.state, g.cell and g.cell.drag)
+    end
+  end
+
   -- 0.9.45 HOLD TO REPEAT: in a menu, a joystick direction held past
   -- REPEAT_DELAY keeps stepping instead of one row per push. gen2-aio 0.9.52:
   -- slowed from 0.35 s / 11 rows a second, which overshot rows on the Fold.
@@ -617,6 +642,8 @@ return function(mod)
             g.long = true
             g.aToken = press(game, "a")
           end
+        elseif genericDragOk(g, game) then
+          startGenericDrag(game, g, g.sx, g.sy)
         elseif g.kind == "screencell" and c and c.kind == "party" and not g.generic then
           local state = g.state
           if topState(game) == state and partyDragOk(state) then
@@ -791,6 +818,19 @@ return function(mod)
       if dx * dx + dy * dy > deadzone() ^ 2 then g.t0, g.moved = nil, true end
       return
     end
+    if g and g.drag == "generic" then
+      if type(g.targets.dragMove) == "function" then pcall(g.targets.dragMove, g.state, g.cell.drag, ev.x, ev.y) end
+      return
+    end
+    -- a small slide off a pick-up-able cell picks it up (before it can
+    -- become a swipe)
+    if g and g.kind == "screencell" and not g.long and not g.swipe and g.sx and genericDragOk(g, game) then
+      local dx, dy = ev.x - g.sx, ev.y - g.sy
+      if dx * dx + dy * dy > (deadzone() * 0.6) ^ 2 then
+        startGenericDrag(game, g, ev.x, ev.y)
+        return
+      end
+    end
     if g and g.drag then
       local st = screenTargets(game)
       local c = st and cellIn(st, ev.x, ev.y, { party = true })
@@ -920,6 +960,26 @@ return function(mod)
     end
     if g.long then
       if g.aToken then release(g.aToken); g.aToken = nil end
+      if g.drag == "generic" then
+        -- the drop cell from the frame drawn last (the page may have turned
+        -- while the finger was down); nil = let go over nothing
+        local st = screenTargets(game)
+        local to
+        if st and st.state == g.state then
+          for _, c in ipairs(st.cells or {}) do
+            if c.drop ~= nil and ev.x >= c.x and ev.x <= c.x + c.w and ev.y >= c.y and ev.y <= c.y + c.h then
+              to = c.drop; break
+            end
+          end
+        end
+        if topState(game) == g.state then
+          pcall(g.targets.dragDrop, g.state, g.cell.drag, to)
+        else
+          cancelGenericDrag(g)
+        end
+        buzz()
+        return
+      end
       if g.drag then
         local state = g.state
         if state and state.switchFrom then
@@ -1008,7 +1068,7 @@ return function(mod)
       if ev.phase == "pressed" then onPressed(game, ev)
       elseif ev.phase == "moved" then onMoved(game, ev)
       elseif ev.phase == "released" then onReleased(game, ev)
-      elseif ev.phase == "cancelled" then endGesture(ev.id) end
+      elseif ev.phase == "cancelled" then cancelGenericDrag(endGesture(ev.id)) end
     end)
     if not ok then log("warn", "KIM Touch: %s", tostring(err)) end
     return true
@@ -1016,7 +1076,7 @@ return function(mod)
 
   -- Drop every hold if the controls switch off mid-gesture.
   local function releaseAll()
-    for id in pairs(pointers) do endGesture(id) end
+    for id in pairs(pointers) do cancelGenericDrag(endGesture(id)) end
     ring = nil
   end
 

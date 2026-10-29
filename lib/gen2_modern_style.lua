@@ -568,6 +568,10 @@ return function(mod)
       return top.submenu~=nil or top.switchFrom~=nil
     end
     if isA(top,"src.ui.gen2.HeldItemMenu") then return true end
+    -- 0.9.72: the PC grid's context menu and MOVE's "Move to where?" cursor
+    if isA(top,"src.ui.gen2.BoxMenu") then
+      return top.phase=="submenu" or top.phase=="insert"
+    end
     if isA(top,"src.ui.gen2.PackMenu") then
       return top.submenu~=nil or top.confirm~=nil or top.qtyState~=nil
     end
