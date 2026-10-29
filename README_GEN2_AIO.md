@@ -57,6 +57,17 @@ GitHub and overlay patches are not the updater's install package. The custom
 index is independent of the community index; a community listing would require
 a separate submission.
 
+## 0.9.79 changes
+
+- 3D world: fewer long freezes while an area builds in the background.
+  This was most noticeable walking out of houses in Azalea Town while Ilex
+  Forest built. Dense forest cells are expensive, and the builder only
+  checked the clock every 32 steps, so one slice could run 130 ms over.
+  It now checks every 4 steps.
+- DIAGNOSTICS `voxel slow` now names the step a long slice was spent in
+  (structures, cells, trees, upload, persist ...). A new `voxel slow worst`
+  line keeps the longest one.
+
 ## 0.9.78 changes
 
 - DIAGNOSTICS now shows where a slow area's time goes, on two new lines:
