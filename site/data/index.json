@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-10-29T02:17:50.059006Z",
+  "generated_at": "2026-10-29T02:20:23.161922Z",
   "count": 1,
   "categories": [
     "UI",
@@ -65,7 +65,7 @@
       "folder": "drglitchyphd@gen2-aio",
       "title": "Gen2-AIO",
       "author": "drglitchyphd",
-      "version": "0.9.70",
+      "version": "0.9.71",
       "github": "drglitchyphd/aio-recomp",
       "repo": "https://github.com/drglitchyphd/aio-recomp",
       "summary": "Crystal all-in-one: HD Pokemon, modern UI, voxel overworld, Kenney scenes, touch controls, followers and optional Nuzlocke rules.",
@@ -83,18 +83,18 @@
         "touch"
       ],
       "automatic_version_check": true,
-      "downloadURL": "https://github.com/drglitchyphd/aio-recomp/releases/download/v0.9.70/gen2-aio-0.9.70.zip",
+      "downloadURL": "https://github.com/drglitchyphd/aio-recomp/releases/download/v0.9.71/gen2-aio-0.9.71.zip",
       "description_url": "https://raw.githubusercontent.com/drglitchyphd/aio-recomp/main/README_GEN2_AIO.md",
       "latest": {
-        "version": "0.9.70",
-        "tag": "v0.9.70",
-        "name": "Gen2-AIO 0.9.70",
+        "version": "0.9.71",
+        "tag": "v0.9.71",
+        "name": "Gen2-AIO 0.9.71",
         "prerelease": false,
-        "published_at": "2026-10-29T02:17:19Z",
+        "published_at": "2026-10-29T02:19:54Z",
         "zip": {
-          "name": "gen2-aio-0.9.70.zip",
-          "url": "https://github.com/drglitchyphd/aio-recomp/releases/download/v0.9.70/gen2-aio-0.9.70.zip",
-          "size": 50294383
+          "name": "gen2-aio-0.9.71.zip",
+          "url": "https://github.com/drglitchyphd/aio-recomp/releases/download/v0.9.71/gen2-aio-0.9.71.zip",
+          "size": 50295037
         }
       },
       "update_check": "ok"
