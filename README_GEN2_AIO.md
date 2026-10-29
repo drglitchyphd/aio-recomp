@@ -57,6 +57,13 @@ GitHub and overlay patches are not the updater's install package. The custom
 index is independent of the community index; a community listing would require
 a separate submission.
 
+## 0.9.81 changes
+
+- The Charcoal Kiln's Farfetch'd (Azalea Town) is drawn as Farfetch'd,
+  not Moltres. Crystal draws it on a sheet named after Moltres (GSC's
+  generic bird), and WILDS NPC POKEMON took the name at its word. A
+  Pokemon object's own cry now decides its species.
+
 ## 0.9.80 changes
 
 - 3D world: the VOXEL DISK CACHE could switch itself off without a word.
