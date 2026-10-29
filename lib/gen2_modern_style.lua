@@ -579,6 +579,14 @@ return function(mod)
       local p=tostring(top.phase or "")
       return p=="buy" or p=="sell" or p=="buyQuantity" or p=="sellQuantity"
     end
+    -- gen2-aio 0.9.75: the item PC's lists / quantity / toss YES-NO and the
+    -- MAILBOX's letter menu step back to the screen's own menu
+    if isA(top,"src.ui.gen2.ItemPcMenu") then
+      return (top.phase~=nil and top.phase~="menu") or top.qtyState~=nil or top.confirm~=nil
+    end
+    if isA(top,"src.ui.gen2.MailboxMenu") then
+      return top.submenu~=nil or top.confirm~=nil
+    end
     if isA(top,"src.ui.gen2.PokedexMenu") then
       return top.view~=nil and top.view~="list"
     end
