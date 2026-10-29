@@ -125,7 +125,10 @@ return function(mod)
 
   local function row(game, mon)
     return {
-      label = Strings("REMEMBER"),
+      -- gen2-aio 0.9.75: RELEARN on Gold / Silver / Crystal (the game has
+      -- learnMoveOn, the Gen 2 LearnMove), the later games' word for it
+      label = Strings((game and type(game.learnMoveOn) == "function")
+        and "RELEARN" or "REMEMBER"),
       -- The party menu dispatches a hook-injected row as onSelect(mon, game)
       -- (src/ui/PartyMenu.lua); the box provider has no arguments to give and
       -- calls it bare.  Taking both and falling back on the pair this row was
@@ -153,8 +156,22 @@ return function(mod)
     -- SWITCH / STATS / CANCEL, mid-battle: not a place to be teaching moves
     if ctx and ctx.battle then return out end
     if not (mon and mon.species) then return out end
+    -- gen2-aio 0.9.75: an EGG's submenu is STATS / SWITCH / CANCEL
+    if mon.isEgg then return out end
     if not shouldOffer(game, mon) then return out end
-    out[#out + 1] = row(game, mon)
+    -- gen2-aio 0.9.75: Gold's list ends in CANCEL when it has room
+    -- (GetMonSubmenuItems); the new row goes above it.  Gold dispatches by
+    -- id and by the row's onSelect, never by position, so this is safe there.
+    -- At the cart's NUM_MONMENU_ITEMS (8) the native box is full height, so
+    -- the row takes CANCEL's place, as the cart itself drops CANCEL from a
+    -- full list (B still backs out).
+    local last = out[#out]
+    if type(last) == "table" and last.id == "CANCEL" then
+      if #out >= 8 then out[#out] = row(game, mon)
+      else table.insert(out, #out, row(game, mon)) end
+    else
+      out[#out + 1] = row(game, mon)
+    end
     return out
   end)
 

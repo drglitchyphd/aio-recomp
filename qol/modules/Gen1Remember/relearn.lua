@@ -60,7 +60,9 @@ local function preIndex(data)
   local into = {}
   for id, def in pairs(data.pokemon or {}) do
     for _, evo in ipairs((type(def) == "table" and def.evolutions) or {}) do
-      local target = evo.species
+      -- gen2-aio 0.9.75: a Gen 2 evolutions row names its target `into`
+      -- (src/core/gen2/Evolution.lua); Gen 1's says `species`
+      local target = evo.species or evo.into
       if target and (data.pokemon or {})[target] then
         into[target] = into[target] or {}
         into[target][#into[target] + 1] = id
@@ -112,7 +114,11 @@ local function grants(def, level)
     end
   end
   for _, move in ipairs(def.level1Moves or {}) do add(move, 1) end
-  for _, entry in ipairs(def.learnset or {}) do
+  -- gen2-aio 0.9.75: a Gen 2 species keeps its level-up moves in
+  -- `levelMoves` (EvosAttacks, level 1 rows included) and has no `learnset`
+  -- or `level1Moves`.  Reading only the Gen 1 fields left every Crystal pool
+  -- empty, so HIDE WHEN EMPTY took the row off every POKéMON.
+  for _, entry in ipairs(def.learnset or def.levelMoves or {}) do
     if entry.level and entry.level <= level then add(entry.move, entry.level) end
   end
   local rows = {}

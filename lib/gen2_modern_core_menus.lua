@@ -449,8 +449,10 @@ return function(mod)
     -- field-action/water choices with the engine-owned generic Menu class.
     -- Treat that source object as the controller and replace only its pixels;
     -- no changes to the other mod or its callbacks/items are required.
+    -- gen2-aio 0.9.75: not RELEARN's list (it carries `relearn`); that one
+    -- has its own window in lib/gen2_aio/modern_moves.lua
     if okGenericMenu and GenericMenu and isClass(s,GenericMenu)
-        and s.game and s.game.data and s.game.data.gen2MenuGfx then
+        and s.game and s.game.data and s.game.data.gen2MenuGfx and rawget(s,"relearn")==nil then
       return "genericmenu"
     end
     if isDexRadarState(s) then return "dexradar" end
