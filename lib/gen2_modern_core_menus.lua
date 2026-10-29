@@ -278,7 +278,7 @@ return function(mod)
     return y+h
   end
   local function closeButton(x,y,w,h,c,opts)
-    if Style and Style.closeButton then Style.closeButton(x,y,w,h,c,opts) end
+    if Style and Style.closeButton then return Style.closeButton(x,y,w,h,c,opts) end
   end
   local function closeReserve()
     return Style and Style.closeReserve and Style.closeReserve() or 0
@@ -556,10 +556,20 @@ return function(mod)
       naturalRh=60*scale*den
       h=math.min(sh*.88,94*scale+math.min(count,9)*naturalRh+76*scale)
     end
+    -- gen2-aio: the description strip (divider + text) at the card's bottom.
+    -- With the MENU BUTTON in a bottom corner the button sits in that strip,
+    -- and the shared chrome sizes it from its own (larger, on the Fold cover
+    -- screen) scale: grow the strip so the divider clears the button.
+    local footL=86*scale
+    local cornerBtn=Style and Style.closeCorner and Style.closeCorner()~="tr"
+    if cornerBtn and Style.footerHeight then
+      footL=math.max(footL,Style.footerHeight()+10*scale)
+      h=math.min(sh*.94,h+footL-86*scale)
+    end
     local inset=(tonumber(opt("startMenuInset","0")) or 0)/100
     local x=sx+sw-w-28*scale-(sw-w)*inset; local y=sy+(sh-h)/2
     panel(x,y,w,h,c,.95)
-    closeButton(x,y,w,h,c)
+    local cbx,cby,cbs=closeButton(x,y,w,h,c)
     local textRatio=math.max(.60,math.min(2.0,
       (tonumber(opt("startMenuTextScale","100")) or 100)/100))
     local big, body, small = font(40*scale*textRatio),
@@ -578,7 +588,7 @@ return function(mod)
     -- only scroll that always keeps the native selected index on screen.
     local listRows=tonumber(s.list and s.list.rows) or math.min(count,8)
     listRows=math.max(1,math.min(count>0 and count or 1,listRows))
-    local rowAreaH=math.max(1,h-165*scale)
+    local rowAreaH=math.max(1,h-165*scale-(footL-86*scale))
     local minRh=math.max(body:getHeight()+8*scale,42*scale)
     local fitRh=rowAreaH/listRows
     local rh=math.max(minRh,math.min(naturalRh,fitRh))
@@ -608,8 +618,16 @@ return function(mod)
     end
     local row=rows[index]; local desc=row and row.desc or {}
     local descText=normalizeUiText(desc,"  ")
-    color(c.divider,nil,true); G.rectangle("fill",x+16*scale,y+h-86*scale,w-32*scale,1)
-    fittedText(descText,23*scale,x+18*scale,y+h-66*scale,w-36*scale,"left",c.muted)
+    local lineY=y+h-footL
+    if cornerBtn and cby then lineY=math.min(lineY,cby-6*scale) end
+    color(c.divider,nil,true); G.rectangle("fill",x+16*scale,lineY,w-32*scale,1)
+    -- the description keeps clear of a bottom-corner button
+    local dx,dw=x+18*scale,w-36*scale
+    if cornerBtn and cbx and cbs then
+      if cbx>x+w*.5 then dw=math.max(1,cbx-8*scale-dx)
+      else local nx=cbx+cbs+8*scale; dw=math.max(1,dx+dw-nx); dx=nx end
+    end
+    fittedText(descText,23*scale,dx,lineY+20*scale,dw,"left",c.muted)
 
     if s.phase=="confirm" or s.phase=="confirmContest" then
       modal(x,y,w,h,c,s.phase=="confirm" and "Return to the title screen?" or "End the Contest?",

@@ -244,8 +244,19 @@ return function(mod)
     return math.max(0.5, math.min(2, (tonumber(opt("touchSize", 100)) or 100) / 100))
   end
 
+  -- KIM's battle HUD / overworld HUD rects drawn within the last half
+  -- second at this window size (published on the bundle's own mod; this one
+  -- only inherits them), or nil
+  local function freshRect(R)
+    if type(R) ~= "table" then return nil end
+    local W, H = love.graphics.getDimensions()
+    if R.W ~= W or R.H ~= H then return nil end
+    if now() - (tonumber(R.time) or 0) > 0.5 then return nil end
+    return R
+  end
+
   -- B, START, SELECT in window units.
-  local function buttons()
+  local function buttons(game)
     local ox, oy, sw, sh = screen()
     local short = math.min(sw, sh)
     local s = sizeScale()
@@ -253,21 +264,41 @@ return function(mod)
     local margin = short * 0.035
     local left = opt("touchHand", "right") == "left"
     local landscape = sw > sh
-    local hy = landscape and 0.50 or (HEIGHT[opt("touchButtonHeight", "mid")] or 0.74)
+    local height = opt("touchButtonHeight", "mid")
+    local hy = landscape and 0.50 or (HEIGHT[height] or 0.74)
     -- Tall screens (over 1.9x, e.g. a Fold cover screen): KIM's battle panel
     -- sits in the bottom third there, so the side buttons go below it.
+    -- gen2-aio: HIGH there sat barely above MID (B still on the overworld
+    -- HUD's bottom bar); outside battle it now goes well up the edge, the
+    -- taller the screen the higher.
     if not landscape and sh > sw * 1.9 then
-      hy = ({ low = 0.94, mid = 0.915, high = 0.88 })[opt("touchButtonHeight", "mid")] or 0.915
+      hy = ({ low = 0.94, mid = 0.915, high = 0.88 })[height] or 0.915
+      local stack = game and game.stack
+      local top = stack and type(stack.top) == "function" and stack:top() or nil
+      local battle = type(top) == "table" and top.isBattle == true
+      if height == "high" and not battle then
+        hy = math.max(0.66, 0.88 - (sh / sw - 1.9) * 0.3)
+      end
     end
-    if landscape and opt("touchButtonHeight", "mid") == "high" then hy = 0.38 end
-    if landscape and opt("touchButtonHeight", "mid") == "low" then hy = 0.62 end
+    if landscape and height == "high" then hy = 0.38 end
+    if landscape and height == "low" then hy = 0.62 end
     local bx = left and (ox + margin + r) or (ox + sw - margin - r)
     local by = oy + sh * hy
     local pr = r * 0.42
     local pw = r * 1.5
-    local sy = by - r - margin - pr
     local startX = left and (bx - r + pw / 2) or (bx + r - pw / 2)
     local selectX = left and (startX + pw + margin * 0.6) or (startX - pw - margin * 0.6)
+    -- never on the overworld HUD (lib/gen2_aio/overworld_hud.lua): with the
+    -- HUD along the bottom edge, B and its pills move up to clear it
+    local hud = freshRect(mod._kimArenaOverworldHudRect)
+    if hud and not landscape then
+      local cl = math.min(bx - r, selectX - pw / 2) - r * 0.15
+      local cr = math.max(bx + r, selectX + pw / 2) + r * 0.15
+      if cr > hud.x and cl < hud.x + hud.w and by + r * 1.15 > hud.y and by - r - margin - pr * 2 < hud.y + hud.h then
+        by = math.min(by, hud.y - margin * 0.5 - r * 1.15)
+      end
+    end
+    local sy = by - r - margin - pr
     return {
       b = { kind = "circle", btn = "b", label = "B", x = bx, y = by, r = r },
       start = { kind = "pill", btn = "start", label = "START", x = startX, y = sy, w = pw, h = pr * 2 },
@@ -460,16 +491,65 @@ return function(mod)
     local mt = getmetatable(state)
     return ok and type(Naming) == "table" and mt ~= nil and (mt == Naming or mt.__index == Naming)
   end
+  -- gen2-aio: between two menus (the fade from the PACK back to START, the
+  -- first frame of the next window before it has drawn its close button) the
+  -- buttons used to come back for those frames and vanish again: a flash on
+  -- every menu change. They now stay as the last menu had them until a
+  -- screen without its own close button is really up (or the overworld is).
+  local lastMenu = nil   -- { time, keep } the last frame a close button showed
+  local function isMenuFade(state)
+    local ok, Fade = pcall(require, "src.ui.gen2.MenuFade")
+    local mt = getmetatable(state)
+    return ok and type(Fade) == "table" and mt ~= nil and (mt == Fade or mt.__index == Fade)
+  end
+  -- START / SELECT kept beside a close button in a bottom corner (MENU
+  -- BUTTON corner) sat on top of it: a tap on the lower half of the button
+  -- pressed START (the POKeDEX flipped to SEARCH and back) or SELECT. Move
+  -- the pair clear of the button, below it when there is room, else above.
+  local function clearOfClose(pills, cr)
+    local function hitBox(z)
+      local pad = z.h * 0.35
+      return z.x - z.w / 2 - pad, z.y - z.h / 2 - pad, z.w + pad * 2, z.h + pad * 2
+    end
+    local gap = cr.h * 0.25
+    local clash = false
+    for _, z in pairs(pills) do
+      local x, y, w, h = hitBox(z)
+      if x < cr.x + cr.w + gap and x + w > cr.x - gap and y < cr.y + cr.h + gap and y + h > cr.y - gap then
+        clash = true
+      end
+    end
+    if not clash then return pills end
+    local _, oy, _, sh = screen()
+    local out = {}
+    for k, z in pairs(pills) do
+      local half = z.h / 2 + z.h * 0.35
+      local ny = cr.y + cr.h + gap + half
+      if ny + z.h / 2 > oy + sh then ny = cr.y - gap - half end
+      local c = {}
+      for kk, vv in pairs(z) do c[kk] = vv end
+      c.y = ny
+      out[k] = c
+    end
+    return out
+  end
   local function shownButtons(game)
-    if isNaming(topState(game)) then return {} end
-    local all = buttons()
+    local top = topState(game)
+    if isNaming(top) then return {} end
+    local all = buttons(game)
     local cr, state = closeTarget(game)
     if not cr then
+      local last = lastMenu
+      if last and top ~= nil and (now() - last.time < 0.25 or (isMenuFade(top) and now() - last.time < 2)) then
+        return { start = last.keep and all.start or nil, select = last.keep and all.select or nil }
+      end
       all.ball = ballZone(all.b)
       return all
     end
     local keep = usesStartSelect(state)
-    return { start = keep and all.start or nil, select = keep and all.select or nil }
+    lastMenu = { time = now(), keep = keep }
+    if not keep then return {} end
+    return clearOfClose({ start = all.start, select = all.select }, cr)
   end
   mod.exports.shownButtons = function(game) return shownButtons(game) end
   local function inClose(r, x, y)
@@ -701,6 +781,14 @@ return function(mod)
       pcall(q.wheelHover, x, y)
       return
     end
+    -- the close button's own square beats a floating button over it
+    do
+      local cr0, cs0 = closeTarget(game)
+      if cr0 and x >= cr0.x and x <= cr0.x + cr0.w and y >= cr0.y and y <= cr0.y + cr0.h then
+        pointers[ev.id] = { kind = "close", rect = cr0, state = cs0 }
+        return
+      end
+    end
     for _, z in pairs(shownButtons(game)) do
       if z.kind == "ball" and hit(z, x, y) then
         local throw = mod._kimArenaQuickBallThrow
@@ -843,7 +931,12 @@ return function(mod)
     if g and (g.kind == "cell" or g.kind == "screencell") and not g.long and g.sx then
       local c = g.cell
       local dx, dy = ev.x - g.sx, ev.y - g.sy
-      if not g.swipe and (math.abs(dy) > c.h * 0.6 or math.abs(dx) > c.w * 0.45) then
+      -- a free-scroll list's swipe starts after most of a row, even on a
+      -- cell taller than one (the AREA DEX's backdrop behind its cards)
+      local ch = c.h
+      local st0 = g.targets
+      if st0 and st0.freeScroll and tonumber(st0.rowH) then ch = math.min(ch, tonumber(st0.rowH)) end
+      if not g.swipe and (math.abs(dy) > ch * 0.6 or math.abs(dx) > c.w * 0.45) then
         g.swipe = math.abs(dy) * 1.2 >= math.abs(dx) and "v" or "h"
         g.t0, g.done = nil, 0
       end
