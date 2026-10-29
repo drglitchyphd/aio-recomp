@@ -1,7 +1,7 @@
 {
   "id": "gen2-aio",
   "name": "Gen2-AIO",
-  "version": "0.9.82",
+  "version": "0.9.83",
   "github": "drglitchyphd/aio-recomp",
   "api": 2,
   "entry": "main.lua",

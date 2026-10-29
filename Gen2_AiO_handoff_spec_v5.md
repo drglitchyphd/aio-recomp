@@ -1,10 +1,28 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.82)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.83)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.83 (2026-10-29)
+
+- The step tally moved to BuildBudget (`B.step`, `B.mark`, `B.resetSteps`);
+  ChunkMesher's `mark` delegates to it.
+- `Structures.forMap` marks its sections: s.grid, s.tileshape, s.buildings,
+  s.props, s.regions, s.model, s.signs, s.ground, s.done.
+- runJob runs `Structures.forMap` explicitly ahead of the aux meshes and
+  marks structures / grass / flowers / figures. `quadsMesh` ticks per quad.
+- Device report (0.9.82, Adreno 840): `voxel slow worst: 1665 ms in
+  lookup (AZALEA_TOWN full)`. That is the aux meshes plus the first
+  Structures analysis, all before the old "geometry" mark.
+- Sandbox: `src/mods/Sandbox.lua` denies `ffi` (and `love.thread` without
+  the "compute" permission; `love.filesystem` always), so MeshStore's stub
+  is what loads on device and `whyOff()` reports "no ffi library".
+  Sandbox-safe routes: `mod.cache` (write/read/exists/delete byte strings
+  under mod_cache/<id>/), `love.data` (pack, compress, newByteData) and
+  `mod.job` (background permission).
 
 ## 0.9.82 (2026-10-29)
 

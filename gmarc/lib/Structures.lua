@@ -193,8 +193,10 @@ end
 function Structures.forMap(map)
   local S = cache[map.id]
   if S then return S end
+  Budget.mark("s.grid")
 
   local tileset = map.tileset
+  Budget.mark("s.tileshape")
   local shapes = TileShape.forMap(map)
   local void = voidTiles(tileset)
   local perRow = tileset.tilesPerRow or 16
@@ -273,6 +275,7 @@ function Structures.forMap(map)
     end
   end
 
+  Budget.mark("s.buildings")
   -- ---- buildings: whole sprites voxelized band by band ----
   --
   -- Before anything else looks at this grid. A profiled building is a
@@ -344,6 +347,7 @@ function Structures.forMap(map)
     return s and s.art == "upright" and not s.authored
   end
 
+  Budget.mark("s.props")
   -- ---- cylinders: profile-pinned round graphics, one per 16x16 cell ----
   -- the flat ground tiles this map actually places, for the hull's
   -- ground matching: the ball's own drawn background picks its floor
@@ -388,6 +392,7 @@ function Structures.forMap(map)
   -- flat on its face.
   Structures.buildMounted(S, map, x0, x1, y0, y1)
 
+  Budget.mark("s.regions")
   -- ---- flood-fill regions of structural tiles ----
   local seen = {}
   local regions = {}
@@ -424,6 +429,7 @@ function Structures.forMap(map)
     end
   end
 
+  Budget.mark("s.model")
   -- ---- model each region: carve out per-pixel objects, volume the rest --
   local data = pixels(tileset)
   for _, region in ipairs(regions) do
@@ -436,6 +442,7 @@ function Structures.forMap(map)
     end
   end
 
+  Budget.mark("s.signs")
   -- ---- profile-pinned billboards (signs): forced per-pixel slabs ----
   if data then
     local seenB = {}
@@ -554,6 +561,7 @@ function Structures.forMap(map)
     Structures.buildFlowers(S, map, tw, th, x0, x1, y0, y1, data)
   end
 
+  Budget.mark("s.ground")
   -- ---- authored ground under pinned props ----
   -- The profile can name the tile a pinned prop stands on (a tileset
   -- entry's prop_ground: prop tile id -> ground tile id), overriding
@@ -592,6 +600,7 @@ function Structures.forMap(map)
 
   V.require("LiveCutProps").prepare(S,map)
   cache[map.id] = S
+  Budget.mark("s.done")
   return S
 end
 
