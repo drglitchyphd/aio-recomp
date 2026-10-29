@@ -91,9 +91,29 @@ while true do
 end
 ]]
 
+-- gen2-aio 0.9.58: what DIAGNOSTICS says about the cache. Published on
+-- every lookup and save (a run of nothing but misses used to say nothing),
+-- with the files on storage for this build and for older builds.
+-- gen2-aio 0.9.80: declared ahead of ensureThread, which writes these and
+-- calls report() when the worker cannot start -- declared after it, they
+-- were globals there and report was nil, so a failed start threw out of
+-- the first lookup and the cache went OFF without ever saying so.
+local lastEvent, lastError, fileCount, oldCount, offReason = "-", nil, nil, nil, nil
+local function report()
+  local mod = V and V.mod
+  local d = mod and rawget(mod, "_kimArenaDiag")
+  if not d then return end
+  local st = MeshStore.stats
+  local state = disabled and ("OFF" .. (offReason and (" (" .. offReason .. ")") or ""))
+    or (MeshStore.enabled() and "on" or "OFF (setting)")
+  pcall(d, "disk cache", ("%s; hits %d, misses %d, saves %d, failures %d; files %s (+%s old); last %s%s"):format(
+    state, st.hits, st.misses, st.saves, st.failures, tostring(fileCount or "?"),
+    tostring(oldCount or "?"), lastEvent, lastError and ("; error " .. lastError) or ""))
+end
+
 local function ensureThread()
   if thread or disabled then return thread ~= nil end
-  local ok = pcall(function()
+  local ok, startErr = pcall(function()
     local mod = V and V.mod
     root = "mod_cache/" .. tostring(mod and mod.id or "GEN2_VOXEL")
     toWorker = love.thread.newChannel()
@@ -101,7 +121,7 @@ local function ensureThread()
     thread = love.thread.newThread(WORKER)
     thread:start(toWorker, fromWorker)
   end)
-  if not ok then disabled = true; thread = nil; offReason = "no worker thread"; report(); return false end
+  if not ok then disabled = true; thread = nil; offReason = "no worker thread: " .. tostring(startErr):sub(1, 60); report(); return false end
   -- count what survived from earlier plays: this build's files are the
   -- ones a revisit can hit; old builds' files are swept below
   pcall(function()
@@ -114,22 +134,6 @@ local function ensureThread()
   -- old builds' files go: keep only names that start with this build's tag
   toWorker:push({ op = "sweep", dir = root .. "/" .. DIR, keep = MeshStore.tag() })
   return true
-end
-
--- gen2-aio 0.9.58: what DIAGNOSTICS says about the cache. Published on
--- every lookup and save (a run of nothing but misses used to say nothing),
--- with the files on storage for this build and for older builds.
-local lastEvent, lastError, fileCount, oldCount, offReason = "-", nil, nil, nil, nil
-local function report()
-  local mod = V and V.mod
-  local d = mod and rawget(mod, "_kimArenaDiag")
-  if not d then return end
-  local st = MeshStore.stats
-  local state = disabled and ("OFF" .. (offReason and (" (" .. offReason .. ")") or ""))
-    or (MeshStore.enabled() and "on" or "OFF (setting)")
-  pcall(d, "disk cache", ("%s; hits %d, misses %d, saves %d, failures %d; files %s (+%s old); last %s%s"):format(
-    state, st.hits, st.misses, st.saves, st.failures, tostring(fileCount or "?"),
-    tostring(oldCount or "?"), lastEvent, lastError and ("; error " .. lastError) or ""))
 end
 
 local function poll()
@@ -154,6 +158,7 @@ local function poll()
   report()
 end
 MeshStore.poll = poll
+MeshStore.report = report
 
 -- ------------------------------------------------------------------- key
 local function fnv(h, s)

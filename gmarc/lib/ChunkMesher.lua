@@ -1261,9 +1261,14 @@ local function meshFromFlat(ptr, n)
   return ok and mesh or nil
 end
 
+local offReported = false
 local function storeKey(map, job)
   local S = store()
-  if not (S and S.enabled() and ffi) then return nil end
+  if not (S and S.enabled() and ffi) then
+    -- gen2-aio 0.9.80: say once why nothing is cached (setting, worker)
+    if S and S.report and not offReported then offReported = true; pcall(S.report) end
+    return nil
+  end
   local inst = (love and love.graphics and love.graphics.drawInstanced
     and V.require("TreeInstances").available()) and "i" or "n"
   return S.key(map, job.slot .. inst, job.masks)

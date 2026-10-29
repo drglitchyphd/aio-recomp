@@ -322,6 +322,10 @@ return function(mod)
     end
     -- code is read in full (1.4 MB); the big data folder (~40 MB of map
     -- overrides) is fingerprinted by file names and sizes only
+    -- 0.9.80: files that never change what a map's mesh looks like
+    -- (diagnostics, scheduling, the cache builder) do not retire the cache
+    local NO_GEOMETRY = { ["gmarc/lib/FrameDiag.lua"] = true, ["gmarc/lib/Perf.lua"] = true,
+      ["gmarc/lib/BuildBudget.lua"] = true, ["gmarc/lib/CacheBuilder.lua"] = true }
     local function walk(dir, full)
       local okL, items = pcall(mod.list, mod, dir)
       if not okL or type(items) ~= "table" then return end
@@ -329,7 +333,9 @@ return function(mod)
       for _, name in ipairs(items) do
         local path = dir .. "/" .. tostring(name)
         local info = mod.info and mod:info(path)
-        if info and info.type == "directory" then walk(path, full)
+        if NO_GEOMETRY[path] then
+          -- not part of the fingerprint
+        elseif info and info.type == "directory" then walk(path, full)
         elseif full then
           local okR, body = pcall(mod.read, mod, path)
           eat(path); if okR and type(body) == "string" then eat(body) end

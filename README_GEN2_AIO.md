@@ -57,6 +57,18 @@ GitHub and overlay patches are not the updater's install package. The custom
 index is independent of the community index; a community listing would require
 a separate submission.
 
+## 0.9.80 changes
+
+- 3D world: the VOXEL DISK CACHE could switch itself off without a word.
+  If its background writer failed to start, the first area lookup threw,
+  and from then on every area rebuilt from scratch on every visit. This
+  caused the multi-second slowdowns walking in and out of buildings (0
+  areas loaded from disk). A failed start now just turns the cache off.
+- DIAGNOSTICS always shows a `disk cache` line, including OFF and the
+  reason (the setting, or why the writer could not start).
+- Updates that only touch diagnostics or build scheduling no longer
+  throw away your saved 3D areas.
+
 ## 0.9.79 changes
 
 - 3D world: fewer long freezes while an area builds in the background.
