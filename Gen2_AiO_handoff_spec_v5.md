@@ -1,10 +1,27 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.79)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.80)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.80 (2026-10-29)
+
+- MeshStore:
+  - `report`, `lastEvent`, `fileCount`, `oldCount` and `offReason` were
+    declared after `ensureThread`, so inside it they were globals and
+    `report` was nil. A worker that failed to start threw out of
+    `begin()`, and the cache went OFF silently. They are now declared
+    first, and the start error is kept in `offReason`.
+  - New `MeshStore.report`.
+  - ChunkMesher `storeKey` reports once when the store is off.
+  - Test: `tests/mesh_store/` (LOVE; fails on the old code).
+- main.lua `_kimArenaBuildId` skips FrameDiag, Perf, BuildBudget and
+  CacheBuilder in the fingerprint.
+- Device data (0.9.78, Violet City / Azalea): steady draw 7.6 ms, 158
+  calls, 0 rebuilds/s, 46 fps; `16 builds total (0 disk)`; no `disk cache`
+  line.
 
 ## 0.9.79 (2026-10-29)
 
