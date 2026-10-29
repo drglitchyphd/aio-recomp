@@ -81,7 +81,7 @@ mod = {
   ui = U("ui"), save = U("save"), storage = U("storage"),
   find = function() return nil end,
 }
-mod.content.screens = { register = function() end, override = function() end }
+mod.content.screens = { registered = {}, register = function(self, name, def) self.registered[name] = def end, override = function() end }
 mod.ui = { insertBefore = function(list, label, row)
   for i, it in ipairs(list) do if it.label == label then table.insert(list, i, row); return list end end
   list[#list + 1] = row; return list end, ListMenu = { new = function() return {} end }, push = function() end }

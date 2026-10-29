@@ -22,7 +22,7 @@ return function(host)
     { "LIGHT", "gen1_modern_ui:light" }, { "DARK", "gen1_modern_ui:dark" },
     { "CRYSTAL", "gen2_aio:crystal" }, { "GOLD", "gen2_aio:gold" }, { "SILVER", "gen2_aio:silver" },
     { "POKEGEAR", "gen2_aio:pokegear" }, { "HIGH CONTRAST", "gen2_aio:high_contrast" },
-    { "TYPE (LEAD POKEMON)", "gen2_aio:type" }, { "GEN 3 (FRLG)", "gen2_aio:gen3" },
+    { "TYPE (LEAD POKEMON)", "gen2_aio:type" }, { "TYPE LIGHT (LEAD POKEMON)", "gen2_aio:type_light" }, { "GEN 3 (FRLG)", "gen2_aio:gen3" },
     { "CUSTOM", "gen2_aio:custom" } } }
 
   local PICKERS = {

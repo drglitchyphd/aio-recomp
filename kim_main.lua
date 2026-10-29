@@ -555,6 +555,7 @@ return function(mod)
           { "POKEGEAR", "gen2_aio:pokegear" },
           { "HIGH CONTRAST", "gen2_aio:high_contrast" },
           { "TYPE (LEAD POKEMON)", "gen2_aio:type" },
+          { "TYPE LIGHT (LEAD POKEMON)", "gen2_aio:type_light" },
           -- gen2-aio 0.9.37
           { "GEN 3 (FRLG)", "gen2_aio:gen3" },
           { "CUSTOM", "gen2_aio:custom" },

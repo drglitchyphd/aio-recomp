@@ -638,7 +638,11 @@ return function(mod)
       text = text:gsub("^%s+", ""):gsub("%s+$", "")
 
       -- Common concatenated map-name components (CeruleanMart4, etc.).
-      local tokens = {
+      -- gen2-aio 0.9.72: only for a name still run together; on one the
+      -- camel-case split above already spaced ("Dark Cave Violet Entrance")
+      -- this pass lowercased and re-glued the words around the token
+      -- ("Dark Cave violetentrance").
+      local tokens = text:find(" ", 1, true) and {} or {
           "Department Store", "Dept Store", "Pokemon Center", "Pokemon Mart",
           "Pkmn Center", "Pkmn Mart", "PokeMart", "Poke Mart",
           "Game Corner", "GameCorner", "Silph Co", "Bike Shop", "Fishing Guru",
@@ -5820,7 +5824,7 @@ return function(mod)
               local listCount = self.tab == 1
                   and #getTrackerLogRows()
                   or #getTrackerMapRows(self.game)
-              local maxScroll = math.max(0, listCount - 4)
+              local maxScroll = math.max(0, listCount - (rawget(self, "_aioVisible") or 4))
 
               if self.game.input:wasPressed("down") and self.scroll < maxScroll then
                   self.scroll = self.scroll + 1
@@ -5838,7 +5842,7 @@ return function(mod)
               local arrowListCount = self.tab == 1
                   and #getTrackerLogRows()
                   or #getTrackerMapRows(self.game)
-              local arrowMaxScroll = math.max(0, arrowListCount - 4)
+              local arrowMaxScroll = math.max(0, arrowListCount - (rawget(self, "_aioVisible") or 4))
               if self.scroll < arrowMaxScroll then
                   self.arrowTime = self.arrowTime + (dt or 0)
               else
@@ -5846,21 +5850,61 @@ return function(mod)
               end
           end
 
+          -- gen2-aio 0.9.72: the tracker as its own Modern UI page
+          -- (lib/gen2_aio/modern_pages.lua kind "tracker"): LOG / MAP tabs,
+          -- a Pokemon icon and a status per row, totals at the top.
           function self:_aioModernData()
               syncCurrentArea(self.game)
+              local save=self.game and self.game.save
+              -- every Pokemon the run still has, and the losses on record
+              local alive,lost={},{}
+              for _,mon in ipairs(Identity.allCurrentMons(save or {})) do
+                  local okI,id=pcall(Identity.pokemonIdentity,mon)
+                  if okI and id then alive[id]=mon end
+              end
+              for _,h in ipairs(type(mod.save:get("nuzlocke_history"))=="table" and mod.save:get("nuzlocke_history") or {}) do
+                  if type(h)=="table" and h.pokemonId then lost[h.pokemonId]=true end
+              end
+              local inParty={}
+              for _,mon in ipairs(save and save.party or {}) do inParty[mon]=true end
+              local states=mod.save:get("encounter_states")
+              if type(states)~="table" then states={} end
+              local counts={caught=0,lost=0,failed=0,open=0}
+              local function statusOf(area,catch)
+                  if catch then
+                      local mon=catch.pokemonId and alive[catch.pokemonId]
+                      if (mon and mon.nuzlockeDead==true) or (catch.pokemonId and lost[catch.pokemonId]) then
+                          return "lost"
+                      end
+                      if mon and inParty[mon] then return "party" end
+                      return "caught"
+                  end
+                  local st=states[area]
+                  if st and st.status=="FAILED" then return "failed" end
+                  return "open"
+              end
               local source=self.tab==1 and getTrackerLogRows() or getTrackerMapRows(self.game)
               local rows={}
               for _,row in ipairs(source) do
                   local caught=row.catch
+                  local areaId=self.tab==1 and row.area or (row.area and row.area.id)
                   local area=self.tab==1 and ((row.area=="__LEGACY__") and "LEGACY" or routeName(row.area)) or row.area.name
-                  rows[#rows+1]={label=area,value=caught and ((caught.isShiny and "*" or "")..tostring(caught.species or "???")) or "..."}
+                  local status=statusOf(areaId,caught)
+                  local failed=not caught and states[areaId]
+                  local species=caught and caught.species or (failed and failed.species) or nil
+                  if status=="party" or status=="caught" then counts.caught=counts.caught+1
+                  elseif counts[status] then counts[status]=counts[status]+1 end
+                  rows[#rows+1]={label=area,species=species,shiny=caught and caught.isShiny==true,
+                      status=status,value=species and tostring(species) or ""}
               end
-              if #rows==0 then rows[1]={label="No encounters recorded"} end
-              local cap,name=nextLevelCapInfo(self.game and self.game.save)
+              local cap,name=nextLevelCapInfo(save)
               local guide=mod.save:get("area_guide_enabled",true)==true
-              return {title=self.tab==1 and "ENCOUNTER TRACKER / LOG" or "ENCOUNTER TRACKER / MAP",rows=rows,start=self.scroll+1,
-                  help="LEVEL CAP: "..tostring(cap).." / "..tostring(name),footer=guide and "UP/DOWN SCROLL   A PAGE   B BACK" or "UP/DOWN SCROLL   B BACK",
-                  buttons=guide and {{button="up"},{button="down"},{button="a"},{button="b"}} or {{button="up"},{button="down"},{button="b"}}}
+              return {kind="tracker",title="ENCOUNTERS",tab=self.tab,tabs=guide and {"LOG","MAP"} or {"LOG"},
+                  setTab=function(st,i) st.tab=i; st.scroll=0; st.marqueeTime=0 end,
+                  rows=rows,start=self.scroll+1,counts=counts,
+                  empty="No encounters yet. Your first catch in each area shows up here.",
+                  cap=cap and ("LEVEL CAP "..tostring(cap)..(name and (" - "..tostring(name)) or "")) or nil,
+                  footer=guide and "UP/DOWN SCROLL   A LOG / MAP   B BACK" or "UP/DOWN SCROLL   B BACK"}
           end
 
           function self:draw()

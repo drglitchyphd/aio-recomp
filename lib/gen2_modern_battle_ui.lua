@@ -314,6 +314,27 @@ return function(mod)
     typeCache[hue] = c
     return c
   end
+  -- gen2-aio 0.9.72 TYPE LIGHT: the same lead-Pokemon tint on light panels
+  -- (GEN 3-style white boxes, dark text); frame, cursor and selection carry
+  -- the type, darkened where text has to read on them
+  local typeLightCache = {}
+  local function typeLightTheme(hue)
+    local c = typeLightCache[hue]
+    if c then return c end
+    local r, g, b = hue[1], hue[2], hue[3]
+    c = {
+      surface = { mix(0.98, r, 0.07), mix(0.98, g, 0.07), mix(0.97, b, 0.07), 0.98 },
+      raised = { mix(0.92, r, 0.14), mix(0.92, g, 0.14), mix(0.92, b, 0.14), 1 },
+      selected = { mix(r, 1, 0.58), mix(g, 1, 0.58), mix(b, 1, 0.58), 1 },
+      accent = { r * 0.58, g * 0.58, b * 0.58, 1 },
+      frame = { r * 0.78, g * 0.78, b * 0.78, 1 },
+      frameShadow = { 0.10, 0.12, 0.15, 0.35 },
+      text = { 0.13, 0.13, 0.16, 1 }, muted = { mix(0.30, r * 0.5, 0.25), mix(0.31, g * 0.5, 0.25), mix(0.34, b * 0.5, 0.25), 1 },
+      divider = { r * 0.70, g * 0.70, b * 0.70, 0.90 },
+    }
+    typeLightCache[hue] = c
+    return c
+  end
   local function leadType()
     local game = rawget(mod, "_kantoInMotionActiveGame")
     if type(game) ~= "table" then return nil end
@@ -349,6 +370,11 @@ return function(mod)
       local ok, t = pcall(leadType)
       local hue = ok and t and TYPE_HUE[t]
       return hue and typeTheme(hue) or rawget(THEMES, "default")
+    end
+    if k == "gen2_aio:type_light" then
+      local ok, t = pcall(leadType)
+      local hue = ok and t and TYPE_HUE[t]
+      return hue and typeLightTheme(hue) or rawget(THEMES, "gen1_modern_ui:light")
     end
     return nil
   end })

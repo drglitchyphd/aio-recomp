@@ -57,6 +57,22 @@ GitHub and overlay patches are not the updater's install package. The custom
 index is independent of the community index; a community listing would require
 a separate submission.
 
+## 0.9.72 changes
+
+- Nuzlocke ENCOUNTERS page (the encounter tracker), redesigned:
+  - LOG and MAP are tabs you can tap (A still switches).
+  - The top shows how many Pokemon were caught, fainted and failed, plus the
+    next level cap.
+  - Each row shows the Pokemon's icon, the area, the species and a status:
+    PARTY, CAUGHT, FAINTED, FAILED (it got away) or OPEN (nothing yet).
+  - One footer; the duplicate UP / DOWN / PAGE / BACK bar is gone.
+  - Drag to scroll. Tapping a row no longer flips the tab.
+- Area names stay spaced: "Dark Cave Violet Entrance", not
+  "Dark Cave violetentrance".
+- New UI THEME: TYPE LIGHT (LEAD POKEMON). Light panels coloured by your
+  lead Pokemon's type, changing when your lead does. It is also in the
+  SETUP WIZARD's LOOK step as LEAD POKEMON.
+
 ## 0.9.71 changes
 
 - Naming keyboard (touch): the floating B, START and SELECT no longer show
