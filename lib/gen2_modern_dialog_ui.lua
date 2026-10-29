@@ -533,6 +533,20 @@ return function(mod)
       local rw=narrow and w-44*scale or w-listW-40*scale
       drawText("SELL",big,rx,ry,rw,"center",c.accent)
       drawText("Choose an item to sell.",body,rx,ry+60*scale,rw,"left",c.muted)
+      -- gen2-aio 0.9.77: SELL VALUABLES (lib/gen2_aio/quick_sell.lua)
+      local QS=mod._kimArenaQuickSell
+      if QS and not (mart.message or mart.confirm) then
+        local okV,list,sum=pcall(QS.valuables,mart)
+        if okV and type(list)=="table" and #list>0 then
+          local bh=math.max(48*scale,body:getHeight()+20*scale)
+          local by=ry+60*scale+body:getHeight()+24*scale
+          color(c.selected); G.rectangle("fill",rx,by,rw,bh,bh/2,bh/2)
+          color(c.frame or c.accent); G.setLineWidth(math.max(1.5,2*scale)); G.rectangle("line",rx,by,rw,bh,bh/2,bh/2)
+          drawFittedText(("SELL VALUABLES  ¥%d"):format(sum or 0),22*scale,rx+12*scale,
+            by+(bh-body:getHeight())/2,rw-24*scale,"center",c.text)
+          DTap.add(rx,by,rw,bh,function(st) pcall(QS.sellValuables,st) end,false)
+        end
+      end
     else
       local entries=mart.entries or {}
       local idx=tonumber(mart.index) or 1
@@ -607,6 +621,19 @@ return function(mod)
           rx+12*scale,qtyY+12*scale,rw-24*scale,"left",c.text)
         drawFittedText(("TOTAL   ¥%d"):format(total),23*scale,
           rx+12*scale,qtyY+54*scale,rw-24*scale,"left",c.accent)
+        -- gen2-aio 0.9.77: ALL sells the whole stack (the price question
+        -- follows on A, as usual)
+        local QS=mod._kimArenaQuickSell
+        if phase=="sellQuantity" and QS and not (mart.message or mart.confirm) then
+          local bh=math.max(44*scale,body:getHeight()+16*scale)
+          local by=qtyY+100*scale+10*scale
+          local bw=rw*.42
+          color(c.raised or c.surface); G.rectangle("fill",rx,by,bw,bh,bh/2,bh/2)
+          color(c.frame or c.accent); G.setLineWidth(math.max(1.5,2*scale)); G.rectangle("line",rx,by,bw,bh,bh/2,bh/2)
+          drawFittedText(("ALL (%d)"):format(tonumber(mart.qtyMax) or 0),21*scale,rx+8*scale,
+            by+(bh-body:getHeight())/2,bw-16*scale,"center",c.text)
+          DTap.add(rx,by,bw,bh,function(st) pcall(QS.all,st) end,false)
+        end
       end
     end
 
