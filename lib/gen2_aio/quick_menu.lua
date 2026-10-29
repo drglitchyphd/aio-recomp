@@ -712,6 +712,11 @@ return function(host)
     G.setScissor()
     self.maxScroll = math.max(0, (y + self.scroll) - bottom)
     if self.scroll > self.maxScroll then self.scroll = self.maxScroll end
+    -- gen2-aio: the whole list area drags too (section titles, the gaps and
+    -- the empty space below the last card). A swipe there used to fall
+    -- through to KIM Touch's D-pad ring: finger up = UP = the list moved the
+    -- wrong way. Added last, so the cards above still win their own taps.
+    if Tap and Tap.add then Tap.add(px + 4, top, pw - 8, bottom - top, function() end, false) end
     if Tap and Tap.finish then Tap.finish() end
     local seenN, caughtN, total = 0, 0, 0
     for _, sec in ipairs(self.sections) do

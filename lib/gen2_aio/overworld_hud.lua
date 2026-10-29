@@ -151,6 +151,15 @@ return function(host)
   function M.draw(game)
     local l = M.layout(game)
     if not l then return end
+    -- where the HUD sits this frame (window units), for KIM Touch to keep
+    -- its B / START / SELECT off it
+    do
+      local x0, y0 = math.min(l.x, l.statusX), math.min(l.y, l.statusY)
+      local x1 = math.max(l.x + l.w, l.statusX + l.statusW)
+      local y1 = math.max(l.y + l.size, l.statusY + font(l.clockPx):getHeight() + l.padding * 2)
+      rawset(mod, "_kimArenaOverworldHudRect", { x = x0, y = y0, w = x1 - x0, h = y1 - y0, W = l.W, H = l.H,
+        time = love.timer and love.timer.getTime() or 0 })
+    end
     local th = theme()
     for _, r in ipairs(l.cells) do
       local held = false
