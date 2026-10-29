@@ -1,10 +1,65 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.76)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.77)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.77 (2026-10-29)
+
+- `lib/gen2_aio/quick_sell.lua` (`mod._kimArenaQuickSell`):
+  - `valuables(mart)` lists the sell-only items in the bag with
+    `MartMenu.sellPrice` totals;
+  - `sellValuables(mart)` asks once, then pays and removes them through
+    `setMoney` / `Bag.remove`;
+  - `all(mart)` sets `qty = qtyMax`.
+  - dialog_ui drawMart adds the SELL VALUABLES and ALL pills as DTap cells.
+  - Test: `tests/quick_sell.lua`, which needs AIO_ENGINE.
+- BUILD 3D CACHE:
+  - `gmarc/lib/CacheBuilder.lua` walks `world.maps` and requests each map's
+    BODY and FULL variants through ChunkMesher. FULL masks come from
+    `World.computeNeighbors` with 2 hops and the current view size.
+  - It skips variants already on storage (`ChunkMesher.stored`, new
+    `MeshStore.exists`) and maps already in memory.
+  - It waits while `MeshStore.backlog()` is above 2, and invalidates the
+    maps it built.
+  - `lib/gen2_aio/voxel_cache.lua`:
+    - asks once per start, after 2 s free in the overworld;
+    - the question shows only with the 3D world on, the disk cache on,
+      `voxelCacheAsk ~= false` and `voxelCacheDone ~= build id`;
+    - adds the ADVANCED row `gen2-aio:voxel_cache` (`Hub.extras.voxelCache`);
+    - the build page's `update` steps the builder for 30 ms a frame;
+    - leaving the page stops the build (checked in `core.update`).
+  - Test: `tests/voxel_cache.lua`.
+- qoltoggles FIELD MOVES ALL: `TM_ITEMS_GEN2` / `phantomGateItem`. A
+  TM-only field move needs the TM in the bag. Test:
+  `tests/rock_smash_gate.lua`.
+- `lib/gen2_aio/obedience_hint.lua`: an extra message the first time a
+  traded mon disobeys in a battle. The rule is unchanged. Test:
+  `tests/obedience_hint.lua`.
+- Level-up stats:
+  - the battle UI keeps the line during "stats-box";
+  - dialog_ui draws only the STATS card while the battle panel is active;
+  - `BattleState.update` is wrapped once per process for bench level-ups.
+  - Test: `tests/level_stats/`.
+- touch/main.lua:
+  - the close button's square wins over floating buttons, and START /
+    SELECT move clear of it;
+  - button visibility holds through MenuFade and for 0.25 s after a menu;
+  - HIGH scales with screen aspect outside battle;
+  - the cluster moves above `mod._kimArenaOverworldHudRect`.
+  - core_menus: the START menu strip grows for a bottom-corner X, and Area
+    Dex has a whole-list drag cell.
+  - Checks in menu_chrome.
+- gmarc BattleScene: on screens taller than 1.2x their width, the player
+  billboard shrinks to fit (at most 1.5x the foe's base size, 60% of the
+  width, about 10% off the left edge).
+- quick_menu:
+  - new HUD button `box` (Gen2BoxMenu, withdraw);
+  - TRACK draws a dot when nuzlocke's new `exports.currentAreaOpen(game)`
+    is true.
+  - nuzlocke no longer adds RULES to START.
 
 ## 0.9.76 (2026-10-29)
 

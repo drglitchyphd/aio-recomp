@@ -57,6 +57,46 @@ GitHub and overlay patches are not the updater's install package. The custom
 index is independent of the community index; a community listing would require
 a separate submission.
 
+## 0.9.77 changes
+
+- Poke Mart: QUICK SELL. When you sell, a SELL VALUABLES button sells every
+  item that exists only to be sold (Nuggets, Pearls, Stardust, Star Pieces,
+  the mushrooms, Slowpoke Tails...) after one YES / NO for the total. The
+  quantity picker has an ALL button for the whole stack.
+- 3D world: BUILD 3D CACHE. Once you are out in the world with the 3D world
+  on, the game offers to build every area into the voxel disk cache (BUILD
+  NOW / LATER / DON'T ASK AGAIN), so no area has to build while you play.
+  The build shows its progress and can be stopped at any time; the next run
+  carries on where it stopped. Also in GEN2-AIO > ADVANCED > BUILD 3D CACHE.
+- Rock Smash (and Dig, Headbutt, Sweet Scent) no longer work outside battle
+  before you have the TM. With FIELD MOVES ALL on, a Pokemon that can only
+  learn the move from a TM needs that TM in your bag. A Pokemon that knows
+  the move can always use it.
+- A traded Pokemon that will not obey now says why. As in Crystal, a
+  Pokemon from another trainer obeys only up to Lv10 until the Hive Badge
+  (Lv30), then Lv50 with the Fog Badge, Lv70 with the Storm Badge and any
+  level with the Rising Badge. Renaming it does not make it yours.
+- Level up: "<name> grew to level N!" and the STATS card now appear together
+  on one screen. The message no longer shows twice or jumps up, and one
+  press continues. This also applies to Pokemon that level up from the bench.
+- Pokedex: tapping X / back goes back one step. The START / SELECT buttons
+  no longer sit on top of the close button, which made the dex flip between
+  the list and SEARCH.
+- The Pack's X now responds over the whole button on the cover screen.
+- START menu: the footer line no longer cuts through a bottom-corner X.
+- Touch buttons no longer flash when you close or switch menus.
+- Area Dex scrolls like every other list, wherever you drag.
+- HIGH touch button height now really sits high on tall screens. The B /
+  START / SELECT buttons never cover the overworld HUD.
+- Battles on tall screens (the Fold cover screen): your Pokemon is sized
+  automatically to match the foe and stay on screen. The inner screen and
+  ENEMY PKMN SIZE are unchanged.
+- New HUD button PC BOX opens your storage boxes from anywhere. Turn it on
+  in GEN2-AIO > HUD BUTTONS.
+- A red dot on the TRACK HUD button means you have not had this area's
+  encounter yet.
+- RULES is no longer on the START menu. It is in GEN2-AIO > RULES > RUN RULES.
+
 ## 0.9.76 changes
 
 - Evolution: STOP EVOLUTION. Crystal only notices B in short pauses between
