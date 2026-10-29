@@ -39,11 +39,13 @@ function B.expired()
 end
 
 -- Cheap enough to sprinkle through inner loops: one modulo most calls,
--- a clock read every 32nd.
+-- a clock read every 4th. gen2-aio 0.9.79: was every 32nd, and in a dense
+-- forest one map cell (a carved tree hull) costs milliseconds, so 32 of
+-- them between looks overran a 4 ms slice by 130 ms (Ilex Forest).
 function B.tick()
   local n = B.n + 1
   B.n = n
-  if n % 32 ~= 0 then return end
+  if n % 4 ~= 0 then return end
   if buildCo and coroutine.running() == buildCo and clock() > deadline then
     coroutine.yield("budget")
   end

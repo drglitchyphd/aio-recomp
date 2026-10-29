@@ -109,6 +109,18 @@ local VOLUME_TOP_SHADE = 0.85
 local cache = {}     -- map id -> { full = mesh|false, body = ..., grass = ... }
 local gen = {}       -- map id -> generation, bumped by invalidate/evict
 
+-- gen2-aio 0.9.79: which step of a build a long slice was spent in, for
+-- DIAGNOSTICS `voxel slow` (structures / cells / stamps / upload ...).
+-- mark(name) closes the running step and opens the next; the pump resets
+-- the tally per slice and reports its largest step.
+local stepClock = (love and love.timer and love.timer.getTime) or os.clock
+local step = { at = "start", since = 0, spent = {} }
+local function mark(name)
+  local now = stepClock()
+  step.spent[step.at] = (step.spent[step.at] or 0) + (now - step.since)
+  step.at, step.since = name, now
+end
+
 -- Horizontal neighbours: tile step, face direction id (see Voxel3D).
 local SIDES = {
   { 1, 0, 1 },    -- +X east
@@ -325,8 +337,11 @@ local function runGeometry(map, bodyOnly, masks, sink, waterSink, instances)
   local push = sink.push
   local waterPush = waterSink and waterSink.push or nil
   local tileset = map.tileset
+  mark("structures")
   local S = Structures.forMap(map)
+  mark("tileshape")
   local shapes = TileShape.forMap(map)
+  mark("cells")
   -- Replacement ground can explicitly be water (ships, mooring posts).
   -- Preserve its recessed height and reflective material instead of making
   -- a painted y=0 plot. Other replacement art retains the existing floor.
@@ -893,6 +908,7 @@ local function runGeometry(map, bodyOnly, masks, sink, waterSink, instances)
   -- Authored models were emitted before derived props, so retain that
   -- ordering while expanding shared instances into reusable corners.
   local assetCorners = {{0,0,0},{0,0,0},{0,0,0},{0,0,0}}
+  mark("trees")
   for _,st in ipairs(S.assetStamps or {}) do if not st.liveCut then
     local instanced=instances and st.tree and Instances.whole(st,bodyOnly,tw*8,th*8,masks,Budget.tick)
       and instances:add(st,groundShades)
@@ -916,6 +932,7 @@ local function runGeometry(map, bodyOnly, masks, sink, waterSink, instances)
   end
 
   end
+  mark("objects")
   for _, q in ipairs(S.objectQuads) do if not q.liveCut then
     Budget.tick()
     local x0 = math.min(q[1][1], q[2][1], q[3][1], q[4][1])
@@ -953,6 +970,7 @@ local function runGeometry(map, bodyOnly, masks, sink, waterSink, instances)
   -- (or, body-only, ring stamps full stop) skip without touching their
   -- quads. Only stamps crossing a boundary walk quad by quad.
   local sc = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } }
+  mark("round")
   for _, st in ipairs(S.roundStamps or {}) do if not st.liveCut then
     local mx, mz = st.mx, st.mz
     local sr = st.r or 8
@@ -1390,7 +1408,7 @@ end
 local jobPhase = "start"
 local function runJob(job)
   job.started=clock()
-  jobPhase = "lookup"
+  jobPhase = "lookup"; mark("lookup")
   local map = job.map
   local c = entry(job.id)
   -- gen2-aio: restore from the disk cache when this exact build exists
@@ -1404,7 +1422,7 @@ local function runJob(job)
         if blob == nil then coroutine.yield() end
       until blob ~= nil
       if blob then
-        jobPhase = "restore"
+        jobPhase = "restore"; mark("restore")
         local okR, mesh, water = pcall(restore, blob, map, c, job)
         pcall(blob.release, blob)
         if okR and mesh then
@@ -1444,16 +1462,19 @@ local function runJob(job)
     c.figures = (okX and figures) or false
     if c.stale then c.stale.aux = nil end
   end
-  jobPhase = "geometry"
+  jobPhase = "geometry"; mark("aux")
   local sink = newSink()
   local waterSink = newSink()
   local instances=newInstances(map);job.instances=instances
   runGeometry(map, job.slot == "body", job.masks, sink, waterSink,instances)
+  mark("upload")
   local mesh = sink.finish();job.upload=mesh
+  mark("instances")
   if instances then instances:finish(mesh)end
+  mark("water")
   local water = waterSink.finish()
   if storeName and mesh and (gen[job.id] or 0) == job.gen then
-    jobPhase = "persist"
+    jobPhase = "persist"; mark("persist")
     local okS, errS = pcall(persist, storeName, map, sink, waterSink, mesh)
     if not okS then print("[warn] voxel disk cache: " .. tostring(errS)) end
   end
@@ -1524,6 +1545,7 @@ local URGENT_SLICE = 0.004
 local IDLE_SLICE = 0.0015
 local COVERED_SLICE = 0.030
 
+local slowWorst = 0   -- the longest slice so far, kept on its own line
 local function pump(covered)
   if #jobs == 0 then return end
   local pick = jobs[1]
@@ -1542,14 +1564,25 @@ local function pump(covered)
     end
     Budget.begin(pick.co, deadline - clock())
     local resumed = clock()
+    step.spent, step.since = {}, stepClock()
     local ok, err = coroutine.resume(pick.co, pick)
     Budget.finish()
     local spent = (clock() - resumed) * 1000
     if spent > 50 then
+      mark(step.at)
+      local top, topMs = step.at, 0
+      for name, t in pairs(step.spent) do
+        if t * 1000 > topMs then top, topMs = name, t * 1000 end
+      end
       local d = V.mod and rawget(V.mod, "_kimArenaDiag")
       if d then
-        d("voxel slow", ("%.0f ms in %s (%s %s)"):format(spent, jobPhase,
-          tostring(pick.id), tostring(pick.slot)))
+        local line = ("%.0f ms in %s/%s %.0f ms (%s %s)"):format(spent, jobPhase, top, topMs,
+          tostring(pick.id), tostring(pick.slot))
+        d("voxel slow", line)
+        if spent > slowWorst then
+          slowWorst = spent
+          d("voxel slow worst", line)
+        end
       end
     end
     if not ok then

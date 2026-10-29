@@ -1,10 +1,20 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.78)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.79)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.79 (2026-10-29)
+
+- BuildBudget.tick samples the clock every 4th call (was 32nd). Device
+  report: ILEX_FOREST body, 132 ms uninterrupted geometry slices, pump peak
+  1859 ms, cold build 4.25 s on Adreno 840.
+- ChunkMesher `mark(name)` step tally: structures, tileshape, cells, trees,
+  objects, round, aux, upload, instances, water, persist, lookup, restore.
+  A slice over 50 ms reports its largest step in `voxel slow`; the longest
+  slice so far is kept in `voxel slow worst`.
 
 ## 0.9.78 (2026-10-29)
 
