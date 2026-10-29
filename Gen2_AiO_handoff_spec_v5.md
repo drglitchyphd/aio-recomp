@@ -1,10 +1,41 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.74)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.75)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.75 (2026-10-29)
+
+- New presenters, each `return function(host)`, loaded in a loop in
+  main.lua after modern_caller:
+  - `lib/gen2_aio/modern_moves.lua`: Gen2MoveDeleter (deleter / RESTORE PP
+    / FORGET A MOVE via layout="forget"), Gen2MoveTutor and the RELEARN list
+    (`src.ui.Menu` tagged `relearn`). Wraps `Game2.learnMoveOn` to note the
+    incoming move.
+  - `lib/gen2_aio/modern_services.lua`: ItemPcMenu, BankOfMom, MailboxMenu,
+    MailMenu, MailRead, MailCompose, DayCareMenu. DayCare is gated on
+    DIALOGUE UI and has no close button.
+  - `lib/gen2_aio/modern_extras.lua`: ContestMenu, BattleTowerMenu,
+    DecorationMenu, ElevatorMenu, BuenaPassword (`strict`: the tap mode
+    "sub" ignores misses), PhotoStudio, and the coins / moneycoins
+    ScriptMenus. PrizeMenu.lua is never pushed by the game. It wraps
+    `Style.closeIsBack`.
+  - `lib/gen2_aio/modern_story.lua`: HallOfFame (induction and PC view),
+    Diploma, EggHatchAnim, UnownPrinter, UnownPuzzle. If a Modern draw
+    errors, that screen falls back to native for good.
+- Gen1Remember (vendored, marked 0.9.75):
+  - relearn.lua reads Crystal's `levelMoves` / `into`;
+  - screen.lua teaches through `game:learnMoveOn`;
+  - main.lua labels the row RELEARN on Gen 2 and puts it above CANCEL.
+  Re-apply these if the module is ever re-synced from upstream.
+- core_menus: the generic window skips menus tagged `relearn`. style:
+  `closeIsBack` rules for the item PC and mailbox.
+- assets/menu_icons/hd/normal/006.png: a bKGD chunk of the wrong size for
+  RGBA was stripped (LÖVE refused the file).
+- Tests (all need AIO_ENGINE_SRC): tests/modern_moves, tests/modern_services,
+  tests/modern_extras and tests/modern_story.
 
 ## 0.9.74 (2026-10-29)
 

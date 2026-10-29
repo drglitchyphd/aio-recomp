@@ -57,6 +57,37 @@ GitHub and overlay patches are not the updater's install package. The custom
 index is independent of the community index; a community listing would require
 a separate submission.
 
+## 0.9.75 changes
+
+Modern UI for the screens that only had Crystal's own look (MODERN UI and
+MENU UI on). Each is a themed, tappable window with the close button and
+footer. Everything still goes through Crystal's own code.
+
+- Move learning:
+  - FORGET A MOVE when a Pokemon learns a 5th move outside battle, with
+    type pills, PP, the move's numbers and the new move;
+  - the Move Deleter, PP restore, and the Move Tutor (ABLE / NOT ABLE /
+    KNOWS IT per Pokemon).
+- RELEARN in the POKeMON menu outside battle now works on Crystal. The QOL
+  pack's move reminder only read Red / Blue move data, so it never found
+  anything to relearn and hid itself. It opens a Modern move list with
+  levels and the move's numbers.
+- Item PC (withdraw / deposit / toss, with quantity buttons and MOVE), Mom's
+  bank (a keypad with up / down per digit), mailbox, held mail, reading and
+  writing mail, and the Day-Care conversation.
+- Game Corner prize counters and the coin seller (Mart-style, with your
+  coins), the Bug-Catching Contest swap, the Battle Tower level list,
+  bedroom decorations, elevators, Buena's password and Blue Card prizes,
+  and the photo studio.
+- Hall of Fame (the induction keeps Crystal's timing, with HD sprites; the
+  PC viewer gets NEXT / NEXT TEAM buttons), the Diploma, egg hatching (the
+  native shell animation, then the hatchling's HD sprite), and the Unown
+  printer and puzzle (tap or drag the panels).
+- On Buena's password, a tap that misses every word no longer answers.
+- Fixed: Charizard's HD menu icon could not load (a malformed PNG chunk).
+- With MODERN UI or MENU UI off, all of these are Crystal's own screens,
+  unchanged.
+
 ## 0.9.74 changes
 
 - Encounter tracker: Pokemon you caught no longer all show FAINTED.
