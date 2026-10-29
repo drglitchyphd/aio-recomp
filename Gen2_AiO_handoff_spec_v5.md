@@ -1,10 +1,26 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.81)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.82)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.82 (2026-10-29)
+
+- New `MeshStore.whyOff()`:
+  - returns nil, "VOXEL DISK CACHE is OFF", or "the disk cache could not
+    start (<offReason>)";
+  - starts the worker, so a failed start is known up front;
+  - the ffi/bit stub names the missing library.
+- New `CacheBuilder.whyNot(world)`; `available()` now calls it.
+- voxel_cache: the ADVANCED row is listed whenever gmarc's CacheBuilder
+  loads. When it can't run, it shows OFF with the reason in its help and
+  does nothing on activate.
+- Tests: voxel_cache (32), mesh_store (13).
+- Device report: on 0.9.78 the row was missing, and there was no
+  `disk cache` line with `0 disk` restores, so the cache was off on device.
+  Which cause it is (the setting or a failed start) is still unknown.
 
 ## 0.9.81 (2026-10-29)
 

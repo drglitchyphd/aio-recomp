@@ -14,7 +14,9 @@ function love.load()
       _kimArenaBuildId = function() return "t1" end }
     local S = loadStore(mod)
     check(S.enabled(), "enabled by default")
+    check(S.whyOff() == nil, "nothing to explain when it works")
     local name = S.tag() .. "MAP_body_1.kms"
+    love.filesystem.remove("mod_cache/MESHSTORE_TEST/voxel/" .. name)   -- a run that stopped early
     check(S.begin(name) == nil and lines["disk cache"], "a miss is reported: " .. tostring(lines["disk cache"]))
     local data = love.data.newByteData(("x"):rep(4096))
     check(S.save(name, data), "save queued")
@@ -38,6 +40,9 @@ function love.load()
     love.thread.newThread = realNew
     check(okB and r == nil, "a failed start does not throw: " .. tostring(r))
     check(not S2.enabled(), "the cache is off afterwards")
+    check(S2.whyOff():find("could not start", 1, true), "whyOff says it could not start: " .. tostring(S2.whyOff()))
+    local S3 = loadStore({ id = "MESHSTORE_TEST3", _kimArenaMeshStore = function() return false end })
+    check(S3.whyOff() == "VOXEL DISK CACHE is OFF", "whyOff names the setting")
     check(lines["disk cache"] and lines["disk cache"]:find("OFF %(no worker thread: .*no threads here"),
       "it says why: " .. tostring(lines["disk cache"]))
     love.filesystem.remove("mod_cache/MESHSTORE_TEST/voxel/" .. name)

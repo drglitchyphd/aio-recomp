@@ -41,10 +41,21 @@ local function mapIds(world)
   return ids
 end
 
-function CacheBuilder.available(world)
-  if type(world) ~= "table" or type(world.maps) ~= "table" then return false end
+-- nil when a build can run, else why not (shown on the BUILD 3D CACHE row)
+function CacheBuilder.whyNot(world)
+  if type(world) ~= "table" or type(world.maps) ~= "table" then return "the world is not loaded yet" end
   local okS, S = pcall(V.require, "MeshStore")
-  return okS and type(S) == "table" and S.enabled() and S.exists ~= nil
+  if not (okS and type(S) == "table") then return "the disk cache did not load (" .. tostring(S) .. ")" end
+  if type(S.whyOff) == "function" then
+    local okW, why = pcall(S.whyOff)
+    if not okW then return "the disk cache failed (" .. tostring(why) .. ")" end
+    if why then return why end
+  end
+  if not S.enabled() or S.exists == nil then return "the disk cache is off" end
+  return nil
+end
+function CacheBuilder.available(world)
+  return CacheBuilder.whyNot(world) == nil
 end
 
 function CacheBuilder.new(world)

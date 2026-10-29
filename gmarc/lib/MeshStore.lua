@@ -19,7 +19,10 @@ local V = ...
 local MeshStore = {}
 local okFfi, ffi = pcall(require, "ffi")
 local okBit, bit = pcall(require, "bit")
-if not (okFfi and okBit) then return { enabled = function() return false end } end
+if not (okFfi and okBit) then
+  local why = "this build of LOVE has no " .. (okFfi and "bit" or "ffi") .. " library"
+  return { enabled = function() return false end, whyOff = function() return why end }
+end
 
 local DIR = "voxel"
 local MAGIC = "KMS1"
@@ -159,6 +162,19 @@ local function poll()
 end
 MeshStore.poll = poll
 MeshStore.report = report
+
+-- gen2-aio 0.9.82: nil when the cache works, else why not, in words for the
+-- BUILD 3D CACHE row (starts the worker, so a failed start is known now)
+function MeshStore.whyOff()
+  local fn = hostFn("_kimArenaMeshStore")
+  if fn then
+    local ok, on = pcall(fn)
+    if ok and on == false then return "VOXEL DISK CACHE is OFF" end
+  end
+  if not disabled then ensureThread() end
+  if disabled then return "the disk cache could not start (" .. tostring(offReason or "?") .. ")" end
+  return nil
+end
 
 -- ------------------------------------------------------------------- key
 local function fnv(h, s)

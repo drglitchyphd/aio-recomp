@@ -57,6 +57,14 @@ GitHub and overlay patches are not the updater's install package. The custom
 index is independent of the community index; a community listing would require
 a separate submission.
 
+## 0.9.82 changes
+
+- GEN2-AIO > ADVANCED > BUILD 3D CACHE is always listed now. It used to
+  hide whenever the voxel disk cache was off. When a build cannot run, the
+  row reads OFF and its help says why, for example "VOXEL DISK CACHE is
+  OFF" (turn that row on) or the reason the disk cache could not start on
+  this device.
+
 ## 0.9.81 changes
 
 - The Charcoal Kiln's Farfetch'd (Azalea Town) is drawn as Farfetch'd,
