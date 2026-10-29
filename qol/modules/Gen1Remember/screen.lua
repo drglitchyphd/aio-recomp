@@ -110,6 +110,16 @@ return function(mod, Relearn)
         return
       end
     end
+    -- gen2-aio 0.9.75: Gold / Silver / Crystal teach through the engine's
+    -- own LearnMove (Game2:learnMoveOn), as a TM or the move tutor does: a
+    -- free slot is Mon.learnMove's `{ id, pp, maxPp }`, a full set is the
+    -- cart's ask / forget list / HM refusal / "Poof!".  The Gen 1 path below
+    -- would push Red's MoveLearnMenu and write a Gen 1 move slot.
+    if type(game.learnMoveOn) == "function" then
+      return game:learnMoveOn(mon, moveId, function(learned)
+        if onDone then onDone(learned == true) end
+      end)
+    end
     if #mon.moves < Relearn.MAX_MOVES then
       learnIntoFreeSlot(game, mon, moveId, onDone)
     else
@@ -209,6 +219,10 @@ return function(mod, Relearn)
       noSound = true,
       onCancel = done,
     })
+    -- gen2-aio 0.9.75: what a Modern presenter needs to draw this list
+    -- itself (lib/gen2_aio/modern_moves.lua): the mon and the pool rows, in
+    -- the same order as the Menu's items.  Nothing reads it to act.
+    menu.relearn = { mon = mon, rows = rows }
     game.stack:push(menu)
   end
 

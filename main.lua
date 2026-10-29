@@ -1253,6 +1253,18 @@ return function(mod)
   if type(tradeFactory) == "function" then tradeFactory({ mod = mod }) end
   local callerFactory = loadOwn("lib/gen2_aio/modern_caller.lua")
   if type(callerFactory) == "function" then callerFactory({ mod = mod }) end
+  -- 0.9.75: Modern UI for the screens that only had Crystal's own look --
+  -- move learning / RELEARN, Day-Care, Mom's bank, the item PC and mail, the
+  -- Game Corner counters, contest, Battle Tower, decorations, elevators,
+  -- Buena and the photo studio, and the story screens
+  for _, rel in ipairs({ "lib/gen2_aio/modern_moves.lua", "lib/gen2_aio/modern_services.lua",
+      "lib/gen2_aio/modern_extras.lua", "lib/gen2_aio/modern_story.lua" }) do
+    local f = loadOwn(rel)
+    if type(f) == "function" then
+      local okM, err = pcall(f, { mod = mod })
+      if not okM then log("warn", "Gen2-AIO: %s: %s", rel, tostring(err)) end
+    end
+  end
   local zoomFactory = loadOwn("lib/gen2_aio/screen_zoom.lua")
   if type(zoomFactory) == "function" then
     local okZ, err = pcall(zoomFactory, { mod = mod })
