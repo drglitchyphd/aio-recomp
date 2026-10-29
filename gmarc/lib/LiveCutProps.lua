@@ -107,11 +107,16 @@ function P.restore(mapId,snap)
  for _,t in ipairs(snap.targets or{})do
   local p={x=t.x,y=t.y,bx=t.bx,by=t.by,block=t.block,stamps={}}
   for _,st in ipairs(t.stamps or{})do
-   local f=st.flat or{};local vertices,indices={},{}
-   for i=1,#f,6 do vertices[#vertices+1]={f[i],f[i+1],f[i+2],f[i+3],f[i+4],f[i+5]}end
-   for q=0,#vertices/4-1 do local b=q*4;for _,i in ipairs({1,2,3,1,3,4})do indices[#indices+1]=b+i end end
    local stamp={mx=st.mx,mz=st.mz,quads={}}
-   stamp.liveMesh=#vertices>0 and V.require('Voxel3D').newMesh(vertices,indices) or nil
+   if st.bytes then
+    -- gen2-aio 0.9.84: the disk cache hands vertex BYTES (st.count vertices)
+    stamp.liveMesh=(st.count or 0)>0 and V.require('MeshStore').mesh(V.require('Voxel3D').FORMAT,st.bytes,st.count) or nil
+   else
+    local f=st.flat or{};local vertices,indices={},{}
+    for i=1,#f,6 do vertices[#vertices+1]={f[i],f[i+1],f[i+2],f[i+3],f[i+4],f[i+5]}end
+    for q=0,#vertices/4-1 do local b=q*4;for _,i in ipairs({1,2,3,1,3,4})do indices[#indices+1]=b+i end end
+    stamp.liveMesh=#vertices>0 and V.require('Voxel3D').newMesh(vertices,indices) or nil
+   end
    if stamp.liveMesh then p.stamps[#p.stamps+1]=stamp end
   end
   list[#list+1]=p

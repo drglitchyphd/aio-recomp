@@ -57,6 +57,25 @@ GitHub and overlay patches are not the updater's install package. The custom
 index is independent of the community index; a community listing would require
 a separate submission.
 
+## 0.9.84 changes
+
+- 3D world: much faster and lighter.
+  - The 3D building data (every building model for every tileset) was
+    unpacked in full when the 3D world started. That meant about 17 million
+    small Lua objects, about 600 MB of memory, and seconds of loading.
+  - The game then kept walking all of that memory for the rest of the
+    session, which slowed every area build and caused hitches.
+  - Building models are now unpacked one at a time, the first time a map
+    uses them. The data loads in about 0.1 s and takes about 30 MB.
+  - In testing, a route that took 19 s to build now takes under 1 s, and
+    the longest freeze dropped from 10 s to 0.2 s.
+- VOXEL DISK CACHE now works on phones and tablets. Once an area is built
+  in 3D, later visits and restarts load it from storage instead of
+  rebuilding it. BUILD 3D CACHE in GEN2-AIO > ADVANCED is available there
+  too. Old cache files are cleared automatically.
+- DIAGNOSTICS `voxel slow` now lists the three biggest steps of a long
+  build step.
+
 ## 0.9.83 changes
 
 - 3D world: building an area's grass, flowers and figures now pauses to
@@ -66,10 +85,8 @@ a separate submission.
   analysis sections (s.grid, s.buildings, s.props, s.regions, s.model,
   s.signs, s.ground), then grass, flowers, figures, cells, trees, upload.
   It used to call all of the first part "lookup".
-- Known: the VOXEL DISK CACHE cannot run under the game's mod sandbox on
-  Android (mods are not given the ffi library it was written on), which is
-  why BUILD 3D CACHE reads OFF there. A sandbox-safe version is in the
-  works.
+- Known (fixed in 0.9.84): the VOXEL DISK CACHE could not run under the
+  game's mod sandbox on Android.
 
 ## 0.9.82 changes
 

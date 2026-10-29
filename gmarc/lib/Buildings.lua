@@ -1032,9 +1032,42 @@ local function authoredTileModel(sp, pr, t)
           zmin=0, zmax=D-1}
 end
 
+-- gen2-aio 0.9.84: a template's voxelEdits ship as one compact string
+-- ("x,y,z,i,r,d;" per edit, the voxel editor's own encoding) and become the
+-- edit list here, the first time a map models that template -- not all
+-- 300-odd of them when data/voxel_heights.lua loads (that was ~17 million
+-- tables, 600 MB and seconds of load). A data-file pass that reworks the
+-- decoded list (the Kanto roofs) rides along as t.editsFix, run once here.
+-- The decoded list is kept on the template, so a template costs this once.
+local function editsOf(t)
+  local edits = t.voxelEdits
+  if type(edits) == "string" then
+    local list, n = {}, 0
+    for x, y, z, i, r, d in edits:gmatch("([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^;]*);") do
+      local e = { x = tonumber(x), y = tonumber(y), z = tonumber(z), i = tonumber(i), region = tonumber(r) }
+      if d ~= "" then e.remove = d == "1" end
+      n = n + 1
+      list[n] = e
+      Budget.tick()
+    end
+    -- the decode yields, so another build may have finished this template
+    -- meanwhile: theirs (already fixed) wins over a second, unfixed copy
+    if t.voxelEdits ~= edits then return t.voxelEdits end
+    edits = list
+  end
+  if t.editsFix then
+    local fix = t.editsFix
+    t.editsFix = nil
+    edits = fix(t, edits or {})
+  end
+  t.voxelEdits = edits
+  return edits
+end
+Buildings.editsOf = editsOf
+
 local function model(sp, pr, t)
   if t.surfaces then
-    local authored=AssetSurface.build(sp.W,sp.H,t.surfaces,t.voxelEdits,false)
+    local authored=AssetSurface.build(sp.W,sp.H,t.surfaces,editsOf(t),false)
     if t.spriteRoof then return V.require('SpriteRoof').build(authored,sp,t.spriteRoof)end
     return authored
   end
