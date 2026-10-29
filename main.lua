@@ -362,6 +362,7 @@ return function(mod)
     return ok and api or nil
   end
   voxel._kimArenaDiag = diagSet
+  voxel._kimArenaDiagOn = function() return opt("diagnostics", false) == true end
   voxel._kimArenaVoidRelief = function() return opt("voidRelief", true) ~= false end
   voxel._kimArenaVoidFloor = function() return opt("voidFloor", true) ~= false end
   voxel._kimArenaShadowCapture = function(begin, side)

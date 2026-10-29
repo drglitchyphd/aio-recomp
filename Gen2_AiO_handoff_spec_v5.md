@@ -1,10 +1,21 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.77)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.78)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.78 (2026-10-29)
+
+- `gmarc/lib/FrameDiag.lua` wraps the voxel pipeline record (`update`,
+  `drawWorld`) with wall-clock spans. Once a second, when the host's
+  `_kimArenaDiagOn()` (main.lua: the DIAGNOSTICS option) is true, it
+  reports `voxel frame` (update/draw avg and peak, `love.graphics.getStats`)
+  and `voxel churn` (character count, `ChunkMesher.stats`).
+- ChunkMesher.stats: `refreshSec` (reset each report), `lastRefresh`,
+  `builds`, `restores`. A steady nonzero rebuild rate means a map's blocks
+  keep being rewritten (`Map.setBlock` / `world.block_replaced`).
 
 ## 0.9.77 (2026-10-29)
 

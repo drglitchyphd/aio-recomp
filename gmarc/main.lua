@@ -141,7 +141,7 @@ function voidFill.check()
   voidFill.last = now
 end
 
-mod.content.render_pipelines:register("voxel", {
+mod.content.render_pipelines:register("voxel", V.require("FrameDiag").wrap({
   label = "VOXEL",
   levels = Voxel.ANGLE_LABELS,
   -- 3 is the engine's TILT key, which this mode supersedes -- see the
@@ -250,7 +250,7 @@ mod.content.render_pipelines:register("voxel", {
     ChunkMesher.invalidate()   -- no map id = every cached mesh
     ForestAtmos.invalidate()   -- shaft/particle meshes and shader sentinels
   end,
-})
+}))
 
 mod.content.render_pipelines:register("tiltshift", {
   label = "T-SHIFT",

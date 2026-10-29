@@ -1168,6 +1168,11 @@ local function finishJob(job, ok, err)
     d("voxel build",("%s %s: %s, %.0f ms elapsed"):format(tostring(job.id),job.slot,
       ok and (job.cacheHit and "disk" or "cold") or "FAILED",(clock()-job.started)*1000))
   end
+  local st = ChunkMesher.stats
+  if ok and st then
+    st.builds = st.builds + 1
+    if job.cacheHit then st.restores = st.restores + 1 end
+  end
   abandonJob(job)
   jobIndex[jobKey(job.id, job.slot)] = nil
   for i, j in ipairs(jobs) do
@@ -1660,7 +1665,12 @@ end
 -- the block-edit path (a cut tree, a door stamp) -- invalidate() drops
 -- the mesh outright, and until the async rebuild landed the scene fell
 -- to the flat 2D path, a whole-world blink for a one-block edit.
+-- gen2-aio 0.9.78: counters for DIAGNOSTICS `voxel churn` (lib/FrameDiag.lua)
+ChunkMesher.stats = { refreshSec = 0, lastRefresh = nil, builds = 0, restores = 0 }
+
 function ChunkMesher.refresh(mapId)
+  ChunkMesher.stats.refreshSec = ChunkMesher.stats.refreshSec + 1
+  ChunkMesher.stats.lastRefresh = mapId
   V.require("CaveInterior").invalidate(mapId)
   if not mapId then return ChunkMesher.invalidate() end
   local c = cache[mapId]
