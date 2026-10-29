@@ -1,10 +1,18 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.80)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.81)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.81 (2026-10-29)
+
+- npc_mons `speciesFor`: a species-named sheet (`SPRITE_<SPECIES>`) defers
+  to the species the object's talk script names (`scanScript`: cry /
+  loadwildmon / pokepic) and keeps the sheet's only when the script names
+  none. Charcoal Kiln: SPRITE_MOLTRES + `cry FARFETCH_D`.
+- Test: `tests/npc_mon_species.lua` (AIO_ENGINE; fails on the old code).
 
 ## 0.9.80 (2026-10-29)
 

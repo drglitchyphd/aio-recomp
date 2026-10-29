@@ -158,7 +158,15 @@ return function(host)
       if s then return s end
     end
     local named = nameSpecies(world, id)
-    if named then return named end
+    if named then
+      -- 0.9.81: the sheet name is only a hint. Crystal borrows sheets:
+      -- the Charcoal Kiln's Farfetch'd is a SPRITE_MOLTRES object (the
+      -- generic bird slot -- Moltres never stands in GSC's overworld), so
+      -- the object's own talk script (`cry FARFETCH_D`) has the last word.
+      local key = npc.def and npc.def.scriptKey
+      local s = key and scanScript(world, key, 0, {})
+      return s or named
+    end
     if GENERIC[id] ~= nil then
       local key = npc.def and npc.def.scriptKey
       local s = key and scanScript(world, key, 0, {})
