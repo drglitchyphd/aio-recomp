@@ -22,7 +22,7 @@ end
 for _,name in ipairs({"src.render.TextBox","src.ui.ChoiceBox","src.ui.gen2.MartMenu",
   "src.ui.gen2.StartMenu","src.ui.gen2.PackMenu","src.ui.gen2.TrainerCard","src.ui.gen2.SaveMenu",
   "src.ui.gen2.OptionsMenu","src.ui.gen2.Pokegear","src.ui.gen2.PartyMenu","src.ui.gen2.SummaryMenu",
-  "src.ui.gen2.PokedexMenu","src.ui.gen2.HeldItemMenu","src.ui.gen2.InitClock","src.ui.gen2.BoxMenu"}) do class(name) end
+  "src.ui.gen2.PokedexMenu","src.ui.gen2.HeldItemMenu","src.ui.gen2.InitClock","src.ui.gen2.BoxMenu","src.ui.gen2.EvolutionAnim"}) do class(name) end
 package.preload["src.ui.gen2.Chrome"]=function()return {} end
 local Typer={text=function(s,page)return page end,typing=function(s)return s.typing==true end}
 package.preload["src.ui.gen2.Typer"]=function()return Typer end
@@ -166,6 +166,9 @@ function love.load()
       {label="STEP BY STEP",group=true,help="Choose each part yourself."},
       {label="SKIP",group=true,help="Start with the settings as they are."},
       {label="BACK",cancel=true}}},Opt)end},
+    -- 0.9.76: an evolution in progress shows STOP EVOLUTION
+    {"evolution",function()return setmetatable({phase="flash",oldSpecies="CHIKORITA",newSpecies="BAYLEEF",
+      lines={"What? LEAF is","evolving!"},balls={}},classes["src.ui.gen2.EvolutionAnim"])end},
     -- 0.9.68: NEW GAME clock; "DAY 12 o'clock" wrapped onto the arrows
     {"clock",function()return setmetatable({phase="hour",mode="clock",
       question=function()return "What time is it?" end,
@@ -236,7 +239,17 @@ function love.load()
         if sc[1]=="nuzlocke" or sc[1]=="pokedex" or sc[1]=="tracker" then
           -- pages without footer assertions of their own below
         end
-        if sc[1]=="clock" then
+        if sc[1]=="evolution" then
+          local taps=rawget(mod,"_kimScreenTapTargets")
+          local stop
+          for _,c in ipairs(taps and taps.cells or {}) do stop=c end
+          check(stop and stop.button==false,"evolution "..dims[1].." has a STOP EVOLUTION button")
+          if stop then stop.select(state) end
+          check(rawget(state,"_aioStop")==true,"evolution "..dims[1].." STOP asks the evolution to stop")
+          local saw=false
+          for _,d in ipairs(drawn) do if d.text=="STOP EVOLUTION" then saw=true end end
+          check(saw,"evolution "..dims[1].." draws STOP EVOLUTION")
+        elseif sc[1]=="clock" then
           -- not a menu window: no close button; the hour reads on one line,
           -- clear of the footer below it
           check(close==nil,"clock "..dims[1].." has no close button")
@@ -253,7 +266,7 @@ function love.load()
         else
         check(close and close.state==state,sc[1].." "..dims[1].." publishes a close button")
         end
-        if close and sc[1]~="clock" then
+        if close and sc[1]~="clock" and sc[1]~="evolution" then
           -- clear of every text on the window
           for _,t in ipairs(drawn) do
             local f=t.font

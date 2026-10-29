@@ -3713,7 +3713,7 @@ return function(mod)
     local h=math.min(sh*.86,660*requestedScale)
     local scale=math.min(requestedScale,w/760,h/550)
     local x=sx+(sw-w)/2; local y=sy+(sh-h)/2; panel(x,y,w,h,c,.96)
-    drawPcHeader(x,y,w,scale,c,"EVOLUTION",s.force and "Evolution cannot be stopped" or "B  stop evolution")
+    drawPcHeader(x,y,w,scale,c,"EVOLUTION",s.force and "Evolution cannot be stopped" or "B or STOP EVOLUTION to stop it")
     local species=s.showNew and s.newSpecies or s.oldSpecies
     if s.phase=="reveal" or s.phase=="picAnim" or s.phase=="congrats" or s.phase=="paragraph" or s.phase=="evolved" then
       if not s.canceled then species=s.newSpecies end
@@ -3748,6 +3748,19 @@ return function(mod)
       end
     end
     local body=font(23*scale); local small=font(17*scale)
+    -- gen2-aio 0.9.76: STOP EVOLUTION, a button inside the window (the touch B
+    -- sits under it, and at 2x speed the cart's own B window is a few frames);
+    -- lib/gen2_aio/evolution_stop.lua turns the request into Crystal's own stop
+    if not s.force and not s.canceled and (s.phase=="evolving" or s.phase=="cry" or s.phase=="flash") then
+      local asked=rawget(s,"_aioStop")==true
+      local bw,bh=math.min(w*.6,360*scale),math.max(44*scale,small:getHeight()*2.2)
+      local bx,by=x+(w-bw)/2,y+h-bh-18*scale-(type(s.lines)=="table" and #s.lines>0 and 150*scale or 64*scale)
+      color(asked and c.raised or c.selected,.95); G.rectangle("fill",bx,by,bw,bh,bh/2,bh/2)
+      color(c.frame or c.accent,nil,true); G.setLineWidth(math.max(1.5,2*scale)); G.rectangle("line",bx,by,bw,bh,bh/2,bh/2)
+      local bf=font(20*scale)
+      text(asked and "STOPPING..." or "STOP EVOLUTION",bf,bx,by+(bh-bf:getHeight())/2,bw,"center",c.text)
+      KimTap.add(bx,by,bw,bh,function(st) if not st.force then st._aioStop=true end end,false)
+    end
     local msg=type(s.lines)=="table" and table.concat(s.lines,"\n") or ""
     if msg~="" then
       local my=y+h-145*scale; color(c.raised,.92); G.rectangle("fill",x+24*scale,my,w-48*scale,92*scale,6,6)
@@ -3956,7 +3969,7 @@ return function(mod)
             end
           end
         end
-        local tapKinds={titlemenu=true,centerpc=true,pc=true,genericmenu=true,save=true,options=true,gear=true,boxpc=true,modoptions=true,kimsettings=true}
+        local tapKinds={titlemenu=true,centerpc=true,pc=true,genericmenu=true,save=true,options=true,gear=true,boxpc=true,modoptions=true,kimsettings=true,evolution=true}
         if tapKinds[kind] then KimTap.begin(top) end
         G.push("all"); G.origin()
         local drawn,why=pcall(renderers[kind],top)

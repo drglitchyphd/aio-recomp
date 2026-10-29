@@ -57,6 +57,15 @@ GitHub and overlay patches are not the updater's install package. The custom
 index is independent of the community index; a community listing would require
 a separate submission.
 
+## 0.9.76 changes
+
+- Evolution: STOP EVOLUTION. Crystal only notices B in short pauses between
+  the flashes, which at 2x speed last a few frames, and with touch the
+  floating B sat under the evolution window. Now a STOP EVOLUTION button
+  sits in the window, and a B press or a tap at any moment of the animation
+  is remembered and stops the evolution at Crystal's next check. Stone
+  evolutions still cannot be stopped, as on the cart.
+
 ## 0.9.75 changes
 
 Modern UI for the screens that only had Crystal's own look (MODERN UI and
