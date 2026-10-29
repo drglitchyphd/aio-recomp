@@ -307,6 +307,11 @@ return function(mod)
   function Style.footerHeight()
     local fh=footerFont():getHeight()
     local vpad=math.max(6,math.floor(fh*.45+.5))
+    -- 0.9.69: a close button in a bottom corner keeps its full size with a
+    -- margin all round, so the band grows to hold it
+    if Style.closeCorner and Style.closeCorner()~="tr" then
+      return math.max(fh+vpad*2,math.floor(math.max(26,fh*1.9)+.5)+2*math.max(8,math.floor(fh*.55+.5)))
+    end
     return fh+vpad*2
   end
 
@@ -391,11 +396,23 @@ return function(mod)
     local hints,parsedInfo
     if type(spec.hints)=="string" then hints,parsedInfo=Style.parseHints(spec.hints)
     else hints=spec.hints or {} end
+    -- 0.9.69: with the touch controls up, the floating B is hidden while a
+    -- menu window shows its close / back button, so the footer stops
+    -- telling the player to press it
+    local touchUp=false
+    do
+      local touch=mod.exports and mod.exports.touch
+      if type(touch)=="table" and type(touch.active)=="function" then
+        local okT,on=pcall(touch.active); touchUp=okT and on==true
+      end
+    end
     local copy={}
-    for i,hh in ipairs(hints) do
+    for _,hh in ipairs(hints) do
       local label=hh[2]
       if hh[1]=="B" then label="BACK" end
-      copy[i]={hh[1],label and tostring(label):upper() or nil}
+      if not (touchUp and hh[1]=="B") then
+        copy[#copy+1]={hh[1],label and tostring(label):upper() or nil}
+      end
     end
     hints=copy
     local info=spec.info or parsedInfo
@@ -469,6 +486,17 @@ return function(mod)
     if v=="br" or v=="bl" then return v end
     return "tr"
   end
+  -- the button in a footer corner: size, side inset and top
+  local function footerClose(y,h)
+    local fh=footerFont():getHeight()
+    local bandH=Style.footerHeight()
+    local size=math.floor(math.max(26,fh*1.9)+.5)
+    size=math.min(size,math.floor(bandH*.8))
+    -- a little above centre: the window frame eats into the band's bottom
+    local gap=math.floor((bandH-size)*.42)
+    local inset=math.max(gap+8,math.floor(size*.5+.5))
+    return size,inset,(y and h) and (y+h-bandH+gap) or nil
+  end
   local function closeMetrics(x,y,w,h)
     local fh=footerFont():getHeight()
     local size=math.floor(math.max(26,fh*1.9)+.5)
@@ -476,11 +504,11 @@ return function(mod)
     local inset=math.max(5,math.floor(size*.24+.5))
     local corner=Style.closeCorner()
     if corner~="tr" then
-      local bandH=Style.footerHeight()
-      size=math.min(size,math.floor(bandH-2))
-      local by=y+h-bandH+math.floor((bandH-size)/2)
-      if corner=="br" then return x+w-inset-size,by,size,inset end
-      return x+inset,by,size,inset
+      -- 0.9.69: a margin all round inside the footer band, so the button
+      -- clears the footer's divider line and the window's rounded corner
+      local size2,inset2,by=footerClose(y,h)
+      if corner=="br" then return x+w-inset2-size2,by,size2,inset2 end
+      return x+inset2,by,size2,inset2
     end
     return x+w-inset-size,y+inset,size,inset
   end
@@ -498,9 +526,7 @@ return function(mod)
   footerReserve=function()
     local corner=Style.closeCorner()
     if corner=="tr" then return 0,nil end
-    local fh=footerFont():getHeight()
-    local size=math.min(math.floor(math.max(26,fh*1.9)+.5),math.floor(Style.footerHeight()-2))
-    local inset=math.max(5,math.floor(size*.24+.5))
+    local size,inset=footerClose()
     return size+inset*2,(corner=="bl") and "left" or "right"
   end
 

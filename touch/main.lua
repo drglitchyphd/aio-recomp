@@ -168,10 +168,6 @@ return function(mod)
         .. "let go on its own row to open its STATS. Hold a battle HUD card or a Pokemon on the "
         .. "in-battle party screen for its info; hold a PACK item to pin it to the KEY ITEM WHEEL. "
         .. "On the overworld, hold START for the QUICK MENU and SELECT for the KEY ITEM WHEEL." },
-    { key = "touchHotbar", label = "KEY BAR (...)", type = "toggle", default = true,
-      help = "Shows the engine's round \"...\" button (its quick key bar) at the top right. "
-        .. "OFF hides it and stops it catching touches; the engine's own KEY BAR setting only "
-        .. "applies after a full restart." },
     { key = "touchRunDrag", label = "FAR DRAG HOLDS B", type = "toggle", default = false,
       help = "On the overworld, dragging well past the ring also holds B (for running mods)." },
     -- touchMouse (MOUSE TEST MODE) stays readable but is not listed: a
@@ -205,7 +201,9 @@ return function(mod)
     if type(L) ~= "table" then return L end
     -- 0.9.60: KEY BAR OFF moves the engine's "..." hotbar button off-screen
     -- too (it is drawn and hit-tested from this same layout)
-    local barOff = opt("touchHotbar", true) == false
+    -- 0.9.69: the KEY BAR row is gone (the engine's own KEY BAR setting
+    -- works); the bar is never hidden from here any more
+    local barOff = false
     if not takeover() and not barOff then return L end
     if hiddenFor ~= L or hiddenBar ~= barOff then
       hidden = {}
@@ -511,7 +509,8 @@ return function(mod)
   -- 0.9.45 HOLD TO REPEAT: in a menu, a joystick direction held past
   -- REPEAT_DELAY keeps stepping instead of one row per push. gen2-aio 0.9.52:
   -- slowed from 0.35 s / 11 rows a second, which overshot rows on the Fold.
-  local REPEAT_DELAY, REPEAT_INTERVAL = 0.5, 0.18
+  -- 0.9.69: and again, to about 4 rows a second
+  local REPEAT_DELAY, REPEAT_INTERVAL = 0.5, 0.24
   local function repeatDirs(game)
     if topState(game) == nil then return end   -- overworld walking holds natively
     for _, g in pairs(pointers) do

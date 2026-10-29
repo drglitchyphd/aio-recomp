@@ -5365,8 +5365,10 @@ return function(mod)
       return nil
     end
     menu._qolHoldFrames = (menu._qolHoldFrames or 0) + 1
-    local after = menu._qolHoldFrames - (opts.delay or 16)
-    if after >= 0 and after % (opts.rate or 4) == 0 then return dir end
+    -- gen2-aio 0.9.69: 22 frames before the first repeat, then every 8
+    -- (about 7 rows a second; every 4 overshot rows on a phone)
+    local after = menu._qolHoldFrames - (opts.delay or 22)
+    if after >= 0 and after % (opts.rate or 8) == 0 then return dir end
     return nil
   end
   mod.exports.holdNav = holdNav
