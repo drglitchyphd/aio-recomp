@@ -91,4 +91,15 @@ check(moved.y < shown.b.y - shown.b.r, "clear of a HUD card: above the START / S
 parent._kimArenaHudRects = nil
 ready = false
 check(tmod.exports.shownButtons(tgame).ball == nil, "gone when no throw is possible")
+-- 0.9.71: none of the floating buttons on the naming keyboard (they hid
+-- under it and still caught its R key)
+local Naming = {}; Naming.__index = Naming
+package.preload["src.ui.gen2.NamingScreen"] = function() return Naming end
+top = setmetatable({}, Naming)
+check(next(tmod.exports.shownButtons(tgame)) == nil, "naming keyboard: no floating buttons")
+log = {}
+local bz = (function() top = { isBattle = true, battle = {}, phase = "menu" }; return tmod.exports.shownButtons(tgame).b end)()
+top = setmetatable({}, Naming)
+ptr(function() log[#log + 1] = "next" end, tgame, { phase = "pressed", x = bz.x, y = bz.y, id = 2, source = "touch" })
+check(not table.concat(log, ","):find("press:b"), "naming keyboard: B's spot does not press B")
 print(("quick ball button: %d checks PASS"):format(n))

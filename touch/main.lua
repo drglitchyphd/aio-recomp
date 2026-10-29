@@ -451,7 +451,16 @@ return function(mod)
     local s = spots[1]
     return { kind = "ball", btn = "ball", label = "BALL", x = s[1], y = s[2], r = r }
   end
+  -- 0.9.71: the naming keyboard covers the whole screen (the floating
+  -- buttons were hidden under it but still caught taps -- its R key) and has
+  -- its own lower / DEL / END keys, so none of them show there
+  local function isNaming(state)
+    local ok, Naming = pcall(require, "src.ui.gen2.NamingScreen")
+    local mt = getmetatable(state)
+    return ok and type(Naming) == "table" and mt ~= nil and (mt == Naming or mt.__index == Naming)
+  end
   local function shownButtons(game)
+    if isNaming(topState(game)) then return {} end
     local all = buttons()
     local cr, state = closeTarget(game)
     if not cr then
@@ -691,8 +700,21 @@ return function(mod)
     end
     local cr, cstate = closeTarget(game)
     if cr and inClose(cr, x, y) then
-      pointers[ev.id] = { kind = "close", rect = cr, state = cstate }
-      return
+      -- 0.9.71: the close button's generous margin gives way to a key or
+      -- row of the screen itself (the naming keyboard's top-right letters
+      -- sat under it); on the button's own square it always wins
+      local onButton = x >= cr.x and x <= cr.x + cr.w and y >= cr.y and y <= cr.y + cr.h
+      local under = false
+      if not onButton then
+        local st = screenTargets(game)
+        for _, c in ipairs(st and st.cells or {}) do
+          if x >= c.x and x <= c.x + c.w and y >= c.y and y <= c.y + c.h then under = true; break end
+        end
+      end
+      if not under then
+        pointers[ev.id] = { kind = "close", rect = cr, state = cstate }
+        return
+      end
     end
     local st, sstate, smode = screenTargets(game)
     if st and st.freeScroll then
