@@ -104,14 +104,34 @@ return function(host)
     return page
   end
 
-  -- BUILD 3D CACHE in GEN2-AIO > ADVANCED
+  -- BUILD 3D CACHE in GEN2-AIO > ADVANCED. 0.9.82: always listed while the
+  -- 3D engine is loaded; when a build cannot run, the row says OFF and why
+  -- (it used to vanish, which read as "missing")
+  local function whyNot(game)
+    local CB = voxelModule("CacheBuilder")
+    if not CB then return "the 3D world is not loaded" end
+    if type(CB.whyNot) ~= "function" then return (usable(game) and nil) or "the disk cache is off" end
+    local ok, why = pcall(CB.whyNot, worldOf(game))
+    if not ok then return tostring(why) end
+    return why
+  end
+  local BUILD_HELP = "Build every area's 3D scene now and keep it on storage, so no area has to "
+    .. "build while you play. Takes a few minutes; you can stop and carry on later."
   Hub.extras.voxelCache = function(game)
-    if not usable(game) then return {} end
-    return { { id = "gen2-aio:voxel_cache", label = "BUILD 3D CACHE",
-      help = "Build every area's 3D scene now and keep it on storage, so no area has to "
-        .. "build while you play. Takes a few minutes; you can stop and carry on later.",
-      value = function() return Hub.read("voxelCacheDone") == buildId() and "BUILT" or nil end,
-      activate = function(g) VC.open(g or game) end } }
+    if not voxelModule("CacheBuilder") then return {} end
+    local why = whyNot(game)
+    local row = { id = "gen2-aio:voxel_cache", label = "BUILD 3D CACHE" }
+    if why then
+      row.help = "Not available: " .. why .. "."
+        .. (why:find("VOXEL DISK CACHE", 1, true) and " Turn it ON above to use this." or "")
+      row.value = function() return "OFF" end
+      row.activate = function() end
+    else
+      row.help = BUILD_HELP
+      row.value = function() return Hub.read("voxelCacheDone") == buildId() and "BUILT" or nil end
+      row.activate = function(g) VC.open(g or game) end
+    end
+    return { row }
   end
 
   -- the one-time question, once the player has been free in the world a moment

@@ -158,4 +158,13 @@ voxelActive = false
 assert(loadfile("lib/gen2_aio/voxel_cache.lua"))()({ mod = mod2 })
 for _ = 1, 6 do tick() end
 check(#pages == 0, "not asked with the 3D world off")
+-- 0.9.82: the row stays listed when a build cannot run, and says why
+S.whyOff = function() return "VOXEL DISK CACHE is OFF" end
+local off = Hub.extras.voxelCache(game)[1]
+check(off and off.value() == "OFF" and off.help:find("VOXEL DISK CACHE is OFF", 1, true), "listed as OFF with the reason")
+local before = #stack.states
+off.activate(game)
+check(#stack.states == before, "an OFF row opens nothing")
+S.whyOff = function() return nil end
+check(Hub.extras.voxelCache(game)[1].value() ~= "OFF", "back on once the cache works")
 print(("voxel cache: %d checks PASS"):format(n))
