@@ -1,10 +1,30 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.69)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.70)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.70 (2026-10-29)
+
+- quick_ball.lua:
+  - BattleState is wrapped once per process. `live.mod` and `export(m)`
+    rebind each session's `_kimArenaQuickBallReady`, `_kimArenaQuickBallInfo`
+    ({id, count}) and `_kimArenaQuickBallThrow` (sets
+    `_aioQuickBallPending`, which BS.update consumes).
+  - `ready()` = eligible and slideFrame >= 72.
+- hd_ball.lua sets `mod._kimArenaBallIcon` (icon, quad) every session.
+- touch:
+  - `ballZone(b)` tries three spots in turn: beside B, above the pills,
+    below B. It takes the first one clear of `_kimArenaHudRects` (enemy and
+    player cards, and the panel from panelTop down).
+  - A press on the ball zone calls the throw hook and swallows the pointer.
+  - `drawBallButton` draws the HD icon (or a vector ball) plus a count
+    badge; it is dimmed when there is no ball to throw.
+  - The SELECT pill's BALL label is gone. `mod._kimArenaHudRects` is now
+    read by normal lookup, because the touch proxy inherits it.
+- Tests: `tests/quick_ball_button.lua` (16 checks).
 
 ## 0.9.69 (2026-10-29)
 

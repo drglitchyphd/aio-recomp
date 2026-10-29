@@ -13,6 +13,8 @@ return function(host)
   if not (okV and type(View) == "table" and type(View.drawObjects) == "function") then return nil end
   if View._kimArenaHdBall then
     View._kimArenaHdBall.live.mod = mod
+    -- 0.9.70: KIM Touch's quick-ball button draws the same icons
+    rawset(mod, "_kimArenaBallIcon", View._kimArenaHdBall.icon)
     return View._kimArenaHdBall
   end
   local live = { mod = mod }
@@ -135,6 +137,7 @@ return function(host)
 
   local api = { icon = icon, live = live }
   View._kimArenaHdBall = api
+  rawset(mod, "_kimArenaBallIcon", icon)
   if log then log("info", "Gen2-AIO: HD Poke Balls installed") end
   return api
 end

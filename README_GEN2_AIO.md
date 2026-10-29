@@ -57,6 +57,18 @@ GitHub and overlay patches are not the updater's install package. The custom
 index is independent of the community index; a community listing would require
 a separate submission.
 
+## 0.9.70 changes
+
+- Touch: a Poke Ball button in wild battles. While you can throw (the
+  FIGHT / PKMN / PACK / RUN menu of a wild battle), a round button beside B
+  shows the ball a throw would use, as its HD icon with how many you have.
+  Tap it to throw. It picks the last ball you threw if any are left, never
+  the MASTER BALL. It sits clear of the battle HUD's cards and panel.
+- SELECT on the touch controls is plain SELECT again; it no longer turns into
+  BALL. SELECT on a controller still throws the quick ball.
+- Fixed: the quick ball's hooks were lost after an Android relaunch back to
+  the launcher and Play.
+
 ## 0.9.69 changes
 
 - Menu close / back button in a bottom corner (MENU BUTTON = BOTTOM RIGHT /
