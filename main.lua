@@ -1262,7 +1262,9 @@ return function(mod)
       -- 0.9.76: STOP EVOLUTION / a B press that is remembered
       "lib/gen2_aio/evolution_stop.lua",
       -- 0.9.77: QUICK SELL (SELL VALUABLES / ALL) at the Poke Mart
-      "lib/gen2_aio/quick_sell.lua" }) do
+      "lib/gen2_aio/quick_sell.lua",
+      -- 0.9.77: BUILD 3D CACHE (the one-time question and ADVANCED row)
+      "lib/gen2_aio/voxel_cache.lua" }) do
     local f = loadOwn(rel)
     if type(f) == "function" then
       local okM, err = pcall(f, { mod = mod })
