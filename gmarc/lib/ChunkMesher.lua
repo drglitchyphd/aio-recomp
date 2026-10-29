@@ -148,8 +148,23 @@ end
 -- skipping ~a million short-lived Lua tables per route and LOVE's slow
 -- table-by-table vertex upload.
 
+-- gen2-aio 0.9.84: both sinks answer capture() -- the vertex bytes, the
+-- uint32 index bytes when the build grouped them (nil = plain quad order)
+-- and the visibility groups -- for the disk cache (MeshStore), which no
+-- longer needs ffi: on the device the TABLE sink is the one that builds.
+local function groupsOut(groups)
+  if not groups then return nil end
+  local out = {}
+  for i, g in ipairs(groups) do
+    local b = g.bounds
+    out[i] = { first = g.first, count = g.count, bounds = { b[1], b[2], b[3], b[4], b[5], b[6] } }
+  end
+  return out
+end
+
 local function newTableSink()
   local verts, indices, quads = {}, {}, 0
+  local groups
   return {
     push = function(c, uv, shade)
       local flat = type(shade) ~= "table"
@@ -164,8 +179,15 @@ local function newTableSink()
     results = function()
       return verts, indices, quads
     end,
+    capture = function()
+      if quads == 0 then return nil end
+      local S = V.require("MeshStore")
+      return { n = #verts, verts = S.packVerts(verts, #verts),
+               indices = groups and S.packIndices(indices, #indices) or nil,
+               groups = groupsOut(groups) }
+    end,
     finish = function()
-      local Visibility,groups
+      local Visibility
       if quads>=4096 then
         Visibility=V.require('MeshVisibility')
         groups=Visibility.index(verts,quads,indices,Budget.check)
@@ -179,18 +201,13 @@ end
 
 local TRI_ORDER = { 1, 2, 3, 1, 3, 4 }
 
-local function newFfiSink(fromPtr, fromN)
+local function newFfiSink()
   local cap = 4096 * 4
   local buf = ffi.new("float[?]", cap * 6)
   local n = 0
-  -- gen2-aio: a sink restored from the disk cache (MeshStore) starts full
-  local keepAlive
-  if fromPtr then
-    keepAlive = fromPtr
-    buf = ffi.cast("float*", fromPtr)
-    n = fromN or 0
-    cap = n
-  end
+  -- gen2-aio 0.9.84: what finish() uploaded, kept for capture() while
+  -- `sink.keep` is set (a build the disk cache will persist)
+  local keptIndices, keptGroups
   local sink
   sink = {
     push = function(c, uv, shade)
@@ -213,7 +230,12 @@ local function newFfiSink(fromPtr, fromN)
       end
       n = n + 4
     end,
-    raw = function() return buf, n end,
+    capture = function()
+      if n == 0 then return nil end
+      local idx = keptIndices and keptIndices:getString() or nil
+      if keptIndices then keptIndices:release(); keptIndices = nil end
+      return { n = n, verts = ffi.string(buf, n * 24), indices = idx, groups = groupsOut(keptGroups) }
+    end,
     finish = function()
       if n == 0 then return nil end
       -- upload in slices with budget ticks between: a route-sized mesh
@@ -289,7 +311,8 @@ local function newFfiSink(fromPtr, fromN)
           end
         end
         m:setVertexMap(indices, 'uint32')
-        indices:release()
+        if sink.keep and groups then keptIndices, keptGroups = indices, groups
+        else indices:release() end
         if groups then V.require('MeshVisibility').register(m,groups) end
         return m
       end)
@@ -1211,8 +1234,11 @@ end
 
 
 -- ------------------------------------------------- gen2-aio disk cache
--- (MeshStore). A finished build is captured, packed and written by a
--- worker thread; a later build of the same inputs restores from it.
+-- (MeshStore). A finished build is captured, packed and written through
+-- mod.cache; a later build of the same inputs restores from it.
+-- gen2-aio 0.9.84: no ffi anywhere on this path (the sandbox denies it on
+-- the device): sections are byte strings from love.data.pack, and meshes
+-- come back through ByteData uploads (MeshStore.mesh).
 local MeshStore
 local function store()
   if MeshStore == nil then
@@ -1222,50 +1248,30 @@ local function store()
   return MeshStore or nil
 end
 
--- quads (grass / flowers / figures / cut trees) -> float[] in quadsMesh's
--- vertex order, and back to a mesh
-local function flatQuads(quads)
+-- quads (grass / flowers / figures) -> vertex bytes in quadsMesh's order
+local function quadBytes(quads)
   local n = #quads * 4
   if n == 0 then return nil, 0 end
-  local f = ffi.new("float[?]", n * 6)
-  local o = 0
+  local f, o = {}, 0
   for _, q in ipairs(quads) do
     Budget.tick()
     for i = 1, 4 do
       local c = q[i]
       local uv = q.uv and q.uv[i] or { q.u, q.v }
-      f[o], f[o+1], f[o+2] = c[1], c[2], c[3]
-      f[o+3], f[o+4] = uv[1], uv[2]
-      f[o+5] = type(q.shade) == "table" and q.shade[i] or q.shade or 1
+      f[o+1], f[o+2], f[o+3] = c[1], c[2], c[3]
+      f[o+4], f[o+5] = uv[1], uv[2]
+      f[o+6] = type(q.shade) == "table" and q.shade[i] or q.shade or 1
       o = o + 6
     end
   end
-  return f, n
-end
-local function meshFromFlat(ptr, n)
-  if not ptr or not n or n <= 0 then return nil end
-  local ok, mesh = pcall(function()
-    local m = love.graphics.newMesh(Voxel3D.FORMAT, n, "triangles", "static")
-    local data = love.data.newByteData(n * 24)
-    ffi.copy(data:getFFIPointer(), ptr, n * 24)
-    m:setVertices(data); data:release()
-    local idx = love.data.newByteData(n / 4 * 6 * 4)
-    local ip = ffi.cast("uint32_t*", idx:getFFIPointer())
-    for q = 0, n / 4 - 1 do
-      for k = 1, 6 do ip[q*6+k-1] = q*4 + TRI_ORDER[k] - 1 end
-      Budget.tick()
-    end
-    m:setVertexMap(idx, "uint32"); idx:release()
-    return m
-  end)
-  return ok and mesh or nil
+  return store().packFloats(f, o), n
 end
 
 local offReported = false
 local function storeKey(map, job)
   local S = store()
-  if not (S and S.enabled() and ffi) then
-    -- gen2-aio 0.9.80: say once why nothing is cached (setting, worker)
+  if not (S and S.enabled()) then
+    -- gen2-aio 0.9.80: say once why nothing is cached (setting, storage)
     if S and S.report and not offReported then offReported = true; pcall(S.report) end
     return nil
   end
@@ -1274,57 +1280,48 @@ local function storeKey(map, job)
   return S.key(map, job.slot .. inst, job.masks)
 end
 
--- capture everything a restore needs, then hand it to the writer
+-- capture everything a restore needs, pack it and write it (one file)
 local function persist(name, map, sink, waterSink, mesh)
   local S = store()
-  if not (S and name and sink.raw) then return end
+  if not (S and name and sink.capture) then return end
   local St = Structures.forMap(map)
-  local sections, meta = {}, { version = 1 }
-  local function add(sec, ptr, count)
-    if ptr and count and count > 0 then
-      sections[#sections + 1] = { name = sec, ptr = ptr, bytes = count * 24 }
-      return count
-    end
-    return 0
+  local w = S.writer()
+  local meta = { version = 2 }
+  -- a terrain-sized mesh: vertex bytes plus, when the build grouped its
+  -- triangles for visibility, the reordered indices and the groups
+  local function addMesh(sec, s)
+    local cap = s and s.capture and s.capture()
+    if not (cap and cap.n > 0) then return nil end
+    w:add(sec, cap.verts)
+    if cap.indices then w:add(sec .. "Idx", cap.indices) end
+    return { count = cap.n, indexed = cap.indices ~= nil, groups = cap.groups }
   end
-  local b, n = sink.raw()
-  meta.main = add("main", b, n)
-  if waterSink and waterSink.raw then
-    local wb, wn = waterSink.raw(); meta.water = add("water", wb, wn)
-  end
+  meta.main = addMesh("main", sink)
+  if not meta.main then return end
+  meta.water = addMesh("water", waterSink)
   meta.capacity = #(St.assetStamps or {})
-  local TI = package.loaded and V.require("TreeInstances")
+  local TI = Instances or V.require("TreeInstances")
   local models = mesh and TI and TI.capture and TI.capture(mesh)
   if models then
     meta.models = {}
     for i, m in ipairs(models) do
-      local nv = #m.verts
-      local f = ffi.new("float[?]", nv * 6)
-      for j, v in ipairs(m.verts) do
-        local o = (j - 1) * 6
-        f[o], f[o+1], f[o+2], f[o+3], f[o+4], f[o+5] = v[1], v[2], v[3], v[4], v[5], v[6]
-        Budget.tick()
-      end
-      add("model" .. i, f, nv)
-      sections[#sections].keep = f
-      meta.models[i] = { count = nv, positions = m.positions, boxes = m.boxes }
+      w:add("model" .. i, S.packVerts(m.verts))
+      meta.models[i] = { count = #m.verts, positions = m.positions, boxes = m.boxes }
       Budget.tick()
     end
     if TI.forget then TI.forget(mesh) end
   end
-  local gf, gn = flatQuads(St.grassQuads or {}); meta.grass = add("grass", gf, gn)
-  if gf then sections[#sections].keep = gf end
-  local ff, fn = flatQuads(St.flowerQuads or {}); meta.flowers = add("flowers", ff, fn)
-  if ff then sections[#sections].keep = ff end
+  local gb, gn = quadBytes(St.grassQuads or {}); w:add("grass", gb); meta.grass = gn
+  local fb, fn = quadBytes(St.flowerQuads or {}); w:add("flowers", fb); meta.flowers = fn
   meta.figures = {}
   for i, fig in ipairs(St.figures or {}) do
-    local f, c = flatQuads(fig.quads or {})
-    if f then
-      add("fig" .. i, f, c); sections[#sections].keep = f
-      local w = 0
+    local b, c = quadBytes(fig.quads or {})
+    if b then
+      w:add("fig" .. i, b)
+      local wd = 0
       for _, q in ipairs(fig.quads) do for k = 1, 4 do
-        local x = q[k] and q[k][1]; if x and x > w then w = x end end end
-      meta.figures[#meta.figures + 1] = { sec = "fig" .. i, count = c, wx = fig.wx, wz = fig.wz, y = fig.y, w = w }
+        local x = q[k] and q[k][1]; if x and x > wd then wd = x end end end
+      meta.figures[#meta.figures + 1] = { sec = "fig" .. i, count = c, wx = fig.wx, wz = fig.wz, y = fig.y, w = wd }
     end
   end
   local LC = V.require("LiveCutProps")
@@ -1335,49 +1332,55 @@ local function persist(name, map, sink, waterSink, mesh)
       for _, st in ipairs(t.stamps) do
         k = k + 1
         local flat = st.flat; st.flat = nil
-        local nv = #flat / 6
-        local f = ffi.new("float[?]", #flat)
-        for j = 1, #flat do f[j - 1] = flat[j]; if j % 64 == 0 then Budget.tick() end end
-        add("cut" .. k, f, nv); sections[#sections].keep = f
-        st.sec, st.count = "cut" .. k, nv
+        w:add("cut" .. k, S.packFloats(flat, #flat))
+        st.sec, st.count = "cut" .. k, #flat / 6
       end
     end
     meta.cut = snap
   end
   meta.support = Structures.supportSnapshot and Structures.supportSnapshot(map) or nil
-  local okP, data = pcall(S.pack, meta, sections)
-  if okP and data then S.save(name, data) end
+  S.save(name, w:finish(meta))
 end
 
--- restore a slot from a blob; returns mesh, water (or nil when unusable)
+-- a terrain-sized mesh back from its sections
+local function storedMesh(rd, sec, info)
+  if not (info and (info.count or 0) > 0) then return nil end
+  local idx = info.indexed and rd:string(sec .. "Idx") or nil
+  if info.indexed and not idx then return nil end
+  local m = store().mesh(Voxel3D.FORMAT, rd:frames(sec), info.count, idx)
+  if m and info.groups and m.setDrawRange then
+    V.require("MeshVisibility").register(m, info.groups)
+  end
+  return m
+end
+
+-- restore a slot from a blob; returns mesh, water (or nil, why when unusable)
 local function restore(blob, map, c, job)
   local S = store()
-  local meta, sec = S.unpack(blob)
-  if not meta or meta.version ~= 1 then return nil end
-  local mp, _ = sec("main")
-  local mesh = mp and newFfiSink(mp, meta.main).finish() or nil
-  if not mesh then return nil end
-  local water
-  local wp = sec("water")
-  if wp and (meta.water or 0) > 0 then water = newFfiSink(wp, meta.water).finish() end
+  local meta, rd = S.open(blob)
+  if not meta then return nil, rd end
+  if meta.version ~= 2 then return nil, "format " .. tostring(meta.version) end
+  local mesh = storedMesh(rd, "main", meta.main)
+  if not mesh then return nil, "main mesh" end
+  local water = storedMesh(rd, "water", meta.water)
   if meta.models then
     local TI = V.require("TreeInstances")
     local models = {}
     for i, m in ipairs(meta.models) do
-      models[i] = { flat = sec("model" .. i), count = m.count, positions = m.positions, boxes = m.boxes }
+      models[i] = { bytes = rd:string("model" .. i), count = m.count, positions = m.positions, boxes = m.boxes }
     end
     if not TI.restore(mesh, models, Voxel3D.FORMAT, meta.capacity) then
       releaseMesh(mesh); if water and water.release then pcall(water.release, water) end
-      return nil
+      return nil, "tree models"
     end
   end
   if c.grass == nil or c.flowers == nil or c.figures == nil then
-    swapSlot(c, "grass", meshFromFlat(sec("grass"), meta.grass) or false)
-    swapSlot(c, "flowers", meshFromFlat(sec("flowers"), meta.flowers) or false)
+    swapSlot(c, "grass", S.mesh(Voxel3D.FORMAT, rd:string("grass"), meta.grass) or false)
+    swapSlot(c, "flowers", S.mesh(Voxel3D.FORMAT, rd:string("flowers"), meta.flowers) or false)
     releaseFigures(c.figures)
     local figs = {}
     for _, f in ipairs(meta.figures or {}) do
-      local m = meshFromFlat(sec(f.sec), f.count)
+      local m = S.mesh(Voxel3D.FORMAT, rd:string(f.sec), f.count)
       if m then figs[#figs + 1] = { mesh = m, wx = f.wx, wz = f.wz, y = f.y, w = f.w } end
     end
     c.figures = figs
@@ -1385,16 +1388,7 @@ local function restore(blob, map, c, job)
   if meta.cut then
     for _, t in ipairs(meta.cut.targets or {}) do
       for _, st in ipairs(t.stamps or {}) do
-        local p, bytes = sec(st.sec)
-        local flat = {}
-        if p then
-          local fp = ffi.cast("float*", p)
-          for j = 0, (st.count or 0) * 6 - 1 do
-            flat[j + 1] = fp[j]
-            if j % 64 == 0 then Budget.tick() end
-          end
-        end
-        st.flat = flat
+        st.bytes = rd:string(st.sec) or ""
       end
     end
     V.require("LiveCutProps").restore(map.id, meta.cut)
@@ -1417,34 +1411,32 @@ local function runJob(job)
   local map = job.map
   local c = entry(job.id)
   -- gen2-aio: restore from the disk cache when this exact build exists
+  -- gen2-aio 0.9.84: one synchronous mod.cache read (no worker to wait on)
   local storeName = storeKey(map, job)
   if storeName then
-    local ticket = store().begin(storeName)
-    if ticket then
-      local blob
-      repeat
-        blob = store().result(ticket)
-        if blob == nil then coroutine.yield() end
-      until blob ~= nil
-      if blob then
-        jobPhase = "restore"; mark("restore")
-        local okR, mesh, water = pcall(restore, blob, map, c, job)
-        pcall(blob.release, blob)
-        if okR and mesh then
-          job.cacheHit=true
-          if (gen[job.id] or 0) ~= job.gen then
-            releaseMesh(mesh)
-            if water and water.release then pcall(water.release, water) end
-            return
-          end
-          swapSlot(c, job.slot, mesh)
-          swapSlot(c, waterSlot(job.slot), water or false)
-          if c.stale then
-            c.stale[job.slot] = nil; c.stale.aux = nil
-            if not (c.stale.full or c.stale.body) then c.stale = nil end
-          end
+    local blob = store().load(storeName)
+    if blob then
+      jobPhase = "restore"; mark("restore")
+      local okR, mesh, water = pcall(restore, blob, map, c, job)
+      blob = nil
+      if not (okR and mesh) then
+        -- an old-format or damaged file: dropped, and this build rewrites it
+        store().reject(storeName, okR and water or mesh)
+      end
+      if okR and mesh then
+        job.cacheHit=true
+        if (gen[job.id] or 0) ~= job.gen then
+          releaseMesh(mesh)
+          if water and water.release then pcall(water.release, water) end
           return
         end
+        swapSlot(c, job.slot, mesh)
+        swapSlot(c, waterSlot(job.slot), water or false)
+        if c.stale then
+          c.stale[job.slot] = nil; c.stale.aux = nil
+          if not (c.stale.full or c.stale.body) then c.stale = nil end
+        end
+        return
       end
     end
   end
@@ -1470,6 +1462,8 @@ local function runJob(job)
   jobPhase = "geometry"; mark("aux")
   local sink = newSink()
   local waterSink = newSink()
+  -- the ffi sink keeps its uploaded indices for persist() to capture
+  sink.keep, waterSink.keep = storeName ~= nil, storeName ~= nil
   local instances=newInstances(map);job.instances=instances
   runGeometry(map, job.slot == "body", job.masks, sink, waterSink,instances)
   mark("upload")

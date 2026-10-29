@@ -127,20 +127,17 @@ end
 function T.forget(mesh)
  for _,m in ipairs(owners[mesh] or {})do m.verts=nil end
 end
--- models: { { flat=float*, count=vertices, positions={...}, boxes={...} } }
+-- models: { { bytes=vertex bytes (string), count=vertices, positions={...}, boxes={...} } }
+-- gen2-aio 0.9.84: vertex BYTES, not an ffi pointer (the mod sandbox denies
+-- ffi); the mesh comes from MeshStore.mesh -- a ByteData upload plus the
+-- shared quad index, no per-vertex Lua.
 function T.restore(mesh,models,format,capacity)
  if not(mesh and T.available())then return false end
  local list={}
  for _,md in ipairs(models)do
   local ok=pcall(function()
    local n=md.count
-   local m=love.graphics.newMesh(format,n,'triangles','static')
-   local data=love.data.newByteData(n*24)
-   require('ffi').copy(data:getFFIPointer(),md.flat,n*24)
-   m:setVertices(data);data:release()
-   local idx={}
-   for q=0,n/4-1 do local b=q*4;for _,i in ipairs({1,2,3,1,3,4})do idx[#idx+1]=b+i end end
-   m:setVertexMap(idx)
+   local m=assert(V.require('MeshStore').mesh(format,md.bytes,n))
    local buffer=love.graphics.newMesh({{'InstanceOffset','float',3}},math.max(capacity or 1024,#md.positions,1),'points','stream')
    m:attachAttribute('InstanceOffset',buffer,'perinstance')
    list[#list+1]={mesh=m,buffer=buffer,positions=md.positions,boxes=md.boxes,visible={},vertices=n}
