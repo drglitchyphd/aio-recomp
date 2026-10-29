@@ -57,6 +57,31 @@ GitHub and overlay patches are not the updater's install package. The custom
 index is independent of the community index; a community listing would require
 a separate submission.
 
+## 0.9.73 changes
+
+New PC box screen (Bill's PC: WITHDRAW, DEPOSIT and MOVE PKMN), with MODERN UI on.
+
+- All boxes as one paged grid: PAGE n / 14 with arrows and tappable dots,
+  and no box names. Each page is a 5 x 4 grid of Pokemon in Kanto in Motion
+  HD sprites. With MENU SPRITES = VANILLA or no HD art, it falls back to the
+  HD icon, then Crystal's own icon.
+- Your party as a strip across the top, with HP bars and levels.
+- The selected Pokemon's picture, level, HP, types and moves sit below the
+  grid (cover screen) or to its right (inner screen).
+- Tap a Pokemon (or press A) for Crystal's usual menu: WITHDRAW / DEPOSIT /
+  MOVE, STATS, RELEASE.
+- Drag a Pokemon to move it:
+  - party to page (deposit), page to party (withdraw), within a page, to
+    another page, or within the party;
+  - drag onto the arrow and hold to turn the page;
+  - Crystal's own rules still apply: box full, party full, last healthy
+    Pokemon, mail.
+- Buttons: the D-pad moves across the strip and the grid; LEFT / RIGHT at an
+  edge, or L / R, turns the page.
+- Deposit and withdraw work on whichever page you are looking at. The
+  current box set in Crystal's own PC menu is left alone.
+- MODERN UI or MENU UI off: Crystal's original box screen, unchanged.
+
 ## 0.9.72 changes
 
 - Nuzlocke ENCOUNTERS page (the encounter tracker), redesigned:
