@@ -293,7 +293,10 @@ function Structures.forMap(map)
         hideBareRing = hullRingOnly or nil,
         runs = {}, skip = {}, ground = {}, doorFold = {}, objectQuads = {},
         grassQuads = {}, flowerQuads = {}, roundStamps = {}, assetStamps = {}, figures = {} }
-  Buildings.build(S, map, pixels(tileset), perRow)
+  Budget.mark("s.pixels"); local px = pixels(tileset)
+  Budget.mark("s.buildings")
+  Buildings.build(S, map, px, perRow)
+  Budget.mark("s.doors")
   if map.tileset.id=='TILESET_KANTO'then V.require('RoomGeometry').build(S,map,keyOf)end
   if map.id=='TIN_TOWER_ROOF'then
     for _,stamp in ipairs(S.assetStamps)do stamp.my=48 end
@@ -364,16 +367,20 @@ function Structures.forMap(map)
       end
     end
   end
+  Budget.mark("s.cylinders")
   Structures.buildCylinders(S, map, x0, x1, y0, y1, groundTiles)
 
   -- ---- stairs: profile-pinned cells that render as real steps ----
+  Budget.mark("s.stairs")
   Structures.buildStairs(S, map, x0, x1, y0, y1)
+  Budget.mark("s.ladders")
   V.require("CaveLadders").build(S,map,keyOf)
   if map.tileset.id=='TILESET_TOWER'then V.require('TinTowerInterior').build(S,map,keyOf)end
 
   -- ---- bookcases: pinned shelves collapsed to one cell of depth ----
   -- The atlas comes along so the shelf front can carry its own measured
   -- relief: the panes it seals behind its black frames sink a voxel.
+  Budget.mark("s.bookcases")
   Structures.buildBookcases(S, map, x0, x1, y0, y1, pixels(tileset), perRow)
 
   -- ---- figures: a person drawn INTO furniture, lifted off it ----
@@ -382,6 +389,7 @@ function Structures.forMap(map)
   -- (Its own tiles are authored furniture or walkable floor either way, so
   -- no pass below would have claimed them -- but the repaint is what those
   -- passes should see, and this needs no pixel access to do it.)
+  Budget.mark("s.figures")
   Structures.buildFigures(S, map, x0, x1, y0, y1)
 
   -- ---- mounted: a thing drawn INTO a wall band, stood proud of it ----
@@ -390,6 +398,7 @@ function Structures.forMap(map)
   -- says is behind the object, so the wall band it was painted into keeps
   -- resolving as the wall it is -- without a second copy of the drawing
   -- flat on its face.
+  Budget.mark("s.mounted")
   Structures.buildMounted(S, map, x0, x1, y0, y1)
 
   Budget.mark("s.regions")

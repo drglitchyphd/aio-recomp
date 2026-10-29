@@ -1,10 +1,44 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.83)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.84)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.84 (2026-10-29)
+
+- gmarc/data/voxel_heights.lua:
+  - each building's `voxelEdits` is now the voxel editor's compact
+    "x,y,z,i,r,d;" string; it used to be generated code expanding every
+    edit at load;
+  - the TILESET_KANTO roof pass is now a per-template `editsFix(a, edits)`
+    (it also sets `spriteRoof`).
+  - Converted with a one-off script. The result is checked identical to
+    the old load: 441 templates, 2,408,364 edits, plus spriteRoof and every
+    other field.
+  - Load went from 2.1 s and 616 MB retained to 0.1 s and 32 MB.
+- Buildings `editsOf(t)` (exported as `Buildings.editsOf`):
+  - decodes on first `model()` with `Budget.tick` per edit;
+  - runs `editsFix` once and caches the list on the template;
+  - if the decode yields and another build finishes the template first,
+    that build's list wins.
+- Sandbox-safe MeshStore:
+  - backend is `V.mod.cache` + `love.data`, with no ffi, love.thread or
+    love.filesystem. Format is "KMS2" (LZ4 frames; the header is a Lua
+    literal);
+  - one synchronous read per job start, one write per persist;
+  - `voxel/index.txt` drives the old-build sweep;
+  - `TreeInstances.restore` / `LiveCutProps.restore` take bytes;
+  - persist no longer reads `package.loaded`, which is nil in the sandbox.
+  - Tests: `tests/mesh_store` (160 checks, incl. end to end through the
+    real engine Sandbox), `tests/voxel_cache` (40),
+    `tests/voxel_heights_lazy` (715).
+- Structures `forMap` marks sub-steps: s.pixels, s.doors, s.cylinders,
+  s.stairs, s.ladders, s.bookcases, s.figures, s.mounted. `voxel slow`
+  shows the top three steps.
+- Harness (synthetic 18x9 route): cold build 19.0 s -> 0.73 s; longest
+  slice 10.6 s -> 0.2 s.
 
 ## 0.9.83 (2026-10-29)
 

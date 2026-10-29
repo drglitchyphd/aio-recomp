@@ -1571,13 +1571,17 @@ local function pump(covered)
     local spent = (clock() - resumed) * 1000
     if spent > 50 then
       mark(step.at)
-      local top, topMs = step.at, 0
-      for name, t in pairs(step.spent) do
-        if t * 1000 > topMs then top, topMs = name, t * 1000 end
+      -- 0.9.84: the three largest steps (a long slice is often two at once)
+      local ranked = {}
+      for name, t in pairs(step.spent) do ranked[#ranked + 1] = { name, t * 1000 } end
+      table.sort(ranked, function(a, b) return a[2] > b[2] end)
+      local parts = {}
+      for i = 1, math.min(3, #ranked) do
+        if ranked[i][2] >= 5 then parts[#parts + 1] = ("%s %.0f"):format(ranked[i][1], ranked[i][2]) end
       end
       local d = V.mod and rawget(V.mod, "_kimArenaDiag")
       if d then
-        local line = ("%.0f ms in %s/%s %.0f ms (%s %s)"):format(spent, jobPhase, top, topMs,
+        local line = ("%.0f ms in %s: %s (%s %s)"):format(spent, jobPhase, table.concat(parts, ", "),
           tostring(pick.id), tostring(pick.slot))
         d("voxel slow", line)
         if spent > slowWorst then
