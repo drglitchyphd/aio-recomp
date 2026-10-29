@@ -712,6 +712,11 @@ return function(host)
     G.setScissor()
     self.maxScroll = math.max(0, (y + self.scroll) - bottom)
     if self.scroll > self.maxScroll then self.scroll = self.maxScroll end
+    -- gen2-aio: the whole list area drags too (section titles, the gaps and
+    -- the empty space below the last card). A swipe there used to fall
+    -- through to KIM Touch's D-pad ring: finger up = UP = the list moved the
+    -- wrong way. Added last, so the cards above still win their own taps.
+    if Tap and Tap.add then Tap.add(px + 4, top, pw - 8, bottom - top, function() end, false) end
     if Tap and Tap.finish then Tap.finish() end
     local seenN, caughtN, total = 0, 0, 0
     for _, sec in ipairs(self.sections) do
@@ -928,6 +933,8 @@ return function(host)
     { id = "travel", name = "FLY / DIG / ROPE" }, { id = "quick", name = "QUICK MENU" },
     -- 0.9.74: Nuzlocke's ENCOUNTERS page
     { id = "tracker", name = "NUZLOCKE TRACKER" },
+    -- 0.9.77: Bill's PC storage (the Modern box grid)
+    { id = "box", name = "PC BOX" },
   }
   local DEFAULT_HUD = "gear,dex,bike,items"
   -- read the editor's value where the editor writes it (the live game's
@@ -1012,8 +1019,27 @@ return function(host)
       if okR and on == false then
         return off("tracker", "TRACK", "This run has no\nNuzlocke rules.")
       end
-      return { id = "tracker", label = "TRACK", run = function(g)
+      -- 0.9.77: `badge` = this area's encounter is still open (the HUD dot)
+      local okO, open = pcall(nz.currentAreaOpen or function() return false end, game)
+      return { id = "tracker", label = "TRACK", badge = okO and open == true or nil, run = function(g)
         if mod.ui and mod.ui.push then pcall(mod.ui.push, g, "NuzlockeTrackerScreen") end
+      end }
+    elseif id == "box" then
+      -- 0.9.77: the box screen BILL's PC -> WITHDRAW opens (the Modern grid
+      -- walks the party and every box), the same storage START -> PC reaches
+      -- from anywhere. Boxes.canUsePc is the PC's own empty-party gate.
+      local Boxes = req("src.core.gen2.Boxes")
+      if Boxes and type(Boxes.canUsePc) == "function" then
+        local okU, can = pcall(Boxes.canUsePc, game.save)
+        if okU and not can then return off("box", "BOX", "You'll need a\nPOKeMON first.") end
+      end
+      return { id = "box", label = "BOX", run = function(g)
+        local Screens = req("src.ui.Screens")
+        if not (Screens and g.stack) then return end
+        pcall(Screens.push, g, "Gen2BoxMenu", {
+          save = g.save, mode = "withdraw",
+          onClose = function() g.stack:pop() end,
+        })
       end }
     end
     return nil

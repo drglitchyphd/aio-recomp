@@ -533,6 +533,20 @@ return function(mod)
       local rw=narrow and w-44*scale or w-listW-40*scale
       drawText("SELL",big,rx,ry,rw,"center",c.accent)
       drawText("Choose an item to sell.",body,rx,ry+60*scale,rw,"left",c.muted)
+      -- gen2-aio 0.9.77: SELL VALUABLES (lib/gen2_aio/quick_sell.lua)
+      local QS=mod._kimArenaQuickSell
+      if QS and not (mart.message or mart.confirm) then
+        local okV,list,sum=pcall(QS.valuables,mart)
+        if okV and type(list)=="table" and #list>0 then
+          local bh=math.max(48*scale,body:getHeight()+20*scale)
+          local by=ry+60*scale+body:getHeight()+24*scale
+          color(c.selected); G.rectangle("fill",rx,by,rw,bh,bh/2,bh/2)
+          color(c.frame or c.accent); G.setLineWidth(math.max(1.5,2*scale)); G.rectangle("line",rx,by,rw,bh,bh/2,bh/2)
+          drawFittedText(("SELL VALUABLES  ¥%d"):format(sum or 0),22*scale,rx+12*scale,
+            by+(bh-body:getHeight())/2,rw-24*scale,"center",c.text)
+          DTap.add(rx,by,rw,bh,function(st) pcall(QS.sellValuables,st) end,false)
+        end
+      end
     else
       local entries=mart.entries or {}
       local idx=tonumber(mart.index) or 1
@@ -607,6 +621,19 @@ return function(mod)
           rx+12*scale,qtyY+12*scale,rw-24*scale,"left",c.text)
         drawFittedText(("TOTAL   ¥%d"):format(total),23*scale,
           rx+12*scale,qtyY+54*scale,rw-24*scale,"left",c.accent)
+        -- gen2-aio 0.9.77: ALL sells the whole stack (the price question
+        -- follows on A, as usual)
+        local QS=mod._kimArenaQuickSell
+        if phase=="sellQuantity" and QS and not (mart.message or mart.confirm) then
+          local bh=math.max(44*scale,body:getHeight()+16*scale)
+          local by=qtyY+100*scale+10*scale
+          local bw=rw*.42
+          color(c.raised or c.surface); G.rectangle("fill",rx,by,bw,bh,bh/2,bh/2)
+          color(c.frame or c.accent); G.setLineWidth(math.max(1.5,2*scale)); G.rectangle("line",rx,by,bw,bh,bh/2,bh/2)
+          drawFittedText(("ALL (%d)"):format(tonumber(mart.qtyMax) or 0),21*scale,rx+8*scale,
+            by+(bh-body:getHeight())/2,bw-16*scale,"center",c.text)
+          DTap.add(rx,by,bw,bh,function(st) pcall(QS.all,st) end,false)
+        end
       end
     end
 
@@ -1075,6 +1102,36 @@ return function(mod)
     ["ask-next-mon"]=true,
   }
 
+  -- gen2-aio: the level-up STATS card.  The cart shows "X grew to level N!"
+  -- and only after A pops the stats box under the same line, so Modern UI
+  -- drew the line once in the battle panel and then again in this module's
+  -- own panel, with the card -- two screens, the second one higher.  The card
+  -- now goes up WITH the line: while the line is up and a leveled mon is
+  -- pending (pendingStatsMon) the card is drawn, and the stats-box phase
+  -- keeps the very same panel.  Mid-crawl lines of a multi-level gain (the
+  -- active mon's EXP bar has more levels to fill) stay card-less, like the
+  -- cart.
+  local function levelStatsMon(state)
+    if type(state)~="table" then return nil end
+    local p=tostring(state.phase or "")
+    if p=="stats-box" then return state.statsBoxMon end
+    local mon=state.pendingStatsMon
+    if p~="resolving" or type(mon)~="table" or state.expBurst then return nil end
+    if type(state.message)~="string" or state.message=="" then return nil end
+    if state.expAnim and (tonumber(state.shownLevel) or 0)<(tonumber(mon.level) or 0) then
+      return nil
+    end
+    return mon
+  end
+  -- The Modern battle panel (lib/gen2_modern_battle_ui.lua) owns the message
+  -- line whenever it is drawing this state; then only the card is drawn here.
+  local function battlePanelOwnsMessage(state)
+    local ui=mod.exports and mod.exports.gen2ModernBattleUi
+    if not (ui and type(ui.active)=="function") then return false end
+    local ok,on=pcall(ui.active,state)
+    return ok and on==true
+  end
+
   local function battleChoiceIndex(state)
     local p=tostring(state.phase or "")
     if p=="ask-nickname" then return state.nicknameIndex or 1 end
@@ -1094,24 +1151,32 @@ return function(mod)
     local dh=math.max(145*scale,body:getHeight()*2+52*scale)
     local x=sx+(sw-w)/2
     local y=sy+sh-dh-20*scale
-    panel(x,y,w,dh,c,.98)
+    local statsMon=levelStatsMon(state)
+    if not (statsMon and battlePanelOwnsMessage(state)) then
+      panel(x,y,w,dh,c,.98)
 
-    local lines={}
-    if type(state.messageLines)=="function" then
-      local ok,v=pcall(state.messageLines,state)
-      if ok and type(v)=="table" then lines=v end
-    end
-    if #lines==0 and state.message then
-      for line in tostring(state.message):gmatch("[^\n\r]+") do lines[#lines+1]=line end
-    end
-    for i,line in ipairs(lines) do
-      if i>2 then break end
-      drawText(line,body,x+28*scale,y+20*scale+(i-1)*(body:getHeight()+8*scale),
-        w-56*scale,"left",c.text)
+      local lines={}
+      if type(state.messageLines)=="function" then
+        local ok,v=pcall(state.messageLines,state)
+        if ok and type(v)=="table" then lines=v end
+      end
+      if #lines==0 and state.message then
+        for line in tostring(state.message):gmatch("[^\n\r]+") do lines[#lines+1]=line end
+      end
+      for i,line in ipairs(lines) do
+        if i>2 then break end
+        drawText(line,body,x+28*scale,y+20*scale+(i-1)*(body:getHeight()+8*scale),
+          w-56*scale,"left",c.text)
+      end
     end
 
-    if tostring(state.phase)=="stats-box" and state.statsBoxMon then
-      local mon=state.statsBoxMon
+    if statsMon then
+      local mon=statsMon
+      -- the line's own A (it waited for one) was the look at this card, so
+      -- the stats-box phase after it closes without a second press
+      if tostring(state.phase)=="resolving" and (tonumber(state.messageTimer) or 0)>0 then
+        state._aioLevelStatsSeen=mon
+      end
       local stats=mon.stats or {}
       local cardW=math.min(500*scale,sw*.32)
       local cardH=330*scale
@@ -1207,7 +1272,37 @@ return function(mod)
   end
   local function isBattleSpecial(state)
     return okBattle and type(state)=="table" and getmetatable(state)==BattleState
-      and BATTLE_DIALOG_PHASE[tostring(state.phase or "")] == true
+      and (BATTLE_DIALOG_PHASE[tostring(state.phase or "")] == true
+        or levelStatsMon(state) ~= nil)
+  end
+
+  -- The stats-box phase that follows a line whose card was already read
+  -- (above) is closed on entry: one A for "grew to level" + STATS, not two.
+  -- The active mon's last line pages itself (no A), so its stats box still
+  -- holds for A as on the cart.  BattleState.update is wrapped once per
+  -- process; the live check is this session's.
+  if okBattle and type(BattleState)=="table" and type(BattleState.update)=="function" then
+    rawset(BattleState,"_aioLevelStatsLive",function(self)
+      if self.phase=="stats-box" and self.statsBoxMon
+          and self._aioLevelStatsSeen==self.statsBoxMon
+          and dialogueEnabled() and hideOriginal() then
+        self.statsBoxMon=nil
+        self.phase="resolving"
+      end
+      if self.phase~="stats-box" and not self.pendingStatsMon then
+        self._aioLevelStatsSeen=nil
+      end
+    end)
+    if not rawget(BattleState,"_aioLevelStatsWrapped") then
+      rawset(BattleState,"_aioLevelStatsWrapped",true)
+      local oldUpdate=BattleState.update
+      BattleState.update=function(self,...)
+        local result={oldUpdate(self,...)}
+        local live=rawget(BattleState,"_aioLevelStatsLive")
+        if live then pcall(live,self) end
+        return unpackCompat(result)
+      end
+    end
   end
 
   local function findTextBelow(game)

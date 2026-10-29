@@ -6313,18 +6313,8 @@ return function(mod)
           end
       })
 
-      mod.ui.insertBefore(result, "OPTION", {
-          -- Short underlying label preserves the original start-menu width.
-          label = "RULES",
-          onSelect = function()
-              -- gen2-aio 0.9.35: the run's rules on a Modern UI page of
-              -- Crystal's OPTION screen (lib/gen2_aio/nuz_rules.lua);
-              -- the Game Boy screen stays as the fallback and for SETUP.
-              local open = mod._kimArenaNuzRules
-              if type(open) == "function" and open(game) then return end
-              mod.ui.push(game, "NuzlockeConfigScreen")
-          end
-      })
+      -- gen2-aio 0.9.77: no START -> RULES row. The run's rules live in
+      -- GEN2-AIO -> RULES -> RUN RULES (lib/gen2_aio/nuz_rules.lua).
 
       return result
   end)
@@ -7608,6 +7598,31 @@ return function(mod)
           encounterType = encounterType or "wild",
       }
       mod.save:set("encounter_states", states)
+  end
+
+  -- gen2-aio 0.9.77: is the current area's encounter still open? True while
+  -- the run is on, the map has wild encounters the rules allow (towns only
+  -- with TOWN CATCHES) and nothing has been caught or failed there yet. The
+  -- overworld HUD's TRACK button shows a dot while it is.
+  do
+      local wildAreas = setmetatable({}, { __mode = "k" })
+      mod.exports.currentAreaOpen = function(game)
+          game = game or currentGame
+          if not active(game) then return false end
+          local key = registerArea(areaKey(game))
+          if not key or not isTrackedArea(key) then return false end
+          local encounters = game.data and game.data.encounters
+          if type(encounters) ~= "table" then return false end
+          if not wildAreas[encounters] then wildAreas[encounters] = encounterSpeciesByArea(game) end
+          if not wildAreas[encounters][key] then return false end
+          if isTownArea(key, routeName(key)) and not mod.save:get("town_catches", false) then
+              return false
+          end
+          if caughtAreas()[key] ~= nil then return false end
+          local state = getEncounterState(key)
+          if state and (state.status == "FAILED" or state.status == "CAUGHT") then return false end
+          return true, routeName(key)
+      end
   end
 
   local activeWildEncounter = nil

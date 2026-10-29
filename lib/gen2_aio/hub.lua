@@ -96,7 +96,7 @@ return function(host)
     } },
     { id = "advanced", label = "ADVANCED", rows = {
       "setupWizard", "perfMode", "voxelPrecache", "voxelDiskCache",
-      { id = "gen2-aio:asset_manager" }, "diagnostics", { modList = true }, { rest = true },
+      { id = "gen2-aio:voxel_cache" }, { id = "gen2-aio:asset_manager" }, "diagnostics", { modList = true }, { rest = true },
     } },
   }
   -- component rows that answer for a key under another id

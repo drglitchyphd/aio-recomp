@@ -1492,6 +1492,19 @@ function ChunkMesher.request(map, bodyOnly, masks, urgent)
   return (c and c[slot]) or nil
 end
 
+-- gen2-aio 0.9.77 BUILD 3D CACHE (lib/CacheBuilder.lua): whether this
+-- variant's finished build is on storage, and whether it is still queued
+function ChunkMesher.stored(map, bodyOnly, masks)
+  local name = storeKey(map, { slot = bodyOnly and "body" or "full", masks = masks })
+  return name ~= nil and store().exists(name)
+end
+function ChunkMesher.queued(map, bodyOnly)
+  return jobIndex[jobKey(map.id, bodyOnly and "body" or "full")] ~= nil
+end
+function ChunkMesher.cached(mapId)
+  return cache[mapId] ~= nil
+end
+
 function ChunkMesher.pending()
   return #jobs
 end

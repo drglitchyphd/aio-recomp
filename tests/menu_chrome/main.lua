@@ -22,7 +22,7 @@ end
 for _,name in ipairs({"src.render.TextBox","src.ui.ChoiceBox","src.ui.gen2.MartMenu",
   "src.ui.gen2.StartMenu","src.ui.gen2.PackMenu","src.ui.gen2.TrainerCard","src.ui.gen2.SaveMenu",
   "src.ui.gen2.OptionsMenu","src.ui.gen2.Pokegear","src.ui.gen2.PartyMenu","src.ui.gen2.SummaryMenu",
-  "src.ui.gen2.PokedexMenu","src.ui.gen2.HeldItemMenu","src.ui.gen2.InitClock","src.ui.gen2.BoxMenu","src.ui.gen2.EvolutionAnim"}) do class(name) end
+  "src.ui.gen2.PokedexMenu","src.ui.gen2.HeldItemMenu","src.ui.gen2.InitClock","src.ui.gen2.BoxMenu","src.ui.gen2.EvolutionAnim","src.ui.gen2.MenuFade"}) do class(name) end
 package.preload["src.ui.gen2.Chrome"]=function()return {} end
 local Typer={text=function(s,page)return page end,typing=function(s)return s.typing==true end}
 package.preload["src.ui.gen2.Typer"]=function()return Typer end
@@ -83,6 +83,13 @@ function love.load()
     return originalText(value,font,x,y,w,align,c)
   end
 
+  local lines={}
+  local originalRect=G.rectangle
+  G.rectangle=function(mode,x,y,w,h,...)
+    if mode=="fill" and h and h<=2 and w and w>20 then lines[#lines+1]={x=x,y=y,w=w,h=h} end
+    return originalRect(mode,x,y,w,h,...)
+  end
+
   local function chain(name,base,...)
     local h={}
     for i,v in ipairs(hooks[name] or {}) do h[i]=v end
@@ -103,7 +110,7 @@ function love.load()
   end
   local shots={}
   local function frame(state,name,below)
-    draws={}
+    draws={};lines={}
     local game=type(state)=="table" and state.__game or gameFor(state,below)
     local canvas=G.newCanvas(dims[1],dims[2])
     G.setCanvas(canvas);G.clear(.16,.27,.2,1)
@@ -398,7 +405,8 @@ function love.load()
     local T=100
     love.timer.getTime=function()return T end
     local thooks={}
-    local tmod={id="touch",exports={},options={get=function()return nil end,define=function()end},read=function()return nil end,
+    local topts={}
+    local tmod={id="touch",exports={},options={get=function(_,k)return topts[k] end,define=function()end},read=function()return nil end,
       hooks={wrap=function(_,n,f,p)thooks[n]=thooks[n] or {};thooks[n][p]=f end},
       input={tap=function(_,g,b)tlog[#tlog+1]="tap:"..b end,press=function(_,g,b)tlog[#tlog+1]="press:"..b;return {} end,release=function()end},
       find=function()return {exports=mod.exports} end}
@@ -449,6 +457,123 @@ function love.load()
     local _,mgame=frame(martState,"touch-mart")
     local ms=tmod.exports.shownButtons(mgame)
     check(ms.b==nil and ms.start==nil and ms.select==nil,"touch: MART hides B, START and SELECT")
+    -- gen2-aio: closing a menu fades back to the one below (PACK -> START):
+    -- the buttons stay hidden through the fade instead of flashing
+    do
+      local _,gP=frame(partyState,"touch-fade-from")
+      check(tmod.exports.shownButtons(gP).b==nil,"touch: menu up, B hidden")
+      local fade=setmetatable({},classes["src.ui.gen2.MenuFade"])
+      gP.stack.states={fade}
+      T=T+0.1
+      local f=tmod.exports.shownButtons(gP)
+      check(f.b==nil and f.start~=nil,"touch: fade after the PARTY keeps its buttons (no flash)")
+      local other=setmetatable({},classes["src.ui.gen2.MartMenu"])
+      gP.stack.states={other}
+      check(tmod.exports.shownButtons(gP).b==nil,"touch: the next menu's first frame (before its close button draws) keeps B hidden")
+      gP.stack.states={}
+      check(tmod.exports.shownButtons(gP).b~=nil,"touch: back on the overworld, B shows at once")
+      gP.stack.states={fade}
+      T=T+3
+      check(tmod.exports.shownButtons(gP).b~=nil,"touch: a long-stale menu no longer hides B")
+    end
+    -- gen2-aio: MENU BUTTON in a bottom corner (cover screen): the START /
+    -- SELECT kept on PACK / POKeDEX sat over the button and took its lower
+    -- half (POKeDEX: START = SEARCH, so B and X flipped between screens)
+    for _,corner in ipairs({"br","bl"}) do
+      opts.menuClosePos=corner
+      for _,hand in ipairs({"right","left"}) do
+        topts.touchHand=hand
+        for _,sc in ipairs(screens) do
+          if sc[1]=="pack" or sc[1]=="pokedex" or sc[1]=="party" then
+            local st=sc[2]()
+            local _,g=frame(st,"touch-"..sc[1].."-"..corner)
+            local cl=rawget(mod,"_kimMenuClose")
+            check(cl~=nil,"touch "..sc[1].." "..corner.." publishes its button")
+            if cl then
+              local shownB=tmod.exports.shownButtons(g)
+              for k,z in pairs(shownB) do
+                local pad=z.h*.35
+                local over=z.x-z.w/2-pad<cl.x+cl.w and z.x+z.w/2+pad>cl.x and z.y-z.h/2-pad<cl.y+cl.h and z.y+z.h/2+pad>cl.y
+                check(not over,"touch "..sc[1].." "..corner.." "..hand.." "..k.." clear of the close button")
+              end
+              game=g
+              for _,fy in ipairs({.15,.5,.85}) do
+                local px,py=cl.x+cl.w/2,cl.y+cl.h*fy
+                tlog={}; send("pressed",px,py); T=T+0.08; send("released",px,py)
+                check(table.concat(tlog,",")=="tap:b","touch "..sc[1].." "..corner.." "..hand.." tap at "..fy.." of the button = B (got "..table.concat(tlog,",")..")")
+              end
+            end
+          end
+        end
+      end
+    end
+    opts.menuClosePos=nil; topts.touchHand=nil
+    -- gen2-aio: AREA DEX drags like every other list, from anywhere in it
+    -- (it used to scroll the wrong way from a title or the empty space)
+    do
+      local was=mod.exports.screenTapTargets
+      mod.exports.screenTapTargets=function()return rawget(mod,"_kimScreenTapTargets")end   -- as main.lua
+      local st
+      for _,sc in ipairs(screens) do if sc[1]=="areadex" then st=sc[2]() end end
+      local _,g=frame(st,"touch-areadex")
+      game=g
+      local taps=rawget(mod,"_kimScreenTapTargets")
+      check(taps and taps.state==st and taps.freeScroll,"touch: AREA DEX is a free-scroll list")
+      -- a point in the list area that is on no card
+      local px,py
+      local back=taps and taps.cells[#taps.cells]
+      if back then
+        for yy=back.y+2,back.y+back.h-2,4 do
+          local onCard=false
+          for i=1,#taps.cells-1 do
+            local c=taps.cells[i]
+            if yy>=c.y and yy<=c.y+c.h then onCard=true end
+          end
+          if not onCard then px,py=back.x+back.w*.5,yy; break end
+        end
+      end
+      check(py~=nil,"touch: AREA DEX has open list space to drag from")
+      if py then
+        local FS=mod._kimFreeScroll
+        tlog={}
+        send("pressed",px,py)
+        for i=1,8 do T=T+0.02; send("moved",px,py-i*40) end
+        local e=FS[st]
+        check(e and (tonumber(e.offset) or 0)>0,"touch: AREA DEX finger up = list scrolls on (content follows the finger)")
+        T=T+0.2; send("released",px,py-320)
+        check(not table.concat(tlog,","):find("up"),"touch: AREA DEX drag never presses UP (got "..table.concat(tlog,",")..")")
+        FS[st]=nil
+      end
+      mod.exports.screenTapTargets=was
+    end
+    -- gen2-aio: BUTTON HEIGHT HIGH on the cover screen sits well up the edge
+    -- and never on the overworld HUD along the bottom
+    do
+      local og={stack={states={},top=function(self)return self.states[#self.states] end}}
+      topts.touchButtonHeight="mid"
+      local mid=tmod.exports.shownButtons(og).b
+      topts.touchButtonHeight="high"
+      local high=tmod.exports.shownButtons(og).b
+      check(high and mid and high.y<mid.y-dims[2]*.1,"touch: HIGH is well above MID on 1080x2520 ("..math.floor(high.y).." vs "..math.floor(mid.y)..")")
+      check(high and high.y<dims[2]*.8,"touch: HIGH B above the bottom fifth")
+      local battleG={stack={states={{isBattle=true,battle={}}},top=function(self)return self.states[#self.states] end}}
+      local hb=tmod.exports.shownButtons(battleG).b
+      check(hb and hb.y>dims[2]*.85,"touch: in battle B stays below KIM's battle panel")
+      for _,h in ipairs({"low","mid","high"}) do
+        topts.touchButtonHeight=h
+        local hud={x=dims[1]*.1,y=dims[2]-220,w=dims[1]*.85,h=200,W=dims[1],H=dims[2],time=T}
+        rawset(mod,"_kimArenaOverworldHudRect",hud)
+        local all=tmod.exports.shownButtons(og)
+        for k,z in pairs(all) do
+          local bottom=z.r and z.y+z.r*1.15 or z.y+z.h/2
+          if k~="ball" then
+            check(bottom<=hud.y,"touch: "..h.." "..k.." clear of a bottom overworld HUD")
+          end
+        end
+        rawset(mod,"_kimArenaOverworldHudRect",nil)
+      end
+      topts.touchButtonHeight=nil
+    end
     local _,game2=frame(partyState,"touch-party2")
     game=game2
     -- a stale rect (half a second old, or another state on top) is ignored
@@ -468,8 +593,10 @@ function love.load()
       dims={1080,2520}
       local Pk=classes["src.ui.gen2.PackMenu"]
       for _,sc in ipairs(screens) do
-        if sc[1]=="pack" or sc[1]=="party" then
+        if sc[1]=="pack" or sc[1]=="party" or sc[1]=="start" or sc[1]=="areadex" then
           local state=sc[2]()
+          -- START: the POKeDEX row, with a description beside the button
+          if sc[1]=="start" then state.list.index=1 end
           local drawn=frame(state,sc[1].."-"..corner)
           local close=rawget(mod,"_kimMenuClose")
           check(close~=nil,sc[1].." "..corner.." publishes a close button")
@@ -489,10 +616,36 @@ function love.load()
               end
             end
             check(close.y>dims[2]*.5,sc[1].." "..corner.." button sits low (footer)")
-            check(leftSide and close.x<dims[1]*.5 or (not leftSide and close.x>dims[1]*.5),sc[1].." "..corner.." on the chosen side")
+            if sc[1]~="start" then   -- START is a side card at the right edge
+              check(leftSide and close.x<dims[1]*.5 or (not leftSide and close.x>dims[1]*.5),sc[1].." "..corner.." on the chosen side")
+            end
+            -- the window's divider lines (footer / description strip) clear
+            -- the button, with a little air (cover screen START menu)
+            for _,l in ipairs(lines) do
+              local hit=l.x<close.x+close.w and l.x+l.w>close.x and l.y<close.y+close.h+2 and l.y+l.h>close.y-2
+              check(not hit,sc[1].." "..corner.." divider line at y="..math.floor(l.y).." clear of the button")
+            end
           end
         end
       end
+      -- the cover screen START menu: a big UI SCALE (the shared chrome's
+      -- button) with a smaller START menu put the description divider
+      -- through the top of the button
+      opts.uiScale="200"; opts.startMenuScale="70"
+      for _,sc in ipairs(screens) do
+        if sc[1]=="start" then
+          local state=sc[2]()
+          state.list.index=1
+          frame(state,"start-big-"..corner)
+          local close=rawget(mod,"_kimMenuClose")
+          check(close~=nil and #lines>0,"start big "..corner.." draws its button and divider")
+          for _,l in ipairs(close and lines or {}) do
+            local hit=l.x<close.x+close.w and l.x+l.w>close.x and l.y<close.y+close.h+2 and l.y+l.h>close.y-2
+            check(not hit,"start big "..corner.." divider at y="..math.floor(l.y).." clear of the button")
+          end
+        end
+      end
+      opts.uiScale=nil; opts.startMenuScale=nil
     end
     opts.menuClosePos=nil
   end

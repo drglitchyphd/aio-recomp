@@ -249,6 +249,18 @@ function MeshStore.result(ticket)
   return ticket.blob
 end
 
+-- gen2-aio 0.9.77 BUILD 3D CACHE: whether a build is on storage already,
+-- and how many writes are still queued for the worker (the builder waits
+-- when that grows, so packed maps do not pile up in memory)
+function MeshStore.exists(name)
+  if not MeshStore.enabled() or not ensureThread() then return false end
+  return love.filesystem.getInfo(pathOf(name)) ~= nil
+end
+function MeshStore.backlog()
+  poll()
+  return toWorker and toWorker:getCount() or 0
+end
+
 function MeshStore.save(name, data)
   if not MeshStore.enabled() or not ensureThread() or threadDead() then
     pcall(data.release, data); return false

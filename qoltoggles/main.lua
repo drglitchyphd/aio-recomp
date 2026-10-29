@@ -399,7 +399,8 @@ local TOGGLES = {
   { key = "repel", label = "INFINITE REPEL", default = false,
     help = "While on, walking\ngives no wild\nencounters, in\ngrass, surf or\ncaves.\vFishing keeps\nits own odds." },
   { key = "field_moves_all", label = "FIELD MOVES ALL", default = true,
-    help = "A mon that can\nlearn a field\nmove can use it\nwithout knowing\nit.\vBadge gates and\ncontext rules." },
+    help = "A mon that can\nlearn a field\nmove can use it\nwithout knowing\nit.\vBadge gates and\ncontext rules.",
+    gen2Help = "A mon that can\nlearn a field\nmove can use it\nwithout knowing\nit.\vTM moves (ROCK\nSMASH...) need\nthe TM; badges\nstill apply." },
   { key = "badgeless_moves", label = "BADGELESS HMs", default = false,
     help = "FLY can reach\nany city, even\nbefore visiting;\nSURF, CUT,\nSTRENGTH and\nFLASH work\nwithout badges.",
     gen2Help = "FLY reaches\nany city/fly point,\neven before\nvisiting; CUT,\nSURF, STRENGTH,\nFLASH, WATERFALL,\nWHIRLPOOL work\nwithout badges." },
@@ -525,6 +526,16 @@ local HM_ITEMS = {
   CUT = "HM_CUT", FLY = "HM_FLY", SURF = "HM_SURF",
   STRENGTH = "HM_STRENGTH", FLASH = "HM_FLASH",
   WATERFALL = "HM_WATERFALL", WHIRLPOOL = "HM_WHIRLPOOL",
+}
+
+-- Gold's TM field moves: FIELD MOVES ALL only lends one of these to a mon
+-- that learns it by TM once the player holds that TM (TM08 is
+-- TM_ROCK_SMASH); a species that learns it by level-up, or a mon that
+-- already knows it, is never gated.  Unlike the HMs this is not optional:
+-- without it ROCK SMASH worked long before Route 36 hands out TM08.
+local TM_ITEMS_GEN2 = {
+  HEADBUTT = "TM_HEADBUTT", ROCK_SMASH = "TM_ROCK_SMASH",
+  DIG = "TM_DIG", SWEET_SCENT = "TM_SWEET_SCENT",
 }
 
 -- MAP LOCATION: display names that correct the town map data -- the town
@@ -1226,7 +1237,7 @@ return function(mod)
   -- same rows as levelMoves plus a flat level1Moves id list.  Reading all
   -- three keeps FIELD MOVES ALL's learnability check honest on both
   -- generations.
-  local function canLearn(def, id)
+  local function learnsByLevel(def, id)
     for _, entry in ipairs(def.learnset or {}) do
       if entry.move == id then return true end
     end
@@ -1236,10 +1247,30 @@ return function(mod)
     for _, mv in ipairs(def.level1Moves or {}) do
       if mv == id then return true end
     end
+    return false
+  end
+
+  local function canLearn(def, id)
+    if learnsByLevel(def, id) then return true end
     for _, tm in ipairs(def.tmhm or {}) do
       if tm == id then return true end
     end
     return false
+  end
+
+  -- the bag item a phantom (not known) field move needs before FIELD MOVES
+  -- ALL lends it: the HM under HM ITEM REQUIRED, and on Gen 2 the TM for a
+  -- TM-only field move (TM_ITEMS_GEN2) regardless of that toggle.  nil = none.
+  local function phantomGateItem(def, id, requireHm)
+    local hm = HM_ITEMS[id]
+    if hm then return requireHm and hm or nil end
+    local tm = GEN2 and TM_ITEMS_GEN2[id]
+    if tm and not learnsByLevel(def, id) then return tm end
+    return nil
+  end
+  local function holds(inventory, item)
+    local n = inventory and inventory[item]
+    return n ~= nil and n ~= false and n ~= 0
   end
 
   -- --------------------------------------------------------------- exports
@@ -2371,8 +2402,9 @@ return function(mod)
   -- fieldmove.eligibility gate: one that knows it, or -- with allMoves --
   -- one whose species can learn it.  The allMoves fallback (the phantom
   -- case) honours HM ITEM REQUIRED: HM moves need the item held, like
-  -- the party-menu list; a mon that already knows the move is never
-  -- gated (it had the HM to learn it).
+  -- the party-menu list, and Gen 2's TM-only field moves always need the
+  -- TM held; a mon that already knows the move is never gated (it had the
+  -- HM/TM to learn it).
   mod.exports.eligibleMon = function(party, data, moveId, allMoves,
                                      inventory, requireHm)
     for _, mon in ipairs(party or {}) do
@@ -2387,10 +2419,8 @@ return function(mod)
       if mon and mon.moves then
         local def = data and data.pokemon and data.pokemon[mon.species]
         if def and canLearn(def, moveId) then
-          local item = HM_ITEMS[moveId]
-          if not requireHm or not item or (inventory and inventory[item]) then
-            return mon
-          end
+          local item = phantomGateItem(def, moveId, requireHm)
+          if not item or holds(inventory, item) then return mon end
         end
       end
     end
@@ -2405,10 +2435,8 @@ return function(mod)
     local list = GEN2 and FIELD_MOVES_GEN2 or FIELD_MOVES
     for _, id in ipairs(list) do
       if def and canLearn(def, id) and not knows(mon, id) then
-        local item = HM_ITEMS[id]
-        if not requireHm or not item or (inventory and inventory[item]) then
-          out[#out + 1] = id
-        end
+        local item = phantomGateItem(def, id, requireHm)
+        if not item or holds(inventory, item) then out[#out + 1] = id end
       end
     end
     return out
