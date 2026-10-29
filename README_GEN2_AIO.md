@@ -57,6 +57,20 @@ GitHub and overlay patches are not the updater's install package. The custom
 index is independent of the community index; a community listing would require
 a separate submission.
 
+## 0.9.83 changes
+
+- 3D world: building an area's grass, flowers and figures now pauses to
+  let frames through. On Azalea Town this part ran in one go for up to 1.7
+  seconds.
+- DIAGNOSTICS `voxel slow` names the exact step of a long build: the map
+  analysis sections (s.grid, s.buildings, s.props, s.regions, s.model,
+  s.signs, s.ground), then grass, flowers, figures, cells, trees, upload.
+  It used to call all of the first part "lookup".
+- Known: the VOXEL DISK CACHE cannot run under the game's mod sandbox on
+  Android (mods are not given the ffi library it was written on), which is
+  why BUILD 3D CACHE reads OFF there. A sandbox-safe version is in the
+  works.
+
 ## 0.9.82 changes
 
 - GEN2-AIO > ADVANCED > BUILD 3D CACHE is always listed now. It used to

@@ -110,16 +110,11 @@ local cache = {}     -- map id -> { full = mesh|false, body = ..., grass = ... }
 local gen = {}       -- map id -> generation, bumped by invalidate/evict
 
 -- gen2-aio 0.9.79: which step of a build a long slice was spent in, for
--- DIAGNOSTICS `voxel slow` (structures / cells / stamps / upload ...).
--- mark(name) closes the running step and opens the next; the pump resets
--- the tally per slice and reports its largest step.
-local stepClock = (love and love.timer and love.timer.getTime) or os.clock
-local step = { at = "start", since = 0, spent = {} }
-local function mark(name)
-  local now = stepClock()
-  step.spent[step.at] = (step.spent[step.at] or 0) + (now - step.since)
-  step.at, step.since = name, now
-end
+-- DIAGNOSTICS `voxel slow` -- the tally lives in BuildBudget (0.9.83) so
+-- Structures can name its own sections too
+local Budget0 = V.require("BuildBudget")
+local step = Budget0.step
+local function mark(name) Budget0.mark(name) end
 
 -- Horizontal neighbours: tile step, face direction id (see Voxel3D).
 local SIDES = {
@@ -1059,6 +1054,7 @@ local function quadsMesh(quads)
   if #quads == 0 then return nil end
   local verts, indices, n = {}, {}, 0
   for _, q in ipairs(quads) do
+    Budget.tick()
     for i = 1, 4 do
       local c = q[i]
       local uv = q.uv and q.uv[i] or { q.u, q.v }
@@ -1450,8 +1446,14 @@ local function runJob(job)
   end
   if c.grass == nil or c.flowers == nil or c.figures == nil
      or (c.stale and c.stale.aux) then
+    -- 0.9.83: named steps -- the map's Structures analysis runs here first
+    -- (grass is its first reader), which DIAGNOSTICS used to call "lookup"
+    mark("structures"); pcall(Structures.forMap, map)
+    mark("grass")
     local okG, grass = pcall(buildGrassMesh, map)
+    mark("flowers")
     local okF, flowers = pcall(buildFlowerMesh, map)
+    mark("figures")
     local okX, figures = pcall(buildFigureMeshes, map)
     if (gen[job.id] or 0) ~= job.gen then
       if okG and grass and grass.release then pcall(grass.release, grass) end
@@ -1569,7 +1571,7 @@ local function pump(covered)
     end
     Budget.begin(pick.co, deadline - clock())
     local resumed = clock()
-    step.spent, step.since = {}, stepClock()
+    Budget0.resetSteps()
     local ok, err = coroutine.resume(pick.co, pick)
     Budget.finish()
     local spent = (clock() - resumed) * 1000

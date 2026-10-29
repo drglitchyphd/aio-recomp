@@ -60,4 +60,19 @@ function B.check()
   end
 end
 
+-- gen2-aio 0.9.83: which step of a build a long slice was spent in, for
+-- DIAGNOSTICS `voxel slow` (structures sections, cells, trees, upload ...).
+-- mark(name) closes the running step and opens the next; ChunkMesher's pump
+-- resets the tally per slice (resetSteps) and reports its largest step.
+B.step = { at = "start", since = 0, spent = {} }
+function B.mark(name)
+  local st = B.step
+  local now = clock()
+  st.spent[st.at] = (st.spent[st.at] or 0) + (now - st.since)
+  st.at, st.since = name, now
+end
+function B.resetSteps()
+  B.step.spent, B.step.since = {}, clock()
+end
+
 return B
