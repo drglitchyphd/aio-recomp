@@ -7,7 +7,9 @@
 --     a thumb that strays too far; lift to stop
 --   * a quick tap anywhere (no drag) is A
 --   * a side button is B; START and SELECT sit beside it
---   * in battle, tap KIM's command and move cells directly
+--   * in battle, tap KIM's command and move cells directly (drag a move onto
+--     another to swap them); the panel's own Poke Ball / back buttons replace
+--     the floating ones there
 --
 -- Everything goes through the engine's public input path: mod.input presses
 -- the same GB buttons a pad would, and battle cells only move the menu cursor
@@ -160,7 +162,8 @@ return function(mod)
       choices = { { "SMALL", "small" }, { "MEDIUM", "medium" }, { "LARGE", "large" } },
       help = "How far a finger must slide before it counts as a direction instead of a tap." },
     { key = "touchBattleTap", label = "TAP MENUS", type = "toggle", default = true,
-      help = "Tap menu entries directly: FIGHT / PKMN / PACK / RUN and moves in battle, "
+      help = "Tap menu entries directly: FIGHT / PKMN / PACK / RUN, the POKe BALL and moves in battle "
+        .. "(drag a move onto another to swap them; the panel's arrow is B), "
         .. "Pokemon on the POKeMON screen, items and pocket tabs in the PACK." },
     { key = "touchLongPress", label = "LONG PRESS", type = "toggle", default = true,
       help = "Hold a move in battle for its type, power, accuracy, PP and description. "
@@ -296,6 +299,34 @@ return function(mod)
       local cr = math.max(bx + r, selectX + pw / 2) + r * 0.15
       if cr > hud.x and cl < hud.x + hud.w and by + r * 1.15 > hud.y and by - r - margin - pr * 2 < hud.y + hud.h then
         by = math.min(by, hud.y - margin * 0.5 - r * 1.15)
+      end
+    end
+    -- gen2-aio 0.9.85: never on the battle HUD's cards either (on the Fold's
+    -- inner screen B sat on the player's HP card at every BUTTON HEIGHT):
+    -- the cluster moves above the card it would cover, or below it when
+    -- there is no room above
+    local cards = freshRect(mod._kimArenaHudRects)
+    local stack = game and game.stack
+    local top = stack and type(stack.top) == "function" and stack:top() or nil
+    if cards and top ~= nil and cards.state == top then
+      local cl = math.min(bx - r * 1.15, selectX - pw / 2, startX - pw / 2)
+      local cr = math.max(bx + r * 1.15, selectX + pw / 2, startX + pw / 2)
+      local above = r + margin + pr * 2.7   -- B's centre to the pills' top
+      local function hits(y)
+        for _, side in ipairs({ "player", "enemy" }) do
+          local q = cards[side]
+          if type(q) == "table" and cards[side .. "Shown"] ~= false and cr > q.x and cl < q.x + q.w
+              and y + r * 1.15 > q.y and y - above < q.y + q.h then return q end
+        end
+        return nil
+      end
+      local q = hits(by)
+      if q then
+        local up = q.y - margin * 0.5 - r * 1.15
+        local down = q.y + q.h + margin * 0.5 + above
+        if up - above >= oy and not hits(up) then by = up
+        elseif down + r * 1.15 <= oy + sh and not hits(down) then by = down
+        elseif up - above >= oy then by = up end
       end
     end
     local sy = by - r - margin - pr
@@ -536,6 +567,12 @@ return function(mod)
   local function shownButtons(game)
     local top = topState(game)
     if isNaming(top) then return {} end
+    -- 0.9.85: the Modern battle panel's command menu, move list and forget
+    -- list carry their own Poke Ball / back buttons (tapTargets().touchUi),
+    -- and B / START / SELECT do nothing else there (START: no battle menu
+    -- action in Crystal; SELECT: the ball, or a move swap, now a drag)
+    local bt = battleTargets(game)
+    if bt and bt.touchUi then lastMenu = nil; return {} end
     local all = buttons(game)
     local cr, state = closeTarget(game)
     if not cr then
@@ -552,6 +589,13 @@ return function(mod)
     return clearOfClose({ start = all.start, select = all.select }, cr)
   end
   mod.exports.shownButtons = function(game) return shownButtons(game) end
+  -- 0.9.85: whether the Modern battle panel should draw its own touch
+  -- controls (Poke Ball, back), and on which side: { hand = "right"|"left" }
+  -- while the floating controls are up and its cells are tappable, else nil
+  mod.exports.battleControls = function()
+    if not takeover() or opt("touchBattleTap", true) == false then return nil end
+    return { hand = opt("touchHand", "right") == "left" and "left" or "right" }
+  end
   local function inClose(r, x, y)
     local h = type(r.hit) == "table" and r.hit or r
     return x >= h.x and x <= h.x + h.w and y >= h.y and y <= h.y + h.h
@@ -608,6 +652,7 @@ return function(mod)
   -- on its own row to open its STATS instead. A long press never also taps A.
   local LONG = 0.45
   local popup = nil      -- { title, lines } shown until the next touch
+  mod.exports.popupShown = function() return popup ~= nil end
 
   local PHYSICAL = { NORMAL = true, FIGHTING = true, FLYING = true, POISON = true,
     GROUND = true, ROCK = true, BUG = true, GHOST = true, STEEL = true }
@@ -663,6 +708,10 @@ return function(mod)
     buzz()
   end
   local function cancelGenericDrag(g)
+    -- (and a battle move picked up for a swap: put it back)
+    if g and g.reorder and type(g.state) == "table" and g.state.moveSwapIndex == g.from then
+      g.state.moveSwapIndex = nil
+    end
     if g and g.drag == "generic" and g.targets and type(g.targets.dragCancel) == "function" then
       pcall(g.targets.dragCancel, g.state, g.cell and g.cell.drag)
     end
@@ -925,10 +974,46 @@ return function(mod)
       if c and g.state then g.state.index = c.index end
       return
     end
+    -- 0.9.85 MOVE ORDER: in the battle move list, a move dragged past the
+    -- dead zone (straight away, or after its info card came up) is picked
+    -- up as Crystal's SELECT would mark it; the cursor follows the finger
+    -- and letting go on another move swaps the two (onReleased)
+    if g and g.kind == "cell" and g.cell and g.cell.kind == "move" and g.sx then
+      if g.reorder or g.noReorder then
+        if g.reorder then
+          local t = battleTargets(game)
+          local c = t and t.state == g.state and cellIn(t, ev.x, ev.y, { move = true })
+          g.over = c and c.index or nil
+          if g.state.phase == "moves" then g.state.moveIndex = g.over or g.from end
+        end
+        return
+      end
+      local dx, dy = ev.x - g.sx, ev.y - g.sy
+      if dx * dx + dy * dy > deadzone() ^ 2 then
+        local state = g.state
+        local moves = state and type(state.playerMoves) == "function" and state:playerMoves() or {}
+        local allowed = state and state.phase == "moves" and #moves > 1
+        if allowed and type(state.swapAllowed) == "function" then
+          local okA, yes = pcall(state.swapAllowed, state); allowed = okA and yes == true
+        end
+        g.t0 = nil
+        if allowed then
+          if g.long then popup = nil end
+          g.reorder, g.from, g.over = true, g.cell.index, g.cell.index
+          state.moveIndex = g.from
+          state.moveSwapIndex = g.from
+          buzz()
+        else
+          g.noReorder = true   -- nothing to reorder: the drag does nothing
+        end
+        return
+      end
+    end
     -- 0.9.45 SWIPE: dragging across a menu scrolls it -- one row per row
     -- height travelled (finger up = further down the list, like a phone),
     -- left/right steps for sideways swipes -- and never ends in an A press.
-    if g and (g.kind == "cell" or g.kind == "screencell") and not g.long and g.sx then
+    if g and (g.kind == "cell" or g.kind == "screencell") and not g.long and g.sx
+        and g.cell.kind ~= "ball" then
       local c = g.cell
       local dx, dy = ev.x - g.sx, ev.y - g.sy
       -- a free-scroll list's swipe starts after most of a row, even on a
@@ -1026,7 +1111,24 @@ return function(mod)
       end
       return
     end
-    if not g or g.kind == "swallow" or g.swipe then return end
+    if not g or g.kind == "swallow" or g.swipe or g.noReorder then return end
+    if g.reorder then
+      -- dropped on another move: SELECT with the cursor on it, the engine's
+      -- own swap (MoveSelectionScreen's .pressed_select). Anywhere else:
+      -- the mark is dropped and the cursor goes home. Never an A.
+      local state = g.state
+      if topBattle(game) == state and state.phase == "moves" then
+        if g.over and g.over ~= g.from and state.moveSwapIndex == g.from then
+          state.moveIndex = g.over
+          tap(game, "select")
+        else
+          state.moveSwapIndex = nil
+          state.moveIndex = g.from
+        end
+        buzz()
+      end
+      return
+    end
     if g.kind == "close" then
       -- lifted on the close button, with the same screen still on top: B
       if inClose(g.rect, ev.x, ev.y) and topState(game) == g.state then
@@ -1130,7 +1232,13 @@ return function(mod)
       local c = g.cell
       local inside = ev.x >= c.x and ev.x <= c.x + c.w and ev.y >= c.y and ev.y <= c.y + c.h
       if inside and state == g.state and state.phase == g.phase then
-        if c.kind == "menu" and state.phase == "menu" then
+        if c.kind == "ball" and state.phase == "menu" then
+          -- 0.9.85: the panel's own Poke Ball button: the quick ball's
+          -- throw, queued for the battle's update (no button pressed)
+          local throw = mod._kimArenaQuickBallThrow
+          if type(throw) == "function" then pcall(throw) end
+          buzz()
+        elseif c.kind == "menu" and state.phase == "menu" then
           state.menuIndex = c.index
           tap(game, "a"); buzz()
         elseif c.kind == "forget" and state.phase == "choose-forget" then
@@ -1205,52 +1313,11 @@ return function(mod)
     return false
   end
 
-  local drawBallButton
-  -- the quick-ball button: the ball a throw would use (its HD item icon, or
-  -- a drawn Poke Ball), with how many are left; dimmed when there are none
-  drawBallButton = function(G, z, a, th)
-    local info
-    local fn = mod._kimArenaQuickBallInfo
-    if type(fn) == "function" then
-      local okI, v = pcall(fn); info = okI and v or nil
-    end
-    local id = info and info.id
-    local dim = id == nil
-    local aa = dim and a * 0.45 or a
-    G.setColor(th.surface[1], th.surface[2], th.surface[3], aa * 0.85)
-    G.circle("fill", z.x, z.y, z.r)
-    G.setColor(th.frame[1], th.frame[2], th.frame[3], aa)
-    G.setLineWidth(math.max(2, z.r * 0.08)); G.circle("line", z.x, z.y, z.r)
-    local iconFn = mod._kimArenaBallIcon
-    local img, quad
-    if type(iconFn) == "function" then
-      local okC, i, q = pcall(iconFn, id or "POKE_BALL"); if okC then img, quad = i, q end
-    end
-    local size = z.r * 1.25
-    if img and quad then
-      G.setColor(1, 1, 1, aa)
-      G.draw(img, quad, z.x, z.y, 0, size / 18, size / 18, 9, 9)
-    else
-      local br = size / 2
-      G.setColor(0.86, 0.2, 0.2, aa); G.arc("fill", z.x, z.y, br, math.pi, 2 * math.pi)
-      G.setColor(0.96, 0.96, 0.96, aa); G.arc("fill", z.x, z.y, br, 0, math.pi)
-      G.setColor(0.1, 0.1, 0.12, aa)
-      G.setLineWidth(math.max(2, br * 0.16)); G.line(z.x - br, z.y, z.x + br, z.y)
-      G.circle("line", z.x, z.y, br)
-      G.setColor(0.96, 0.96, 0.96, aa); G.circle("fill", z.x, z.y, br * 0.28)
-    end
-    -- the count in a badge at the lower right
-    local n = info and info.count or 0
-    local label = dim and "0" or tostring(n)
-    local bf = font(z.r * 0.42)
-    local bw = math.max(bf:getWidth(label) + z.r * 0.3, z.r * 0.62)
-    local bh = bf:getHeight() * 1.05
-    local bx, by = z.x + z.r * 0.95 - bw, z.y + z.r * 0.95 - bh
-    G.setColor(th.frame[1], th.frame[2], th.frame[3], aa)
-    G.rectangle("fill", bx, by, bw, bh, bh / 2, bh / 2)
-    G.setFont(bf)
-    G.setColor(th.surface[1], th.surface[2], th.surface[3], math.min(1, aa + 0.15))
-    G.printf(label, bx, by + (bh - bf:getHeight()) / 2, bw, "center")
+  -- the quick-ball button (its art lives with the quick ball, shared with the
+  -- Modern battle panel's own button)
+  local function drawBallButton(G, z, a, th)
+    local fn = mod._kimArenaQuickBallDraw
+    if type(fn) == "function" then pcall(fn, G, z.x, z.y, z.r, a, th, font) end
   end
 
   local function draw(game)

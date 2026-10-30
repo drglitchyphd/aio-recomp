@@ -636,6 +636,16 @@ return function(mod)
     G.rectangle("fill", x, y, math.max(2, 1.5 * scale), h, r, r)
   end
 
+  -- gen2-aio 0.9.85: the move picked up for a swap (Crystal's SELECT mark,
+  -- wSwappingMove; a touch drag sets the same mark) gets an outline, so the
+  -- pending swap shows in the Modern list too
+  local function markedCell(x, y, w, h, scale)
+    local r = math.max(2, 2 * scale)
+    color(COLORS.accent, nil, true)
+    G.setLineWidth(math.max(2, 1.1 * scale))
+    G.rectangle("line", x, y, w, h, r, r)
+  end
+
   local function stateMessageLines(state)
     if type(state.messageLines) == "function" then
       local ok, lines = pcall(state.messageLines, state)
@@ -1009,6 +1019,7 @@ return function(mod)
         local move = moves[i]
         local cy = listY + (i - 1) * (rowH + rowGap)
         if i == selected then selectedCell(listX, cy, listW, rowH, scale) end
+        if i == state.moveSwapIndex then markedCell(listX, cy, listW, rowH, scale) end
         local hint = typeDecor(state, move, listX, cy, listW, rowH, scale)
         if move then tapCell("move", i, listX, cy, listW, rowH) end
         local name = move and moveName(state, move) or "—"
@@ -1033,6 +1044,7 @@ return function(mod)
         local cx = listX + col * (cellW + cellGap)
         local cy = listY + row * (cellH + cellGap)
         if i == selected then selectedCell(cx, cy, cellW, cellH, scale) end
+        if i == state.moveSwapIndex then markedCell(cx, cy, cellW, cellH, scale) end
         local hint = typeDecor(state, move, cx, cy, cellW, cellH, scale)
         if move then tapCell("move", i, cx, cy, cellW, cellH) end
         local name = move and moveName(state, move) or "—"
@@ -1047,6 +1059,60 @@ return function(mod)
         end
       end
     end
+  end
+
+  -- gen2-aio 0.9.85: with KIM Touch's floating controls up (and its TAP
+  -- MENUS on), the panel carries its own touch controls in a column at the
+  -- thumb's side: the quick Poke Ball in a wild battle's command menu, and a
+  -- back button (B, the shared Modern close button with its back arrow) in
+  -- the move and forget lists. KIM Touch then hides its floating B / START /
+  -- SELECT / ball for these phases (tapTargets.touchUi). Desktop, pads and
+  -- the native panel never see any of it.
+  local function touchControls()
+    local touch = mod.exports and mod.exports.touch
+    local fn = touch and touch.battleControls
+    if type(fn) ~= "function" then return nil end
+    local ok, v = pcall(fn)
+    return ok and type(v) == "table" and v or nil
+  end
+  local function quickBallReady()
+    local fn = mod._kimArenaQuickBallReady
+    if type(fn) ~= "function" or type(mod._kimArenaQuickBallDraw) ~= "function" then return false end
+    local ok, v = pcall(fn)
+    return ok and v == true
+  end
+  -- reserves the column inside the panel's inner rect, draws its control and
+  -- returns the rect left for the phase's own content
+  local function drawTouchColumn(state, phase, ix, iy, iw, ih, fit, opacity)
+    local ctl = touchControls()
+    if not ctl then return ix, iy, iw, ih end
+    local listUp = phase == "moves"
+      or (phase == "choose-forget" and (tonumber(state.messageTimer) or 0) <= 0)
+    local ball = phase == "menu" and quickBallReady()
+    local back = listUp and Style and type(Style.closeButton) == "function"
+    -- the command menu needs nothing else (B and START do nothing there)
+    if phase == "menu" then tapTargets.touchUi = true end
+    if not (ball or back) then return ix, iy, iw, ih end
+    local gap = math.max(3, 3 * fit)
+    local colW = math.floor(math.min(iw * 0.16, ih * 0.62))
+    local left = ctl.hand == "left"
+    local cx = left and ix or (ix + iw - colW)
+    color(COLORS.divider, nil, true)
+    G.rectangle("fill", left and (cx + colW + gap * 0.5) or (cx - gap * 0.5), iy + 3 * fit,
+      math.max(1, fit * .45), ih - 6 * fit)
+    if ball then
+      local r = math.min(colW, ih) * 0.42
+      tapCell("ball", 1, cx, iy, colW, ih)
+      pcall(mod._kimArenaQuickBallDraw, G, cx + colW * 0.5, iy + ih * 0.5, r, opacity, COLORS, fontFor)
+    else
+      local size = math.floor(math.min(colW * 0.78, ih * 0.42))
+      local bx, by = cx + (colW - size) * 0.5, iy + (colW - size) * 0.25
+      pcall(Style.closeButton, cx, iy, colW, ih, COLORS,
+        { at = { bx, by, size, hit = { x = cx, y = iy, w = colW, h = ih } } })
+      tapTargets.touchUi = true
+    end
+    if left then return ix + colW + gap, iy, iw - colW - gap, ih end
+    return ix, iy, iw - colW - gap, ih
   end
 
   local function drawModernBattleUi(game, state, viewport)
@@ -1239,6 +1305,7 @@ return function(mod)
     local inner = math.max(3 * fit, 5)
     local ix, iy = x + inner, y + inner
     local iw, ih = w - inner * 2, h - inner * 2
+    ix, iy, iw, ih = drawTouchColumn(state, phase, ix, iy, iw, ih, fit, opacity)
 
     if phase == "menu" then
       drawCommands(state, ix, iy, iw, ih, bodyFont, captionFont, fit, portrait)
@@ -1296,7 +1363,9 @@ return function(mod)
     apiVersion = 2,
     active = function(state) return supportedSurface(state) end,
     -- gen2-aio: cells drawn on the last panel frame, in window units:
-    -- { state, phase, time, panel = {x,y,w,h}, cells = {{kind,index,x,y,w,h}} }
+    -- { state, phase, time, panel = {x,y,w,h}, cells = {{kind,index,x,y,w,h}},
+    --   touchUi = true when the panel drew its own touch controls (0.9.85) }
+    -- kinds: menu, move, forget, ball (the quick Poke Ball)
     tapTargets = function() return tapTargets end,
   }
 end
