@@ -169,15 +169,17 @@ return function(host)
       if big and isSpecies(world, big) then return big end
       return nil
     end
-    if type(def.species) == "string" and def.species ~= "" then return def.species end
-    if def.species ~= nil then
-      local s = speciesName(world, def.species)
-      if s then return s end
-    end
+    -- 0.9.88: ahead of the sheet's own species -- the ROM's sprite table
+    -- names the Moltres sheet MOLTRES, which is exactly what is borrowed
     if BORROWED[id] then
       local key = npc.def and npc.def.scriptKey
       local s = key and scanScript(world, key, 0, {})
       return s or BORROWED[id]
+    end
+    if type(def.species) == "string" and def.species ~= "" then return def.species end
+    if def.species ~= nil then
+      local s = speciesName(world, def.species)
+      if s then return s end
     end
     local named = nameSpecies(world, id)
     if named then
