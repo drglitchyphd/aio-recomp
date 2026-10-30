@@ -124,7 +124,11 @@ check(p and p.title == "BUILD 3D CACHE" and #stack.states == 1, "BUILD NOW swaps
 for _ = 1, 200 do p:update(0.016) end
 check(options.voxelCacheDone == "b1", "a finished build is remembered for this voxel build")
 check(row.value() == "BUILT", "ADVANCED row says BUILT")
-check(p.rows[1].value() == "DONE", "the page says DONE")
+-- 0.9.85: the finished page: summary, restart note (selected), close
+check(p.rows[1].label == "FINISHED" and p.rows[1].value():find("NEW"), "the page says FINISHED")
+check(p.rows[2].label == "RESTART RECOMMENDED" and p.index == 2
+  and p.rows[2].help:find("close and reopen", 1, true), "it asks for a restart, with the row selected")
+check(p.view[#p.view].cancel, "BACK stays last")
 p.rows[3].activate(game)
 check(#stack.states == 0, "CLOSE leaves")
 -- a page left mid-build stops its build

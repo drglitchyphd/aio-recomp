@@ -39,7 +39,14 @@ local function mapIds(world)
       ids[#ids + 1] = id
     end
   end
-  table.sort(ids, function(a, b) return tostring(a) < tostring(b) end)
+  -- 0.9.85: grouped by tileset, so each tileset's building and revolved
+  -- templates are built once and flushed before the next tileset's
+  local maps = world.maps
+  table.sort(ids, function(a, b)
+    local ta, tb = tostring(maps[a].tileset), tostring(maps[b].tileset)
+    if ta ~= tb then return ta < tb end
+    return tostring(a) < tostring(b)
+  end)
   return ids
 end
 
@@ -99,9 +106,19 @@ local function newMap(world, id)
 end
 
 -- the next map's work, or nil when every map is done
+-- 0.9.85: free the per-template caches between tilesets and when the run
+-- ends: a whole-game build otherwise leaves every template's models in
+-- memory for the rest of the session (it worked only after a restart)
+function CacheBuilder:flush()
+  pcall(function() V.require("Structures").flushTemplates() end)
+end
+
 function CacheBuilder:open()
   self.index = self.index + 1
   local id = self.ids[self.index]
+  local ts = id ~= nil and tostring(self.world.maps[id].tileset) or nil
+  if self.tileset and ts ~= self.tileset then self:flush() end
+  self.tileset = ts
   if id == nil then return nil end
   local map = newMap(self.world, id)
   if not map then
@@ -171,6 +188,7 @@ function CacheBuilder:stop()
   if cur and cur.touched and not cur.resident then pcall(V.require("ChunkMesher").invalidate, cur.id) end
   self.cur = nil
   self.done = true
+  self:flush()
 end
 
 return CacheBuilder

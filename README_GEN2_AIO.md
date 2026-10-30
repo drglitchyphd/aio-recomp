@@ -57,6 +57,16 @@ GitHub and overlay patches are not the updater's install package. The custom
 index is independent of the community index; a community listing would require
 a separate submission.
 
+## 0.9.85 changes
+
+- BUILD 3D CACHE now helps in the same session, not only after a restart.
+  Building every area made the game unpack every building model in the
+  game and keep them all in memory (the same ~600 MB that 0.9.84 removed
+  at start-up). Models are no longer kept once built into an area, and
+  the build frees what it used as it goes and when it finishes.
+- When the build finishes, the page says so and recommends a restart:
+  save, then close and reopen the game. The game cannot restart itself.
+
 ## 0.9.84 changes
 
 - 3D world: much faster and lighter.

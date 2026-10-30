@@ -1,10 +1,27 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.84)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.85)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.85 (2026-10-30)
+
+- `Buildings.editsOf` no longer caches the decoded list on the template.
+  `editsFix` runs on every decode. `models` already keeps what `model()`
+  builds.
+- Device report: a cache built in-game took effect only after a restart.
+  BUILD 3D CACHE models every template, so 0.9.84's per-template cache
+  rebuilt the whole 600 MB heap.
+- New `Buildings.flushModels()` and `Structures.flushTemplates()`
+  (roundCache + models). CacheBuilder sorts maps by tileset, flushes on
+  each tileset change and on stop/finish.
+- The voxel_cache finished page runs `collectgarbage("collect")` and
+  replaces its rows with FINISHED / RESTART RECOMMENDED (selected) / CLOSE.
+  There is no mod restart API: `love.event` is blocked in the sandbox.
+- Tests: voxel_heights_lazy (687; decoding every template leaves the heap
+  where it was), voxel_cache (42).
 
 ## 0.9.84 (2026-10-29)
 
