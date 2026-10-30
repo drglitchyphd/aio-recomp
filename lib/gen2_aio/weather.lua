@@ -142,7 +142,6 @@ return function(host)
   local blobBatch = G.newSpriteBatch(blob, 32, "stream")
 
   local current, level, parts, lastW, lastH, lastT = nil, 0, {}, 0, 0, nil
-  local wanted = nil
 
   local SPEC = {
     rain   = { n = 220, tint = { 0.10, 0.12, 0.20, 0.16 } },
@@ -228,7 +227,6 @@ return function(host)
   local function draw(W, H, t, k)
     local spec = SPEC[current]
     if not spec then return end
-    local night = false
     G.push("all")
     G.origin(); G.setShader(); G.setScissor()
     G.setBlendMode("alpha")

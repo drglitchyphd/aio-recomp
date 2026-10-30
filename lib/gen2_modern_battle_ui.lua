@@ -415,16 +415,6 @@ return function(mod)
     G.setColor(c[1] or 1, c[2] or 1, c[3] or 1, a)
   end
 
-  local function currentCanvasSize()
-    local canvas = type(G.getCanvas) == "function" and G.getCanvas() or nil
-    if canvas and type(canvas.getDimensions) == "function" then
-      local ok, w, h = pcall(canvas.getDimensions, canvas)
-      if ok and w and h then return w, h end
-    end
-    if type(G.getDimensions) == "function" then return G.getDimensions() end
-    return 160, 144
-  end
-
   local function mobileHost()
     if type(mod._kantoInMotionNativeMobileHost) == "function" then
       local ok, value = pcall(mod._kantoInMotionNativeMobileHost)
@@ -562,18 +552,6 @@ return function(mod)
       if ok and value ~= nil then return tostring(value) end
     end
     return tostring(text or "")
-  end
-
-  local function truncate(text, font, maxW)
-    text = tostring(text or "")
-    if not font or type(font.getWidth) ~= "function"
-        or font:getWidth(text) <= maxW then return text end
-    local ellipsis = "..."
-    local target = math.max(0, maxW - font:getWidth(ellipsis))
-    while #text > 0 and font:getWidth(text) > target do
-      text = text:sub(1, #text - 1)
-    end
-    return text .. ellipsis
   end
 
   local function drawText(text, font, x, y, maxW, align, c)

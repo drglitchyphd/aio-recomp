@@ -20,7 +20,6 @@ return function(mod)
   local PACK_META_KEY = "kim_assets/asset-pack.json"
   local PACK_INDEX_KEY = "kim_assets/installed-files.txt"
   local DEFER_KEY = "kim_assets/deferred.txt"
-  local COMPLETE_VALUE = "zip:" .. ASSET_VERSION
   local LEGACY_COMPLETE_VALUE = "legacy:" .. BASE_ASSET_VERSION
   local LEGACY_EXPECTED_FILES = 768
   local LEGACY_ROOTS = {
@@ -44,7 +43,6 @@ return function(mod)
     return "kim_assets_v" .. tostring(version or ASSET_VERSION):gsub("[^%w]", "_") .. ".tmp.zip"
   end
   local TEMP_NAME = tempNameFor(ASSET_VERSION)
-  local MOUNT_POINT = "kim_asset_pack_mount"
   local EXTRACT_BUDGET = 0.010 -- seconds of extraction work per update tick
   local MAX_CACHE_FILE = 64 * 1024 * 1024
   local DOWNLOAD_MAX_SECONDS = 15 * 60 -- large GitHub release; Fetch default (90s) is too short
@@ -1105,28 +1103,6 @@ return function(mod)
     end
   end
 
-  local function beginPortableDownload(release)
-    local total = tonumber(release.zip.size) or 0
-    if total <= 0 then
-      return setError("GitHub did not report the asset ZIP size required for portable download.")
-    end
-    manager.downloadMode = "cache_chunks"
-    manager.downloadTotal = total
-    manager.downloadBytes = 0
-    manager.portableChunkSize = PORTABLE_CHUNK_SIZE
-    manager.portableChunkCount = math.ceil(total / PORTABLE_CHUNK_SIZE)
-    manager.portableChunkIndex = 0
-    local okMeta, metaErr = safeCacheWrite(PORTABLE_CHUNK_META_KEY,
-      string.format("%d\n%d\n%d\n", total, PORTABLE_CHUNK_SIZE, manager.portableChunkCount))
-    if not okMeta then
-      return setError("Could not prepare portable ZIP staging: " .. tostring(metaErr))
-    end
-    manager.state = "downloading"
-    logInfo("KIM portable asset download: %d bytes in %d cache chunks",
-      total, manager.portableChunkCount)
-    startPortableChunkRequest(1)
-  end
-
   local function beginDownloadForRelease(release)
     if type(release) ~= "table" or not release.zip or not release.zip.url then
       return setError("GitHub release has no asset ZIP.")
@@ -1395,13 +1371,6 @@ return function(mod)
     local n = (tonumber(bytes) or 0) / 1000000
     if n >= 100 then return tostring(math.floor(n + 0.5)) end
     return string.format("%.1f", n)
-  end
-
-  local function clipText(text, maxChars)
-    text = tostring(text or "")
-    maxChars = maxChars or 18
-    if #text <= maxChars then return text end
-    return text:sub(1, math.max(1, maxChars - 1)) .. "~"
   end
 
   if not IS_GEN3 then

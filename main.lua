@@ -1,23 +1,24 @@
 -- Gen2-AIO (gen2-aio)
 --
--- One mod built from three:
+-- One mod built from several:
 --   * Kanto in Motion 1.7.6   (root: kim_main.lua, lib/, data/, assets/)
 --                              HD animated Pokemon, menus and battle UI
---   * gmarcs Gen 2 Voxel Mod  (gmarc/) the default voxel overworld and 3D
---     1.0.6                    battle; its 3D-BTL and Stadium rows are owned here
---   * Battle Art Voxel Gen2   (voxel/) the alternative engine (VOXEL ENGINE);
---     2.1.4                    its own battle-sprite art is pinned off
+--   * gmarcs Gen 2 Voxel Mod  (gmarc/) the voxel overworld and 3D battle
+--     1.0.6                    (the only VOXEL ENGINE since 0.9.1); its 3D-BTL
+--                              and Stadium rows are owned here
 --   * Stadium 2 Importer      (stadium2/) Kenney scenes and Stadium 2 arenas,
 --     0.25.0                   used only as battle backgrounds
+--   * Wilds of Kanto (wilds/), Nuzlocke (nuzlocke/), Wild QOL (qol/),
+--     QoL Toggles (qoltoggles/) and KIM Touch (touch/)
 --
 -- The engine gives a mod one options schema (options:define replaces it) and
 -- one id, and the bundled parts were written as separate mods. This file
 -- runs each part with the view it expects:
 --   * every options:define call is merged into one schema;
---   * Battle Art runs on a proxy whose files, assets and paths point at voxel/
+--   * gmarc runs on a proxy whose files, assets and paths point at gmarc/
 --     and whose battle settings the host can pin;
---   * mod.find("BATTLE_ART_VOXEL_GEN2") returns the bundled Battle Art, so
---     KIM's Gen 2 Battle Art bridge (HD cards, HUD placement) finds it;
+--   * mod.find("BATTLE_ART_VOXEL_GEN2") answers nil, so KIM's Gen 2 Battle
+--     Art bridges stay off (gmarc's battle captures KIM's HD sprites itself);
 --   * Stadium modules run on a proxy whose stadium2_* settings come from this
 --     mod's BATTLE BACKGROUND rows.
 
@@ -122,18 +123,6 @@ return function(mod)
   rawset(mod, "_kimArenaOpt", function(key, default) return opt(key, default) end)
 
 
-  -- Battle Art rows that belong to its own battle-sprite art or to choices
-  -- this mod now owns: removed from every menu, values pinned below.
-  local BA_ART = {}
-  for key in ([[interfaceSprites interfaceScaling battleArt trainerArtSet
-      playerArtSet playerAnimatedSet frontAnimatedSet backAnimatedSet
-      duplicateFix playerView frontFlip battles arenaFill stadiumCircle
-      backdropOffset bossBg]]):gmatch("%S+") do BA_ART[key] = true end
-  -- Battle Art's 3D-battle HUD/textbox rows: shown with SHOW BATTLE UI ROWS.
-  local BA_UI = {}
-  for key in ([[backPlacement battleBack spriteLight hudColor
-      textboxFill]]):gmatch("%S+") do BA_UI[key] = true end
-
   local Backdrop -- created after KIM loads
 
   local function mode()
@@ -145,7 +134,6 @@ return function(mod)
 
   local DEPENDS
   local OWN_VISIBLE = {
-    arenaStadiumField = function() return mode() == "stadium" end,
     arenaResolution = scene3d, arenaShader = scene3d,
     arenaExtras = scene3d, arenaWeather = scene3d,
     kimHdOffset = function() return mode() == "kim_hd" and opt("kimHdAlign", true) == false end,
@@ -217,9 +205,7 @@ return function(mod)
 
   -- ------------------------------------------------- voxel engine
   -- gen2-aio 0.9.1: gmarc is the only voxel engine (Battle Art removed).
-  local ENGINES = { gmarc = "gmarc" }
   local engine = "gmarc"
-  local gmarcEngine = engine == "gmarc"
 
   -- gmarc rows the fork owns: its 3D-BTL mode and its own Stadium model
   -- import (the fork's backgrounds replace both).
@@ -227,7 +213,7 @@ return function(mod)
   -- BATTLE SPRITES = STADIUM 2: set up after the Stadium 2 modules bind
   local StadiumModels = nil
   local function stadiumModelsReady()
-    if not (gmarcEngine and StadiumModels) then return false end
+    if not StadiumModels then return false end
     local ok, api = pcall(StadiumModels.models)
     return ok and api ~= nil
   end
@@ -237,15 +223,7 @@ return function(mod)
     -- set through the hub's list pickers (lib/gen2_aio/theme_picker.lua)
     if key == "kimArenaCustomFrame" or key == "kimArenaCustomBacking"
         or key == "kimArenaCustomBorder" then return true end
-    if key == "arenaSprites" and not gmarcEngine then return true end
-    if gmarcEngine then
-      if GM_ART[key] then return true end
-      if key == "showBattleUiRows" then return true end
-    else
-      if BA_ART[key] then return true end
-      if BA_UI[key] then return opt("showBattleUiRows", false) ~= true end
-      if key == "arenaCardDetail" then return true end
-    end
+    if GM_ART[key] then return true end
     if key == "arenaBackground" then return opt("battleSprites", true) == false end
     -- 0.9.66: rows that only do something with another row's value
     local dep = DEPENDS[key]
@@ -259,43 +237,31 @@ return function(mod)
   end
   mod._kimArenaRowHidden = rowHidden
 
-  local voxel = subMod(ENGINES[engine])
-  local locks
-  if gmarcEngine then
-    -- gmarc's 3D-BTL: false = native battle, true = on the map, "flatB" =
-    -- the platform arena, whose discs a BATTLE BACKGROUND plate replaces.
-    locks = {
-      -- the voxel sky reads Crystal's clock, which TIME OF DAY drives
-      daytime = "sync",
-      battles = function()
-        if not (Backdrop and Backdrop.stageEnabled()) then return false end
-        -- BATTLE SPRITES = STADIUM 2 with the model cache built: gmarc's
-        -- model modes ("stadiumB" on the platform arena, "stadium" on the map)
-        local models = stadiumModelsReady()
-        if Backdrop.mode() == "voxel" then return models and "stadium" or true end
-        if Backdrop.fillValue() == "PNG" then return models and "stadiumB" or "flatB" end
-        return models and "stadium" or true
-      end,
-    }
-  else
-    locks = {
-      battles = function() return Backdrop ~= nil and Backdrop.stageEnabled() end,
-      arenaFill = function() return Backdrop and Backdrop.fillValue() or "OFF" end,
-      battleArt = "rom",
-      interfaceSprites = "off",
-    }
-  end
+  local voxel = subMod(engine)
+  -- gmarc's 3D-BTL: false = native battle, true = on the map, "flatB" =
+  -- the platform arena, whose discs a BATTLE BACKGROUND plate replaces.
+  local locks = {
+    -- the voxel sky reads Crystal's clock, which TIME OF DAY drives
+    daytime = "sync",
+    battles = function()
+      if not (Backdrop and Backdrop.stageEnabled()) then return false end
+      -- BATTLE SPRITES = STADIUM 2 with the model cache built: gmarc's
+      -- model modes ("stadiumB" on the platform arena, "stadium" on the map)
+      local models = stadiumModelsReady()
+      if Backdrop.mode() == "voxel" then return models and "stadium" or true end
+      if Backdrop.fillValue() == "PNG" then return models and "stadiumB" or "flatB" end
+      return models and "stadium" or true
+    end,
+  }
   voxel._kimArenaLocks = locks
   -- 0.9.31 PERFORMANCE = BALANCED (default): the costly gmarc rungs are held
   -- down -- supersampled AA off, FOREST FX FULL drops to LOW -- without
   -- touching what the player stored; QUALITY hands them back.
   local function perfBalanced() return opt("perfMode", "balanced") ~= "quality" end
-  if gmarcEngine then
-    locks.aa = function() if perfBalanced() then return 0 end return nil end
-    locks.atmos = function()
-      if perfBalanced() and realGet(realOptions, "atmos") == "full" then return "low" end
-      return nil
-    end
+  locks.aa = function() if perfBalanced() then return 0 end return nil end
+  locks.atmos = function()
+    if perfBalanced() and realGet(realOptions, "atmos") == "full" then return "low" end
+    return nil
   end
   voxel._kimArenaRowHidden = rowHidden
   -- BATTLE CAMERA: LOCKED holds the solved battle shot (no drift, steering
@@ -358,21 +324,21 @@ return function(mod)
   voxel._kimArenaHidePlayerIntro = function()
     return opt("arenaPlayerIntro", true) == false
   end
-  -- KIM's battler shadow, moved from the upright 3D card onto the plate:
-  -- begin (true) asks KIM to publish the metrics instead of drawing them;
-  -- end (false) returns KIM's shadow params for that side.
-  -- gmarc: fill past the map's border ring with the border block (VoidFloor)
   voxel._kimArenaStadiumModels = function()
-    if not (gmarcEngine and StadiumModels) then return nil end
+    if not StadiumModels then return nil end
     local ok, api = pcall(StadiumModels.models)
     return ok and api or nil
   end
   voxel._kimArenaDiag = diagSet
   voxel._kimArenaDiagOn = function() return opt("diagnostics", false) == true end
   voxel._kimArenaVoidRelief = function() return opt("voidRelief", true) ~= false end
+  -- gmarc: fill past the map's border ring with the border block (VoidFloor)
   voxel._kimArenaVoidFloor = function() return opt("voidFloor", true) ~= false end
+  -- KIM's battler shadow, moved from the upright 3D card onto the plate:
+  -- begin (true) asks KIM to publish the metrics instead of drawing them;
+  -- end (false) returns KIM's shadow params for that side.
   voxel._kimArenaShadowCapture = function(begin, side)
-    if not (gmarcEngine and Backdrop and Backdrop.plate and Backdrop.plate()) then return nil end
+    if not (Backdrop and Backdrop.plate and Backdrop.plate()) then return nil end
     if begin then
       rawset(mod, "_kimArenaShadowWas", rawget(mod, "_kantoInMotionGen2BattleArtCapture"))
       mod._kantoInMotionGen2BattleArtCapture = true
@@ -457,16 +423,13 @@ return function(mod)
   voxel._kimArenaEnemyScale = function()
     return (tonumber(opt("arenaEnemySize", 100)) or 100) / 100
   end
-  local hiddenRows = gmarcEngine and GM_ART or BA_ART
   voxel.options = {
     define = function(_, schema)
       if type(schema) == "table" then
         for i = #schema, 1, -1 do
           local row = schema[i]
-          if type(row) == "table" and hiddenRows[row.key] then
+          if type(row) == "table" and GM_ART[row.key] then
             table.remove(schema, i)
-          elseif not gmarcEngine and type(row) == "table" and BA_UI[row.key] then
-            row.visible_if = { key = "showBattleUiRows", equals = true }
           end
         end
       end
@@ -487,20 +450,12 @@ return function(mod)
   }
 
   local internal = {}
-  if gmarcEngine then
-    internal.gmarcs_gen2_voxel_mod = function()
-      return { id = "gmarcs_gen2_voxel_mod", version = "1.0.7", exports = voxel.exports }
-    end
-    -- KIM's Battle Art bridges stay off: gmarc's battle captures KIM's
-    -- direct-HD drawPic itself.
-    internal.BATTLE_ART_VOXEL_GEN2 = function() return nil end
-  else
-    -- KIM's Gen 2 bridge (HD cards on the 3D stage, HUD placement) looks
-    -- for exactly this id.
-    local voxelHandle = { id = "BATTLE_ART_VOXEL_GEN2", version = "2.1.4",
-      exports = voxel.exports }
-    internal.BATTLE_ART_VOXEL_GEN2 = function() return voxelHandle end
+  internal.gmarcs_gen2_voxel_mod = function()
+    return { id = "gmarcs_gen2_voxel_mod", version = "1.0.7", exports = voxel.exports }
   end
+  -- KIM's Battle Art bridges stay off: gmarc's battle captures KIM's
+  -- direct-HD drawPic itself.
+  internal.BATTLE_ART_VOXEL_GEN2 = function() return nil end
   local realFind = mod.find
   local function find(first, second)
     local id = type(first) == "table" and second or first
@@ -515,7 +470,7 @@ return function(mod)
   mod.find = find
   voxel.find = find
 
-  local voxelOk, voxelErr = pcall(function() chunk(ENGINES[engine] .. "/main.lua")(voxel) end)
+  local voxelOk, voxelErr = pcall(function() chunk(engine .. "/main.lua")(voxel) end)
   if not voxelOk then
     log("error", "Gen2-AIO: %s voxel engine failed to start: %s", engine, tostring(voxelErr))
     internal.BATTLE_ART_VOXEL_GEN2 = function() return nil end
@@ -526,8 +481,8 @@ return function(mod)
 
   -- ------------------------------------------------- bundled components
   -- Each runs on its own proxy (files, assets and paths under its folder),
-  -- isolated by pcall so one failing never stops the rest. VOXEL ENGINE,
-  -- WILDS OF KANTO and NUZLOCKE choose what loads, on the next launch.
+  -- isolated by pcall so one failing never stops the rest. WILDS OF KANTO
+  -- and NUZLOCKE choose what loads, on the next launch.
 
   -- Settings and per-save data the component keeps under a key prefix, so
   -- generic names ("enabled", ...) never collide with another component.
@@ -613,14 +568,11 @@ return function(mod)
     -- Wilds finds a voxel engine by mod id. gmarc is a Dramatic Shape
     -- descendant with the same SpriteBillboards / Voxel3D / VoxelState
     -- contract as Dramaless, so it answers to that id and Wilds uses its
-    -- generic variable-size adapter; Battle Art answers to its own id.
+    -- generic variable-size adapter.
     wilds.find = function(first, second)
       local id = type(first) == "table" and second or first
-      if voxelOk and gmarcEngine and id == "DRAMALESS_SHAPE" then
+      if voxelOk and id == "DRAMALESS_SHAPE" then
         return { id = "DRAMALESS_SHAPE", version = "1.0.7", exports = voxel.exports }
-      end
-      if voxelOk and not gmarcEngine and id == "BATTLE_ART_VOXEL_GEN2" then
-        return { id = id, version = "2.1.4", exports = voxel.exports }
       end
       if VOXEL_IDS[id] then return nil end
       return find(first, second)
@@ -1345,8 +1297,6 @@ return function(mod)
     return unpack(r)
   end, 5)
 
-  -- Bring the VOXEL ENGINE row in line with the engine that actually loaded.
-  local engineRowSynced = false
   local okFC, FrameCap = pcall(require, "src.core.FrameCap")
   local fpsClamped, perfDiagAt = false, 0
   mod.hooks:wrap("render.hud", function(nextFn, game, viewport)
@@ -1377,18 +1327,6 @@ return function(mod)
         end
       end
     end)
-    if not engineRowSynced and type(game) == "table" then
-      engineRowSynced = true
-      pcall(function()
-        for _, bucketOwner in ipairs({ game.options, game.save and game.save.options, game.mods }) do
-          local all = type(bucketOwner) == "table" and bucketOwner.modOptions
-          if type(all) == "table" then
-            all[ID] = all[ID] or {}
-            all[ID].voxelEngine = engine
-          end
-        end
-      end)
-    end
     return nextFn(game, viewport)
   end, 3)
 

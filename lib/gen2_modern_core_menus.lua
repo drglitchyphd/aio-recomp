@@ -77,7 +77,7 @@ return function(mod)
   local okGen2Mon,Gen2Mon=pcall(require,"src.battle.gen2.Mon")
   local okSaveMenu,SaveMenu=pcall(require,"src.ui.gen2.SaveMenu")
   local okOptions,OptionsMenu=pcall(require,"src.ui.gen2.OptionsMenu")
-  local okListMenu,ListMenu=pcall(require,"src.ui.ListMenu")
+  pcall(require,"src.ui.ListMenu")
   local okGenericMenu,GenericMenu=pcall(require,"src.ui.Menu")
   if mod.ui and mod.ui.Menu then GenericMenu=mod.ui.Menu; okGenericMenu=true end
   local okSaveCore,SaveCore=pcall(require,"src.core.gen2.Save")
@@ -176,10 +176,6 @@ return function(mod)
       if not ok then G.printf(s:gsub("[\128-\255]","?"),x,y,w,align or "left") end
     else G.print(s,x,y) end
   end
-  local function boldText(s,f,x,y,c)
-    G.setFont(f); color(c,nil,true); s=tostring(s or "")
-    G.print(s,x,y); G.print(s,x+1,y)
-  end
   local function normalizeUiText(value,joiner)
     if type(value)=="table" then value=table.concat(value,joiner or " ") end
     value=tostring(value or "")
@@ -245,9 +241,6 @@ return function(mod)
   end
   local function mobilePortrait(sw,sh)
     return mobileHost() and (tonumber(sh) or 0) > (tonumber(sw) or 0)*1.18
-  end
-  local function mobileLandscape(sw,sh)
-    return mobileHost() and not mobilePortrait(sw,sh)
   end
   local function panel(x,y,w,h,c,alpha)
     if Style and Style.panel then return Style.panel(x,y,w,h,c,alpha) end
@@ -889,21 +882,9 @@ return function(mod)
     local d=def and def.description
     return normalizeInlineText(d)
   end
-  local function drawChevronPair(x,y,size,colorValue,gap)
-    gap=gap or math.max(10,size*.85)
-    local cx=x
-    local cy=y+size*.52
-    color(colorValue)
-    G.setLineWidth(math.max(2,size*.16))
-    G.setLineJoin("miter")
-    G.line(cx+size*.55,cy-size*.42,cx+size*.05,cy,cx+size*.55,cy+size*.42)
-    cx=x+gap
-    G.line(cx-size*.55,cy-size*.42,cx-size*.05,cy,cx-size*.55,cy+size*.42)
-  end
   local function drawVerticalArrow(cx,y,size,direction,colorValue)
     local half=size*.5
     local top=y
-    local midY=y+half
     local bottom=y+size
     color(colorValue)
     if direction=="up" then
@@ -911,56 +892,6 @@ return function(mod)
     else
       G.polygon("fill", cx-half, top, cx+half, top, cx, bottom)
     end
-  end
-  local function packFooterSpec(maxW,scale)
-    local function metrics(footerPx,buttonPx)
-      local ff=font(footerPx)
-      local bf=font(buttonPx)
-      local arrowSize=math.max(8,ff:getHeight()*.50)
-      local gap=math.max(7,ff:getHeight()*.38)
-      local micro=math.max(4,ff:getHeight()*.18)
-      local arrowBlock=arrowSize*2.35
-      local pocketW=ff:getWidth("POCKET")
-      local line2W=bf:getWidth("A")+micro+ff:getWidth("CHOOSE")+gap
-        +bf:getWidth("B")+micro+ff:getWidth("BACK")
-      return {footerFont=ff,buttonFont=bf,arrowSize=arrowSize,gap=gap,micro=micro,
-        arrowBlock=arrowBlock,pocketW=pocketW,line2W=line2W,
-        totalW=arrowBlock+gap+pocketW+gap+line2W}
-    end
-
-    local baseFooterPx=21*scale
-    local baseButtonPx=23*scale
-    local spec=metrics(baseFooterPx,baseButtonPx)
-    if spec.totalW<=maxW then
-      spec.wrapped=false
-      spec.height=math.max(62*scale,spec.footerFont:getHeight()+24*scale)
-      return spec
-    end
-
-    -- Small overages (typical phone landscape at 100% font size) stay on one
-    -- line and scale down only as much as needed. Larger accessibility-font
-    -- overages switch to two rows instead of running past the card edge.
-    local fit=(maxW/math.max(1,spec.totalW))*.97
-    if fit>=.78 then
-      spec=metrics(baseFooterPx*fit,baseButtonPx*fit)
-      spec.wrapped=false
-      spec.height=math.max(62*scale,spec.footerFont:getHeight()+24*scale)
-      return spec
-    end
-
-    local line1=metrics(baseFooterPx,baseButtonPx)
-    local line2=line1
-    if line1.line2W>maxW then
-      local f2=(maxW/math.max(1,line1.line2W))*.97
-      line2=metrics(baseFooterPx*f2,baseButtonPx*f2)
-    end
-    line1.wrapped=true
-    line1.line2Font=line2.footerFont
-    line1.line2ButtonFont=line2.buttonFont
-    line1.line2Gap=line2.gap
-    line1.line2Micro=line2.micro
-    line1.height=math.max(94*scale,line1.footerFont:getHeight()+line2.footerFont:getHeight()+34*scale)
-    return line1
   end
 
   -- gen2-aio: touchable rows drawn this frame (window units), for KIM_TOUCH.
@@ -1798,8 +1729,6 @@ return function(mod)
         local yes=badgeOwned(owned,name,i)
         local cardH=78*scale
         color(yes and c.selected or c.raised); G.rectangle("fill",bx,by,colW-14*scale,cardH,6,6)
-        local artW=112*scale
-        local artH=68*scale
         local tx
         local tw
         local badgeSize=42*scale

@@ -1946,11 +1946,6 @@ return function(mod)
       return candidates
   end
 
-  local function legacyEntryKey(entry, index)
-      return tostring(index) .. ":" .. tostring(entry and entry.species or "")
-          .. ":" .. tostring(entry and entry.isShiny == true)
-  end
-
   local function recoverUniqueLegacyCatches(game, log, areas, gameVersion)
       local legacy = log["__LEGACY__"]
       if type(legacy) ~= "table" then return false end
@@ -2068,18 +2063,6 @@ return function(mod)
       end
 
       return changed
-  end
-
-  local function canInferVanillaEncounterLocations()
-      -- If this Nuzlocke save has ever observed an external encounter provider,
-      -- an unknown old Pokemon may have been generated while that provider was
-      -- active even if it is disabled now. Do not retroactively apply vanilla
-      -- encounter tables to those saves.
-      local history = mod.save:get("encounter_provider_history")
-      if type(history) == "table" and next(history) ~= nil then
-          return false
-      end
-      return activeCompatProvider("encounters", currentGame, nil) == nil
   end
 
   local function recoverLegacyEntriesFromProvider(save, log)
@@ -3218,16 +3201,6 @@ return function(mod)
       pendingRulesDirty = false
       areaGuideEnabled = profile.area_guide_enabled == true
       return true
-  end
-
-  local function loadSavedSetupIntoPending()
-      local profile = loadSetupProfileFromDisk()
-      if profile then
-          pendingNewGameRules = profile
-          pendingRulesDirty = false
-          return true
-      end
-      return false
   end
 
   local function stageNewGameProfile()
@@ -7249,139 +7222,11 @@ return function(mod)
   --   4. Trade (allowed)→ area from TRADE_DATA or current map.
   --   5. Trade (blocked)→ native transaction is rejected before exchange.
   ---------------------------------------------------------------------
-  local function wonderTradeProviderContext(game, ev)
-      local provider = activeCompatProvider("wonder_trade", game, nil)
-      local context = providerContext(provider, game, nil) or {}
-      if type(ev) == "table" then
-          local fields = { "wonderTradeArea", "originArea", "fromArea", "sourceLocation", "tradeArea" }
-          for _, field in ipairs(fields) do
-              if context.area == nil and ev[field] ~= nil then
-                  context.area = routeKey(ev[field]) or ev[field]
-              end
-          end
-          if context.area == nil and ev.context and type(ev.context) == "table" then
-              context.area = routeKey(ev.context.area or ev.context.originArea)
-          end
-      end
-      return provider, context
-  end
-
   local function isWonderTradeEvent(ev, source)
       if type(ev) ~= "table" then return false end
       if ev.wonderTrade == true or ev.isWonderTrade == true or ev.wonder_trade == true then return true end
       source = tostring(source or ""):lower():gsub("[%s%-]", "_")
       return source == "wonder_trade" or source == "wondertrade" or source == "wt"
-  end
-
-  local function registerWonderTradeCatch(game, ev, mon, species, area, provider)
-      area = routeKey(area) or area
-      if not area or area == "UNKNOWN" or area == "__LEGACY__" then
-          return false
-      end
-
-      -- Wonderlocke is a replacement for the existing encounter, not a second
-      -- catch in the same area. Prefer the outgoing Pokemon supplied by the
-      -- provider and replace that tracker row in-place. If no outgoing identity
-      -- is available, only replace a single existing row; never collapse a
-      -- legitimately multi-attributed area.
-      local context = (providerContext(provider, game, nil) or {})
-      local outgoing = (type(ev) == "table" and (ev.outgoingMon or ev.sentMon or ev.tradedMon))
-          or context.outgoingMon
-      local log = trackerLog()
-      local entries = log[area]
-      local replaced = false
-      local outgoingSpecies = outgoing and tostring(outgoing.species or ""):upper() or nil
-      local outgoingId = outgoing and Identity.pokemonIdentity(outgoing) or nil
-      local outgoingFp = outgoing and Identity.fingerprint(outgoing) or nil
-
-      if type(entries) == "table" and #entries > 0 then
-          local replaceIndex
-          if outgoingId then
-              for i, entry in ipairs(entries) do
-                  if entry and entry.pokemonId == outgoingId then
-                      replaceIndex = i; break
-                  end
-              end
-          end
-          if not replaceIndex and outgoingFp then
-              for i, entry in ipairs(entries) do
-                  if entry and entry.fingerprint and entry.fingerprint == outgoingFp then
-                      replaceIndex = i; break
-                  end
-              end
-          end
-          if not replaceIndex and outgoingSpecies then
-              for i, entry in ipairs(entries) do
-                  if tostring(entry and entry.species or ""):upper() == outgoingSpecies then
-                      replaceIndex = i; break
-                  end
-              end
-          end
-          if not replaceIndex and #entries == 1 then
-              replaceIndex = 1
-          end
-
-          if replaceIndex then
-              entries[replaceIndex] = {
-                  species = species,
-                  pokemonId = mon and Identity.ensurePokemonIdentity(mon, game and game.save, "NORMAL") or nil,
-                  isShiny = mon and Identity.isShiny(mon),
-                  encounterType = "wonder_trade",
-                  encounterSource = "wonder_trade",
-                  encounterProvider = provider and provider.id or nil,
-                  encounterProviderVersion = provider and provider.version or nil,
-                  encounterContext = context,
-                  fingerprint = Identity.fingerprint(mon),
-                  provenance = "NORMAL",
-                  retroactive = false,
-              }
-              replaced = true
-              mod.save:set("tracker_log", log)
-              markCaught(area, species)
-              markVisited(area)
-          end
-      end
-
-      if not replaced then
-          -- No safe outgoing match. This can happen with a provider that does
-          -- not expose the sent Pokemon. Keep the encounter visible rather than
-          -- guessing which existing attributed Pokemon should disappear.
-          registerSpecialCatch(species, area, "wonder_trade", mon)
-      end
-
-      if mon then
-          mon.catchLocation = area
-          mon.encounterType = "wonder_trade"
-          mon.nuzlockeEncounterSource = "wonder_trade"
-          mon.nuzlockeEncounterProvider = provider and provider.id or mon.nuzlockeEncounterProvider
-          mon.nuzlockeEncounterProviderVersion = provider and provider.version or mon.nuzlockeEncounterProviderVersion
-          mon.nuzlockeWonderTradeOrigin = area
-          mon.nuzlockeDead = false
-          mon.nuzlockeTrackerRegistered = true
-          Identity.setPokemonOrigin(mon, "NORMAL")
-          Identity.baselineAdd(mon, "NORMAL")
-      end
-
-      local history = mod.save:get("nuzlocke_history", {})
-      if type(history) ~= "table" then history = {} end
-      table.insert(history, {
-          name = (mon and (mon.nickname or species)) or species,
-          species = species,
-          pokemonId = mon and Identity.pokemonIdentity(mon) or nil,
-          catchLocation = area,
-          encounterType = "wonder_trade",
-          encounterSource = "wonder_trade",
-          encounterProvider = provider and provider.id or nil,
-          encounterProviderVersion = provider and provider.version or nil,
-          status = "ALIVE",
-      })
-      mod.save:set("nuzlocke_history", history)
-
-      worldMechanic(game, "wonder_trade:" .. tostring(mon and (mon.nickname or species) or species),
-          "WONDER TRADE!\nThe received Pokemon counts as your encounter.",
-          "Wonder Trade time.\nOne catch in, one teammate out.",
-          "The Nuzlocke accepts the mystery trade.\nWhatever comes back is now part of the run.")
-      return true
   end
 
   -- Wonderlocke is intentionally dormant. Keep the public adapter so Wonder
@@ -8095,7 +7940,6 @@ return function(mod)
   ---------------------------------------------------------------------
   -- WHITEOUT STATE
   ---------------------------------------------------------------------
-  local whiteoutPending = false
 
   local function hasHealthyParty(game)
       local party = game and game.save and game.save.party or {}

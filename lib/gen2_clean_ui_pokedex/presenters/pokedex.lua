@@ -65,26 +65,6 @@ return function(ctx)
     return ("%.1f lbs."):format(value / 10)
   end
 
-  local function wrapLines(lines, width)
-    local output = {}
-    for _, source in ipairs(lines or {}) do
-      local text = tostring(source or "")
-      while #text > width do
-        local split = width
-        for index = width, 1, -1 do
-          if text:sub(index, index) == " " then
-            split = index - 1
-            break
-          end
-        end
-        output[#output + 1] = text:sub(1, split)
-        text = text:sub(split + 2)
-      end
-      output[#output + 1] = text
-    end
-    return output
-  end
-
   local function entryDocument(current, selectedAction)
     local art = sprite(current.art)
     local activeTab = ({ [1] = 1, [2] = 2, [3] = 5, [4] = 6 })

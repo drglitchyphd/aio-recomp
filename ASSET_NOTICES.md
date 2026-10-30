@@ -1,64 +1,66 @@
-# Asset notices — Kanto in Motion v1.6.0
+# Asset notices — Gen2-AIO
 
-## Animated Pokémon battle sprites
+This file covers the artwork, audio, fonts and 3D assets that Gen2-AIO ships
+or downloads. For the full credits list, including the bundled mods and their
+licenses, see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Gen2-AIO does
+not claim ownership of any Pokémon-derived artwork or audio.
 
-Kanto in Motion's HD animated Pokémon presentation uses artwork sourced from:
+## Downloaded, not in the mod ZIP
 
-**Battle Sprites Reloded — JDChaos**  
-https://forums.pokemmo.com/index.php?/topic/142585-battle-sprites-reloded/
+The ASSET MANAGER (GEN2-AIO → ADVANCED) downloads Kanto in Motion's HD asset
+pack once from https://github.com/HaseoSora/Kanto-in-Motion-Assets and keeps it
+in the mod cache across updates.
 
-The imported KIM sprite pipeline supports the game-appropriate National Dex range:
+- **HD animated Pokémon battle sprites:** sourced from **Battle Sprites
+  Reloded** by **JDChaos**.
+  - https://forums.pokemmo.com/index.php?/topic/142585-battle-sprites-reloded/
+  - Front and back, normal and shiny, and male/female where available.
+  - Crystal uses National Dex #001–251, plus the Unown letter forms.
+- **HD battle backgrounds:** Kanto in Motion's 1920×950 painted scenes. Timed
+  outdoor scenes have sunrise, day, sunset and night variants; caves and fixed
+  interiors are static. The artist is not recorded in the bundle.
 
-- Red / Blue / Yellow: #001–151
-- Gold / Silver / Crystal: #001–251
-- FireRed / LeafGreen: #001–386
+## Shipped in the mod
 
-The source is used for front/back, normal/shiny, and available male/female variants. Kanto in Motion does not claim ownership of Pokémon-derived artwork.
-
-## HD Rescaled Pokémon menu icons
-
-Kanto in Motion uses the **HD Rescaled Icons** artwork for National Dex **#001–386**.
-
-Original pack / thread credit: **LockeGriss and contributors**  
-https://forums.pokemmo.com/index.php?/topic/183919-hd-rescaled-icons/
-
-**HaseoSora** contributed the non-flying Charizard icon and the Cyndaquil-family flame edits used by this set:  
-https://forums.pokemmo.com/index.php?/topic/183919-hd-rescaled-icons/#comment-2173491
-
-KIM stores normalized native/Modern UI versions plus original-resolution source images used by the final-resolution G/S/C and FR/LG rendering paths.
-
-Separate shiny menu-icon artwork is not yet included; shiny Pokémon currently fall back to the normal HD menu icon.
-
-## HD battle backgrounds
-
-Kanto in Motion uses supplied HD battle-background assets for its Gen 1 and supported FR/LG HD background paths. Timed outdoor scenes can provide sunrise/day/sunset/night variants; caves and fixed interiors use static routing.
-
-## Trainer Card badges
-
-The retained animated badge artwork is credited to **xpixelpriorx**:  
-https://www.deviantart.com/xpixelpriorx
-
-## Gen1 Modern UI assets
-
-Original project credit: **ArmstrongThomas**  
-https://github.com/ArmstrongThomas/gen1-modern-ui
-
-## Poké Ball Colorfix
-
-Integrated Poké Ball presentation fixes are credited to **keberos**:  
-https://github.com/keberos/pokeball-colorfix
-
-## Kanto Rework
-
-Kanto in Motion integrates adapted Kanto Rework / Pokémon Essentials-style move-animation and routing work.
-
-Project credit: **Faendra**  
-https://github.com/Faendra/kanto-rework-suite
-
-## Shiny encounter presentation
-
-KIM retains its shiny sparkle image and audio cue for the one-shot shiny encounter presentation. Kanto in Motion does not claim ownership of supplied Pokémon-derived/audio assets.
+- **HD Rescaled menu icons** (`assets/menu_icons/`), National Dex #001–386:
+  **LockeGriss and contributors**.
+  - https://forums.pokemmo.com/index.php?/topic/183919-hd-rescaled-icons/
+  - **HaseoSora** made the non-flying Charizard icon and the Cyndaquil-family
+    flame edits:
+    https://forums.pokemmo.com/index.php?/topic/183919-hd-rescaled-icons/#comment-2173491
+  - Shiny menu icons are generated from the matching shiny battle art.
+    Normal icons are the fallback where no shiny sheet exists yet.
+- **Trainer Card animated badges** (`assets/trainer_card/badges/`):
+  **xpixelpriorx**, https://www.deviantart.com/xpixelpriorx
+- **Poké Ball item icons** (`assets/gen2_aio/balls/`): PokeAPI sprites,
+  https://github.com/PokeAPI/sprites
+- **Pixel Operator font** (`assets/fonts/pixeloperator/`): Jayvee Enaguas
+  (HarvettFox96), CC0 1.0.
+- **Kenney 3D kits** (`stadium2/assets/kenney_*`): Kenney, www.kenney.nl,
+  CC0 1.0. Each kit's license is alongside its files.
+  - Four painted textures there are **not** Kenney assets: `meadow-grass.png`,
+    `summer-sky.png`, `watercolor-materials.png` and `watercolor-town.png`.
+    Their READMEs say they were made with an image-generation tool.
+- **Wilds of Kanto sprites and portraits** (`wilds/assets/`): see
+  `wilds/THIRD_PARTY_NOTICES.md` and `wilds/THIRD_PARTY_ASSETS.md`.
+  - The PMDCollab dialogue portraits are **CC BY-NC 4.0**: non-commercial use,
+    with attribution.
+- **Kanto Rework animation sheets and sound effects** (`assets/animations/`,
+  `assets/sfx/`): integrated from **Faendra's** Kanto Rework Suite,
+  https://github.com/Faendra/kanto-rework-suite. These are used only by
+  the Gen 1 battle paths and are inactive on Crystal.
+- **Shiny encounter effect** (`assets/effects/shiny_sparkle.png`,
+  `assets/sfx/shiny.wav`): kept from Kanto in Motion. The source is not
+  recorded.
+- **Player trainer sprites, title art and pixel frames**
+  (`assets/battle/player-trainers-*/`, `assets/title/`,
+  `assets/pixel_frame*.png`): kept from Kanto in Motion. The source is not
+  recorded.
 
 ## Trademark / affiliation notice
 
-Pokémon and related characters, names, and artwork are trademarks and copyrights of their respective owners. Kanto in Motion is an unofficial fan-made mod and is not affiliated with or endorsed by Nintendo, Game Freak, Creatures Inc., or The Pokémon Company.
+Pokémon and related characters, names, and artwork are trademarks and
+copyrights of Nintendo, Creatures Inc. and GAME FREAK inc. (The Pokémon
+Company). Gen2-AIO is an unofficial fan-made mod. It is not affiliated with or
+endorsed by Nintendo, Game Freak, Creatures Inc. or The Pokémon Company, and it
+contains no ROM.

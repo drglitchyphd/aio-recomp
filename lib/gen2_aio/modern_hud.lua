@@ -5,8 +5,8 @@
 -- those boxes with cards in the same theme as KIM's panel:
 --
 --   * battle.status_hud_visible answers false, the engine's official switch,
---     so the native HUD (and every capture of it: Battle Art's edge bands,
---     KIM's Battle Art bridge) draws nothing;
+--     so the native HUD (and every capture of it in gmarc's 3D battle)
+--     draws nothing;
 --   * render.hud draws the cards at window resolution, reading the same
 --     values the native HUD reads (animated HP, chased EXP fill, status tag,
 --     gender, caught marker, party balls).
@@ -397,7 +397,7 @@ return function(host)
       player = { x = playerX, y = playerY, w = cardW, h = playerH },
       panelTop = panel and panel.y or nil,
     }
-    local ph2 = state.showPlayerHud and card(state, "player", playerX, playerY, cardW, fit, theme) or nil
+    if state.showPlayerHud then card(state, "player", playerX, playerY, cardW, fit, theme) end
     if state.ballRows and state.ballRows.player then
       local r = 2.9 * fit
       partyBalls(party and party.party, playerX + cardW - r - 2 * fit - r * 2.5 * 5,

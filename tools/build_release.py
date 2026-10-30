@@ -10,7 +10,7 @@ import zipfile
 RUNTIME_DIRS = ('assets', 'data', 'gmarc', 'lib', 'nuzlocke', 'qol', 'qoltoggles', 'stadium2', 'touch', 'wilds')
 ROOT_FILES = ('manifest.json', 'main.lua', 'kim_main.lua', 'mod.card', 'README.md',
               'README_GEN2_AIO.md', 'OLDER_UPDATE_NOTES.md', 'ASSET_NOTICES.md',
-              'THIRD_PARTY_NOTICES.md', 'Gen2_AiO_handoff_spec_v5.md', 'tools/import_hd_pokemon.py')
+              'THIRD_PARTY_NOTICES.md', 'FEATURES.md', 'Gen2_AiO_handoff_spec_v5.md', 'tools/import_hd_pokemon.py')
 
 
 def build(root, output, tag=None, previous=None):
