@@ -110,14 +110,6 @@ return function(mod)
     end
   end
 
-  local function truncate(text, font, width)
-    text = tostring(text or "")
-    if not font.getWidth or font:getWidth(text) <= width then return text end
-    local tail, target = "...", width - font:getWidth("...")
-    while #text > 0 and font:getWidth(text) > target do text = text:sub(1,-2) end
-    return text .. tail
-  end
-
 
   local function fittedFont(basePx,value,maxW,maxH)
     local px=math.max(8,tonumber(basePx) or 8)

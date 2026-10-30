@@ -35,12 +35,6 @@ return function(mod, battleArt3DEnabled, isMobileHost, battleHudGeometry,
     return ok and value == true
   end
 
-  local function modernLowerPanelActive()
-    if type(modernUiEnabled) ~= "function" then return true end
-    local ok, value = pcall(modernUiEnabled)
-    return ok and value == true
-  end
-
   local function currentBattle()
     if activeBattle then return activeBattle end
     local okGame, Game = pcall(require, "src.core.Game")

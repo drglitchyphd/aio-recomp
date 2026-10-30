@@ -38,7 +38,7 @@ return function(mod)
   end
   if SummaryMenu.__kimModernSummaryV2 then return true end
 
-  local fontCache, imageCache = {}, {}
+  local fontCache = {}
   local FALLBACK = {
     surface={0.075,0.105,0.17,0.94}, raised={0.12,0.17,0.27,0.92},
     selected={0.18,0.43,0.72,0.96}, accent={0.48,0.86,1,1},
@@ -105,22 +105,8 @@ return function(mod)
     color(c.frame); G.rectangle("line",x,y,w,h,8,8)
   end
 
-  -- Configurable UI fonts do not consistently contain arrow or gender glyphs.
-  -- Draw both as vector marks so they remain visible with every KIM font.
-  local function chevron(cx,cy,size,dir,c)
-    size=math.max(4,tonumber(size) or 8)
-    color(c,nil,true); G.setLineWidth(math.max(1,size*.14))
-    if dir=="left" then
-      G.line(cx+size*.28,cy-size*.38,cx-size*.24,cy,cx+size*.28,cy+size*.38)
-    elseif dir=="right" then
-      G.line(cx-size*.28,cy-size*.38,cx+size*.24,cy,cx-size*.28,cy+size*.38)
-    elseif dir=="up" then
-      G.line(cx-size*.38,cy+size*.24,cx,cy-size*.24,cx+size*.38,cy+size*.24)
-    else
-      G.line(cx-size*.38,cy-size*.24,cx,cy+size*.24,cx+size*.38,cy-size*.24)
-    end
-  end
-
+  -- Configurable UI fonts do not consistently contain gender glyphs.
+  -- Draw them as vector marks so they remain visible with every KIM font.
   local function genderSymbol(cx,cy,size,g,c)
     size=math.max(7,tonumber(size) or 10)
     color(c,nil,true); G.setLineWidth(math.max(1,size*.12))
@@ -148,22 +134,6 @@ return function(mod)
       if ok and w and h and w>0 and h>0 then return x,y,w,h end
     end
     return 0,0,ww,wh
-  end
-
-  local function loadImage(path)
-    if not path then return nil end
-    if imageCache[path]~=nil then return imageCache[path] or nil end
-    local ok,img=false,nil
-    if mod.assets and type(mod.assets.image)=="function" then
-      ok,img=pcall(mod.assets.image,mod.assets,path)
-    end
-    if (not ok or not img) and G and type(G.newImage)=="function" then
-      ok,img=pcall(G.newImage,path)
-    end
-    if not ok or not img then imageCache[path]=false return nil end
-    if img.setFilter then pcall(img.setFilter,img,"nearest","nearest") end
-    imageCache[path]=img
-    return img
   end
 
   local function nativePreview(self,mon)

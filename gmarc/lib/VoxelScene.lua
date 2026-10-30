@@ -249,21 +249,6 @@ function VoxelScene.pull(a)
   return 6 + math.max(0, 16 * math.cos(a) - 8) / math.max(math.sin(a), 0.2)
 end
 
--- The sheet frame and mirror flag the 2D path would draw for this pose
--- (same tables as SpriteRenderer). Shared by the billboard pass and the
--- shadow pass so a walking character's shadow swings its legs too.
-local function frameFor(def, facing, phase, flip)
-  local SR = require("src.render.SpriteRenderer")
-  local frame, mirror = 0, false
-  if (def.frames or 1) > 1 then
-    frame = (def.walker and phase == 1) and SR.WALK[facing]
-            or SR.STAND[facing]
-    mirror = facing == "right"
-      or ((facing == "down" or facing == "up") and phase == 1 and flip)
-  end
-  return frame, mirror
-end
-
 -- The facing a pose SHOWS this camera. The flat frames are "how this pose
 -- looks from the south", which is where the orbit always stands; a
 -- first-person eye stands anywhere, so deep enough into the blend the

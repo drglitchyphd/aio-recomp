@@ -1,23 +1,23 @@
 -- gen2-aio battle background provider.
 --
--- Battle Art's 3D battle stage (bundled under voxel/) is the compositor on
--- Crystal: it owns the camera, KIM's HD Pokemon cards and the battle UI. Its
--- ARENA FILL "PNG" plate is pinned by the host while a picture background is
--- selected, and voxel/lib/BattleScene.lua asks this module for that plate:
+-- gmarc's 3D battle stage (gmarc/) is the compositor on Crystal: it owns
+-- the camera, KIM's HD Pokemon cards and the battle UI. The host pins its
+-- 3D-BTL mode to the platform arena while a picture background is selected
+-- (main.lua), and gmarc/lib/BattleScene.lua asks this module for the plate:
 --
 --   KIM HD      a flat 1920x950 Kanto in Motion background, cover-fitted
 --   KENNEY HD   the Stadium 2 Importer's painted Kenney scene for the place
---   STADIUM 2   a Stadium 2 arena decoded from the imported ROM
+--   VOXEL       no plate: the voxel world itself
 --
--- The two 3D choices are rendered every frame through Battle Art's own
--- camera: the Stadium scene is mapped onto Battle Art's world with the
+-- (STADIUM 2, the ROM arena, was removed in 0.9.1; a stored "stadium"
+-- reads as KENNEY HD.) The Kenney scene is rendered every frame through the
+-- battle camera: the Stadium scene is mapped onto the voxel world with the
 -- similarity transform that puts Stadium's player/enemy slots exactly on
--- Battle Art's arena slots, so the cards stand on the scene's real ground.
+-- the arena slots, so the cards stand on the scene's real ground.
 --
--- Fallbacks never leave a broken battle: STADIUM 2 without the ROM (or with
--- a field that fails to decode) uses KENNEY HD; a place Kenney has no scene
--- for uses KIM HD; KIM HD art that has not been downloaded yet shows the
--- voxel world.
+-- Fallbacks never leave a broken battle: a place Kenney has no scene for
+-- uses KIM HD; KIM HD art that has not been downloaded yet shows the voxel
+-- world.
 
 local SROOT = "mods.gen2-aio.stadium2.lib."
 
@@ -53,7 +53,7 @@ return function(host)
     return MODES[mode] and mode or "kim_hd"
   end
 
-  -- Battle Art's 3D-BTL stage runs for every choice except DEFAULT (WHITE).
+  -- gmarc's 3D-BTL stage runs for every choice except DEFAULT (WHITE).
   function B.stageEnabled()
     return B.mode() ~= "white"
   end
@@ -146,10 +146,10 @@ return function(host)
   end
 
   -- ---------------------------------------------------- similarity map
-  -- Map Battle Art world points onto the Stadium scene: Battle Art's player
+  -- Map voxel battle world points onto the Stadium scene: the stage's player
   -- slot -> the scene's player slot, enemy -> enemy, uniform scale, rotation
   -- about +Y. Projection is invariant under this map, so the scene seen
-  -- through the mapped camera lines up with the cards Battle Art draws.
+  -- through the mapped camera lines up with the cards the stage draws.
   local function similarity(pb, eb, ps, es)
     local dbx, dbz = eb[1] - pb[1], eb[3] - pb[3]
     local dsx, dsz = es[1] - ps[1], es[3] - ps[3]
@@ -185,7 +185,7 @@ return function(host)
   end
 
   -- A plan that renders a Stadium Scene (Kenney environment or ROM arena)
-  -- through the Battle Art camera handed to render(view).
+  -- through the battle camera handed to render(view).
   local function scenePlan(scene, label)
     local Renderer, Camera = stadium("renderer"), stadium("battle_camera")
     if not (Renderer and Camera) then
@@ -401,13 +401,14 @@ return function(host)
     return plan
   end
 
-  -- Battle Art ARENA FILL while a battle is staged: PNG while this module
-  -- has a plate for it, OFF (the voxel world) otherwise.
+  -- While a battle is staged: PNG while this module has a plate for it, OFF
+  -- (the voxel world) otherwise; main.lua turns PNG into gmarc's platform
+  -- arena ("flatB" / "stadiumB").
   function B.fillValue()
     return currentPlan() and "PNG" or "OFF"
   end
 
-  -- voxel/lib/BattleScene.lua: { image, exact, offset, render(view) }
+  -- gmarc/lib/BattleScene.lua: { image, exact, offset, render(view) }
   function B.plate()
     return currentPlan()
   end

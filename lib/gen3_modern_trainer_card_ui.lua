@@ -201,11 +201,6 @@ return function(mod)
     local g=c.gender or c.playerGender
     return g==1 or g=="female" or g=="F"
   end
-  local function dataFor(menu,kind)
-    local c=type(menu._card)=="table" and menu._card or {}
-    local version=(menu._session and menu._session.version) or c.version or (kind=="emerald" and "emerald") or ""
-    return c,tostring(version or "")
-  end
   local function playerName(c)
     local n=c.playerName or c.name or "TRAINER"
     n=tostring(n); if n=="" then n="TRAINER" end
