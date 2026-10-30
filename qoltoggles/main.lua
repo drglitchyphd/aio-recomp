@@ -365,7 +365,9 @@ local pendingHeldItemRestores = {}
 -- false = OFF (vanilla), then 0x, 1.5x, 2x, 3x, 4x.  A stored `true` is a
 -- legacy EXP x2 bucket (options.lua from before the selector) and reads
 -- as 2x -- see normalizeMult.
-local MULT_CYCLE = { false, 0, 1.5, 2, 3, 4 }
+-- 0X last (1.0.0): it was the first step from OFF, so one stray tap on
+-- MONEY MULT silently stopped every prize (EXP MULT: every EXP gain)
+local MULT_CYCLE = { false, 1.5, 2, 3, 4, 0 }
 
 -- BATTERY INDICATOR: one persisted cycle controls the placement.  The
 -- strings are deliberately stable storage values; the menu shows the

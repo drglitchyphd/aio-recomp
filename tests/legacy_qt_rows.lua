@@ -72,9 +72,14 @@ check(OPTS.qt_repel == nil, "a key the host holds is not copied")
 
 -- the player sees 0X and steps the row round to OFF: that is what is read
 local row = g["MONEY MULT"]
-for _ = 1, 5 do row.step(game, 1) end
+row.step(game, 1)   -- 1.0.0: 0X is the cycle's last entry, so one step wraps to OFF
 check(OPTS.qt_money_mult == "off", "stepped to OFF: " .. tostring(OPTS.qt_money_mult))
 check(LIVE.get("money_mult") == false, "OFF is in effect, over the legacy key")
+-- and from OFF the first step is 1.5X, not 0X (no stray tap stops prizes)
+row.step(game, 1)
+check(OPTS.qt_money_mult == "1.5", "OFF steps to 1.5X first: " .. tostring(OPTS.qt_money_mult))
+row.step(game, -1)
+check(OPTS.qt_money_mult == "off", "and back to OFF")
 
 if Battle and Prize then
   -- the trainer-win payout through the engine's own Battle:awardPrizeMoney,
@@ -91,11 +96,11 @@ if Battle and Prize then
   end
   local money, text = win()
   check(money == 1080 and text and text:find("for winning", 1, true), "OFF pays ¥80 with its line")
-  row.step(game, 1)
+  row.step(game, -1)   -- 0X is now OFF's step backwards (the cycle's end)
   check(OPTS.qt_money_mult == "0" and LIVE.get("money_mult") == 0, "0X again")
   money, text = win()
   check(money == 1000 and text == nil, "0x: no prize and no line (the setting's own behaviour)")
-  row.step(game, -1)
+  row.step(game, 1)
 else
   print("legacy qt rows: payout part SKIPPED (set AIO_ENGINE to the engine's src root)")
 end

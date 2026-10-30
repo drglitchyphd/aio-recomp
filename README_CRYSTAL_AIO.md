@@ -122,6 +122,12 @@ Gen2-AIO is now **Crystal-AiO**, and this is a full-install release.
   everything else; `tools/build_release.py --full-install` asks for one
   explicitly.
 
+- Trainer prize money: a MONEY MULT (or EXP MULT) value saved under an old
+  key by a 0.9.58 settings bug kept working while its row showed OFF, so 0X
+  could silently stop every prize. The row now shows the value really in
+  effect. 0X also moved to the end of the list (OFF → 1.5X → 2X → 3X → 4X →
+  0X), so a single stray tap from OFF can no longer turn prizes or EXP off.
+
 ## 0.9.91 changes
 
 - New FEATURES.md: a tour of everything Gen2-AIO does and where each
