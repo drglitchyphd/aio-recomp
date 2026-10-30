@@ -283,13 +283,6 @@ return function(mod, battleSystemEnabled, battleHudGeometry)
     return true
   end
 
-  local function activeKrba()
-    local getter = mod.exports and mod.exports._kantoInMotionKRBAActiveSession
-    if type(getter) ~= "function" then return nil end
-    local ok, sess = pcall(getter)
-    return ok and type(sess) == "table" and not sess.done and sess or nil
-  end
-
   -- Return the live Essentials/KRBA transform for one physical battler.
   -- Session:battlerTransform already understands dedicated opponent variants:
   -- for an enemy Quick Attack it maps the moving USER cell to the enemy, not

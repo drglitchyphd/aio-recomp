@@ -243,10 +243,6 @@ return function(host)
         world = "classic", wild = "classic", qol = "classic" } },
   }
 
-  local function stepById(id)
-    for _, s in ipairs(STEPS) do if s.id == id then return s end end
-    return nil
-  end
   local function choiceById(step, id)
     for _, c in ipairs(step.choices) do if c.id == id then return c end end
     return nil

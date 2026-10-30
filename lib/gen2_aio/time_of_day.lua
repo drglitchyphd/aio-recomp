@@ -21,7 +21,6 @@ return function(host)
   if World._kimArenaTime then return World._kimArenaTime end
 
   local FIXED = { morning = 7.0, day = 13.0, evening = 18.5, night = 23.0 }
-  local CYCLE_SECONDS = 30 * 60
   -- 0.9.45: CYCLE 30 ("cycle", the original) and CYCLE 60 ("cycle60")
   local CYCLES = { cycle = 30 * 60, cycle60 = 60 * 60 }
 

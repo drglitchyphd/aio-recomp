@@ -838,7 +838,7 @@ return function(host)
       used[id] = (used[id] or 0) + 1
       return true
     end
-    local revives, cures, potions = {}, {}, {}
+    local revives, potions = {}, {}
     for id in pairs(IE.REVIVE or {}) do revives[#revives + 1] = id end
     for id in pairs(IE.HEAL_HP or {}) do potions[#potions + 1] = id end
     for _, mon in ipairs(game.save and game.save.party or {}) do
