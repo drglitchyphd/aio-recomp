@@ -57,6 +57,13 @@ GitHub and overlay patches are not the updater's install package. The custom
 index is independent of the community index; a community listing would require
 a separate submission.
 
+## 0.9.88 changes
+
+- The Charcoal Kiln's Farfetch'd is now really drawn as Farfetch'd. 0.9.87
+  got NPC Pokemon swapping again, but the game's own sprite data labels
+  that bird's sheet "MOLTRES", and that label was read before the
+  Farfetch'd rule.
+
 ## 0.9.87 changes
 
 - WILDS NPC POKEMON: Pokemon standing in the world (Azalea's Slowpoke, the

@@ -30,6 +30,13 @@ check(M.speciesFor(world, npc("SPRITE_GYARADOS", "Silent")) == "GYARADOS", "no s
 check(M.speciesFor(world, npc("SPRITE_GYARADOS", nil)) == "GYARADOS", "no script: the sheet's")
 -- 0.9.87: the Kiln's bird with no script key is still a Farfetch'd
 check(M.speciesFor(world, npc("SPRITE_MOLTRES", nil)) == "FARFETCH_D", "MOLTRES sheet without a script: Farfetch'd")
+-- 0.9.88: the ROM's sprite table tags the sheet itself as MOLTRES (device)
+local kiln = npc("SPRITE_MOLTRES", nil); kiln.spriteDef.species = "MOLTRES"
+check(M.speciesFor(world, kiln) == "FARFETCH_D", "sheet tagged MOLTRES by the ROM: still Farfetch'd")
+local kiln2 = npc("SPRITE_MOLTRES", "KilnFarfetchd"); kiln2.spriteDef.species = "MOLTRES"
+check(M.speciesFor(world, kiln2) == "FARFETCH_D", "tagged sheet with its script: Farfetch'd")
+local slow = npc("SPRITE_SLOWPOKE", nil); slow.spriteDef.species = "SLOWPOKE"
+check(M.speciesFor(world, slow) == "SLOWPOKE", "other tagged sheets keep their species")
 -- the species list from the game's own data when world.constants has none
 local World2 = require("src.world.gen2.World")
 World2._kimArenaNpcMons = nil

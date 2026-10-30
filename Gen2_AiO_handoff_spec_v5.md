@@ -1,10 +1,20 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.87)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.88)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.88 (2026-10-30)
+
+- Device (0.9.87): `npc mons: 1 swapped (MOLTRES#146); species 251 from
+  constants`. The swap works, but `spriteDef.species` (SpriteMons, from
+  the ROM) said MOLTRES and was returned before BORROWED was checked.
+  BORROWED now runs first.
+- Same device report: disk cache on (hits, 54 files); AZALEA_TOWN body
+  restored from disk in 15 ms; 60 fps in the Kiln.
+- Test: `tests/npc_mon_species.lua` (11 checks; fails on 0.9.87).
 
 ## 0.9.87 (2026-10-30)
 
