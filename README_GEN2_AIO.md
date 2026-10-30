@@ -2,6 +2,12 @@
 
 One mod for Pokemon Crystal on Gen1Recomp, now using `gen2-aio` as its internal ID.
 
+- **Features:** [FEATURES.md](FEATURES.md) is a tour of everything the bundle
+  does and where to find it in the GEN2-AIO menus.
+- **Credits:** [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) credits every
+  bundled mod, artist and asset source. [ASSET_NOTICES.md](ASSET_NOTICES.md)
+  covers the art in more detail.
+
 | Part | Folder | Notes |
 |---|---|---|
 | Kanto in Motion 1.7.6 | root | HD Pokemon, Modern UI, battle panel |

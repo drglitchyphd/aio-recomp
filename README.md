@@ -5,6 +5,13 @@ See [the bundle README](README_GEN2_AIO.md) for current features, release notes,
 installation and updates. The Kanto in Motion documentation below describes
 the bundled upstream component.
 
+- **Features:** [FEATURES.md](FEATURES.md) is a tour of everything Gen2-AIO
+  does and where to find it in the GEN2-AIO menus.
+- **Credits:** [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) credits every
+  bundled mod (Kanto in Motion, gmarcs Gen 2 Voxel Mod, Stadium 2 Importer,
+  Wilds of Kanto Revival, Nuzlocke, Gen1Wild QOL, QoL Toggles, KIM Touch) and
+  every artist and asset source.
+
 Custom mod index:
 `https://raw.githubusercontent.com/drglitchyphd/aio-recomp/main/site/data/index.json`
 
