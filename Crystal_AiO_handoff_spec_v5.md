@@ -1,4 +1,4 @@
-# Crystal-AiO — Handoff Spec v5 (build 0.9.91)
+# Crystal-AiO — Handoff Spec v5 (build 1.0.0)
 
 Mod ID `crystal-aio` from 1.0.0 (`gen2-aio` 0.9.50-0.9.91, `KIM_ARENA` before).
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
@@ -6,6 +6,84 @@ Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: 
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7). Sections before 1.0.0 use the old
 names (`gen2-aio`, `lib/gen2_aio/`, GEN2-AIO).
+
+## 1.0.0 (2026-10-30)
+
+Renamed to Crystal-AiO, Crystal-only, full-install release.
+
+- Identity:
+  - manifest id `crystal-aio`, name `Crystal-AiO`, version 1.0.0;
+    `gen2-aio` added to `conflicts`. The loader fails the *declaring* mod
+    (Loader:_enforceConflicts), so with both installed and enabled Crystal-AiO
+    stays off and the launcher shows "Conflicts with Gen2-AIO"; nothing ever
+    runs twice. Installs go to `mods/<id>` (LauncherMods.installZip), so the
+    new id installs beside the old folder; the old entry's Update is refused
+    by `expectId` ("zip is for 'crystal-aio', expected 'gen2-aio'").
+  - `lib/gen2_aio/` -> `lib/crystal_aio/`; every `mods.gen2-aio.*` require
+    and `mods/gen2-aio/` path (stadium2, nuzlocke) -> `crystal-aio`; screen
+    and row ids `gen2-aio:*` -> `crystal-aio:*`; touch's
+    `mod.find("crystal-aio")`; core_menus' `currentMod.id` check; every
+    user-visible GEN2-AIO / Gen2-AIO string and log prefix.
+  - START row: CRYSTAL-AIO when the Modern START menu hides Crystal's box,
+    else CRYS-AIO (the native box fits 8 characters). `Hub.START_LABELS`;
+    quick_menu accepts both.
+  - Kept on purpose (internal, or stored in players' settings): the
+    `_kimArena*` hooks, `kimArena.*` row ids, `gen2_aio:*` option values
+    (UI THEME etc.), `assets/gen2_aio/`, the `gen2_modern_*` file names and
+    the `-- gen2-aio:` provenance comments.
+  - Files: README_GEN2_AIO.md -> README_CRYSTAL_AIO.md,
+    Gen2_AiO_handoff_spec_v5.md -> Crystal_AiO_handoff_spec_v5.md (packaging,
+    index description_url and auto-release notes updated).
+- Migration (`lib/crystal_aio/identity_migration.lua`, runs first in main.lua):
+  - sources newest first: `gen2-aio`, then `KIM_ARENA` (its `kim_arena:`
+    values mapped to `gen2_aio:`); a key/file `crystal-aio` already has always
+    wins, and the old buckets/folders are never touched;
+  - options.modOptions (saved once, bridged for this boot through
+    `mod.options.get` until the key is changed); save.modData on
+    `save.loading` / `game.ready` (Nuzlocke rules/tracker, QoL counters);
+    `mod_cache/<id>` (HD asset pack, zoom, ...) and
+    `mod_storage/<game>/<run>/<id>` (Nuzlocke runs, QoL Toggles, autosave
+    backups), copied file by file;
+  - not copied: `mod_cache/<id>/voxel/` (MeshStore names carry a build id,
+    and 1.0.0 changes gmarc/lib, so it would be swept anyway) and the old
+    `identity_migrated.txt`. `mod_cache/gen2-aio/voxel/` is deleted every boot
+    (best effort) to free the space;
+  - the marker `mod_cache/crystal-aio/identity_migrated.txt` is written last;
+    a failed copy raises (logged by main.lua) and the next boot retries.
+  - Not migrated: mod profiles' snapshots and the launcher's enable flags.
+- Crystal-only (~12 MB, 373 files, ~90k lines removed):
+  - main.lua returns on any generation other than 2 (force-enabled elsewhere);
+  - removed: `lib/gen3_*`, `lib/modern_ui_integrated*`, kim_main's Gen-1
+    block and everything only it loaded (integrated_krba,
+    krba_essentials_player*, integrated_pokeball_colorfix, pokeball_target_fix,
+    battle_art_111_*, battle_art_desktop_*, mobile_qol_exp_reconstruction,
+    potato_voxel_*, hgss_battle_hard_block), unloaded
+    gen2_clean_ui_passthrough / gen2_gsc / potato_voxel_mobile_hud_boundary /
+    wilds true_size/dev, data/gen1_anims.lua, data/title_player_red.lua,
+    data/hd_deoxys_forms.lua, assets/animations, assets/title and
+    assets/sfx except shiny.wav;
+  - kim_main.lua 8130 -> ~6200 lines: the Game3 branch, Gen 1 title screen,
+    stock Summary/Dex/Evolution/Game3 starter patches, Gen 1 battle hooks and
+    mobile guards; every `IS_GEN2` branch folded (bodies that declare locals
+    stay in `do ... end`). KIM's Gen 1 battle presenter functions that the
+    Crystal path shares code with remain, gated by
+    `battleSystemEnabled() == false` as before;
+  - asset_download_manager: Game3 host, FR/LG Start-menu bridge and the
+    FR/LG mobile download handoff removed;
+  - left: `lib/menu_icons.lua` / `lib/hgss_icon_hard_block.lua` still branch
+    on `mod.generation`; `assets/menu_icons` still holds #252-386.
+- Release pipeline:
+  - `tools/build_release.py --full-install` builds the full ZIP only. With
+    `--previous-zip` a full install also follows from an id change in
+    IDENTITY_TRANSITIONS or a major-version bump; otherwise a patch that would
+    delete files is refused with a hint. Patch name is now
+    `<id>_patch_<old>_to_<new>.zip`.
+  - release.yml: no earlier release of this id, or an older major -> build
+    with `--full-install` (the 0.9.48 "Initial" bootstrap fallback is gone);
+    otherwise download the previous full ZIP and build the patch as before.
+  - auto-release.yml reads README_CRYSTAL_AIO.md; release title Crystal-AiO.
+  - build_mod_index.py keeps the gen2-aio listing until a `crystal-aio-*.zip`
+    is published (unchanged rule), then lists crystal-aio.
 
 ## 0.9.91 (2026-10-30)
 

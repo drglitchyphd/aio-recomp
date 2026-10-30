@@ -1,7 +1,7 @@
 {
   "id": "crystal-aio",
   "name": "Crystal-AiO",
-  "version": "0.9.91",
+  "version": "1.0.0",
   "github": "drglitchyphd/aio-recomp",
   "api": 2,
   "entry": "main.lua",

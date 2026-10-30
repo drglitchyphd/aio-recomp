@@ -38,34 +38,47 @@ jobs:
           PY
           gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" --slurp > /tmp/release-pages.json
       - name: Select previous complete build
+        # A full-install release (new mod id or new major version, e.g. 1.0.0
+        # Crystal-AiO) ships only the full ZIP; any other release also ships
+        # an overlay patch against the newest older full build of this id.
         run: |
           python3 - <<'PY'
-          import json
+          import json, os
           from tools.build_mod_index import select_release
-          version = tuple(map(int, json.load(open('manifest.json'))['version'].split('.')))
+          from tools.build_release import semver
+          manifest = json.load(open('manifest.json'))
+          version = semver(manifest['version'])
           releases = [r for page in json.load(open('/tmp/release-pages.json')) for r in page]
           older = []
           for release in releases:
-              tag = release['tag_name'].removeprefix('v')
               try:
-                  if tuple(map(int, tag.split('.'))) < version:
+                  if semver(release['tag_name'].removeprefix('v')) < version:
                       older.append(release)
               except ValueError:
                   pass
-          selected = select_release(older, json.load(open('manifest.json'))['id'])
-          if not selected:
-              release = next((r for r in releases if r['tag_name'] == 'Initial'), None)
-              asset = next((a for a in (release or {}).get('assets', []) if a['name'] == 'Gen2_AiO_0948.zip'), None)
-              if asset:
-                  selected = {'tag': 'Initial', 'zip': {'name': asset['name']}}
-          assert selected, 'No previous full build found; provide a baseline before releasing'
-          json.dump(selected, open('/tmp/previous-release.json', 'w'))
+          selected = select_release(older, manifest['id'])
+          with open(os.environ['GITHUB_ENV'], 'a') as env:
+              if not selected:
+                  print(f"No earlier {manifest['id']} release: full-install release")
+                  env.write('FULL_INSTALL=1\n')
+              elif semver(selected['version'])[0] < version[0]:
+                  print(f"Major version {semver(selected['version'])[0]} -> {version[0]}: full-install release")
+                  env.write('FULL_INSTALL=1\n')
+              else:
+                  json.dump(selected, open('/tmp/previous-release.json', 'w'))
           PY
-          previous_tag=$(python3 -c 'import json; print(json.load(open("/tmp/previous-release.json"))["tag"])')
-          previous_name=$(python3 -c 'import json; print(json.load(open("/tmp/previous-release.json"))["zip"]["name"])')
-          gh release download "$previous_tag" --repo "$GITHUB_REPOSITORY" --pattern "$previous_name" --output /tmp/previous.zip
-      - name: Build and verify full build and overlay patch
-        run: python3 tools/build_release.py --tag "$RELEASE_TAG" --previous-zip /tmp/previous.zip
+          if [ -z "${FULL_INSTALL:-}" ] && [ -f /tmp/previous-release.json ]; then
+            previous_tag=$(python3 -c 'import json; print(json.load(open("/tmp/previous-release.json"))["tag"])')
+            previous_name=$(python3 -c 'import json; print(json.load(open("/tmp/previous-release.json"))["zip"]["name"])')
+            gh release download "$previous_tag" --repo "$GITHUB_REPOSITORY" --pattern "$previous_name" --output /tmp/previous.zip
+          fi
+      - name: Build and verify full build (and overlay patch)
+        run: |
+          if [ -f /tmp/previous.zip ]; then
+            python3 tools/build_release.py --tag "$RELEASE_TAG" --previous-zip /tmp/previous.zip
+          else
+            python3 tools/build_release.py --tag "$RELEASE_TAG" --full-install
+          fi
       - name: Attach installable builds and checksums
         run: gh release upload "$RELEASE_TAG" dist/* --repo "$GITHUB_REPOSITORY" --clobber
   index:
