@@ -199,25 +199,17 @@ return function(mod)
   -- they neither draw nor capture touches, and the hotbar keeps working.
   local HIDE = { "dpad", "a", "b", "start", "select", "l", "r" }
   local origLayout = TouchControls.layout
-  local hiddenFor, hidden, hiddenBar
+  local hiddenFor, hidden
   TouchControls.layout = function(self, ...)
     local L = origLayout(self, ...)
     if type(L) ~= "table" then return L end
-    -- 0.9.60: KEY BAR OFF moves the engine's "..." hotbar button off-screen
-    -- too (it is drawn and hit-tested from this same layout)
-    -- 0.9.69: the KEY BAR row is gone (the engine's own KEY BAR setting
-    -- works); the bar is never hidden from here any more
-    local barOff = false
-    if not takeover() and not barOff then return L end
-    if hiddenFor ~= L or hiddenBar ~= barOff then
+    -- 0.9.69: the "..." hotbar button is never hidden from here (the
+    -- engine's own KEY BAR setting owns it)
+    if not takeover() then return L end
+    if hiddenFor ~= L then
       hidden = {}
       for k, v in pairs(L) do hidden[k] = v end
-      local list = takeover() and HIDE or {}
-      if barOff then
-        list = { table.unpack and table.unpack(list) or unpack(list) }
-        list[#list + 1] = "hotbar"
-      end
-      for _, k in ipairs(list) do
+      for _, k in ipairs(HIDE) do
         if type(L[k]) == "table" then
           local z = {}
           for kk, vv in pairs(L[k]) do z[kk] = vv end
@@ -225,7 +217,7 @@ return function(mod)
           hidden[k] = z
         end
       end
-      hiddenFor, hiddenBar = L, barOff
+      hiddenFor = L
     end
     return hidden
   end
