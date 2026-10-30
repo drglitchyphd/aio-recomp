@@ -105,9 +105,12 @@ Gen2-AIO is now **Crystal-AiO**, and this is a full-install release.
      load and the launcher shows "Conflicts with Gen2-AIO". Deleting Gen2-AIO
      removes only its `mods/gen2-aio` folder; its settings, save data and
      downloads stay where Crystal-AiO can import them.
-  3. Make sure Crystal-AiO is enabled and start Crystal. The first launch does
-     the import (a few seconds with the HD asset pack); after that it starts
-     normally.
+  3. Make sure Crystal-AiO is enabled and start Crystal. Settings and
+     Nuzlocke data are imported straight away. The downloaded HD asset pack
+     copies over in the background while you play; until it has finished,
+     HD art that has not arrived yet shows the fallback art. DIAGNOSTICS
+     shows the progress on an `import` line. If the game is closed partway,
+     the copy carries on the next time it starts.
   - Do not press **Update** on the old Gen2-AIO entry: GitHub now offers it
     the 1.0.0 ZIP, which the launcher refuses ("zip is for 'crystal-aio',
     expected 'gen2-aio'").

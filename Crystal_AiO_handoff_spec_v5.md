@@ -85,6 +85,13 @@ Renamed to Crystal-AiO, Crystal-only, full-install release.
   - build_mod_index.py keeps the gen2-aio listing until a `crystal-aio-*.zip`
     is published (unchanged rule), then lists crystal-aio.
 
+- identity_migration: `mod.storage` and `mod.cache`'s top-level files copy
+  at start-up. `mod.cache` folders (the HD asset pack) and the old voxel
+  cache's removal are a job stack driven from `core.update` (`M.step`,
+  6 ms a frame). The marker is written when the stack is empty, and a
+  failure stops the job and is retried next start. DIAGNOSTICS shows an
+  `import` line.
+
 ## 0.9.91 (2026-10-30)
 
 - Docs:

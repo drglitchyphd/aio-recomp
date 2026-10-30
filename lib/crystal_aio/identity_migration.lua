@@ -83,61 +83,165 @@ function M.install(mod)
     end)
   end
 
-  local function removeTree(path)
-    local info = fs.getInfo(path)
-    if not info then return end
-    if info.type == 'directory' then
-      for _, name in ipairs(fs.getDirectoryItems(path) or {}) do
-        if name ~= '.' and name ~= '..' and not name:find('[/\\]') then
-          removeTree(path .. '/' .. name)
-        end
-      end
-    end
-    if fs.remove then fs.remove(path) end
-  end
-  -- the old voxel disk cache is a cache: free the space (every boot, so an
-  -- interrupted delete finishes later; nothing here is settings or run data)
-  pcall(removeTree, 'mod_cache/gen2-aio/voxel')
-
   local marker = 'mod_cache/' .. NEW .. '/' .. MARKER
-  if fs.getInfo(marker) then return true end
-  local function copyTree(from, to, top)
+  local function copyFile(from, to)
+    if fs.getInfo(to) then return end            -- what the new id has wins
+    assert(fs.createDirectory(to:match('^(.*)/[^/]+$')))
+    assert(fs.write(to, assert(fs.read(from))))
+  end
+  local function copyTree(from, to)
     local info = fs.getInfo(from)
     if not info then return end
     if info.type == 'directory' then
       assert(fs.createDirectory(to))
       for _, name in ipairs(fs.getDirectoryItems(from)) do
         assert(name ~= '.' and name ~= '..' and not name:find('[/\\]'))
-        if not (top and SKIP_TOP[name]) then
-          copyTree(from .. '/' .. name, to .. '/' .. name)
-        end
+        copyTree(from .. '/' .. name, to .. '/' .. name)
       end
-    elseif info.type == 'file' and not fs.getInfo(to) then
-      assert(fs.createDirectory(to:match('^(.*)/[^/]+$')))
-      assert(fs.write(to, assert(fs.read(from))))
+    elseif info.type == 'file' then
+      copyFile(from, to)
     end
   end
-  -- mod.cache: mod_cache/<id>/ (the HD asset pack, KIM settings, zoom...)
-  for _, src in ipairs(M.OLD) do
-    copyTree('mod_cache/' .. src.id, 'mod_cache/' .. NEW, true)
-  end
-  -- mod.storage: mod_storage/<game>/<playthrough>/<id>/ (Nuzlocke runs,
-  -- QoL Toggles settings, auto-save backups...)
-  if fs.getInfo('mod_storage') then
-    for _, version in ipairs(fs.getDirectoryItems('mod_storage')) do
-      local dir = 'mod_storage/' .. version
-      local info = fs.getInfo(dir)
+
+  -- 1.0.0: what has to be there before anything reads it is copied now --
+  -- mod.storage (Nuzlocke runs, QoL Toggles settings, auto-save backups)
+  -- and mod.cache's top-level files (KIM settings, zoom). mod.cache's
+  -- FOLDERS (the HD asset pack: hundreds of MB, file by file) and freeing
+  -- the old voxel cache run in the background a few milliseconds a frame,
+  -- so the first launch does not sit on a frozen screen; until the art has
+  -- arrived the game simply shows the fallback art for it. The marker is
+  -- written only when the whole import is through, so an interrupted copy
+  -- carries on the next time the game starts.
+  local jobs = {}                                 -- stack, popped from the end
+  if not fs.getInfo(marker) then
+    if fs.getInfo('mod_storage') then
+      for _, version in ipairs(fs.getDirectoryItems('mod_storage')) do
+        local dir = 'mod_storage/' .. version
+        local info = fs.getInfo(dir)
+        if info and info.type == 'directory' then
+          for _, run in ipairs(fs.getDirectoryItems(dir)) do
+            for _, src in ipairs(M.OLD) do
+              copyTree(dir .. '/' .. run .. '/' .. src.id, dir .. '/' .. run .. '/' .. NEW)
+            end
+          end
+        end
+      end
+    end
+    -- older ids last on the stack's bottom: gen2-aio's files land first and win
+    for i = #M.OLD, 1, -1 do
+      local root = 'mod_cache/' .. M.OLD[i].id
+      local info = fs.getInfo(root)
       if info and info.type == 'directory' then
-        for _, run in ipairs(fs.getDirectoryItems(dir)) do
-          for _, src in ipairs(M.OLD) do
-            copyTree(dir .. '/' .. run .. '/' .. src.id, dir .. '/' .. run .. '/' .. NEW)
+        for _, name in ipairs(fs.getDirectoryItems(root)) do
+          assert(name ~= '.' and name ~= '..' and not name:find('[/\\]'))
+          local from = root .. '/' .. name
+          local kind = fs.getInfo(from)
+          if not SKIP_TOP[name] and kind then
+            if kind.type == 'file' then
+              -- small settings files: now, in precedence order below
+            else
+              jobs[#jobs + 1] = { from = from, to = 'mod_cache/' .. NEW .. '/' .. name }
+            end
+          end
+        end
+      end
+    end
+    for _, src in ipairs(M.OLD) do
+      local root = 'mod_cache/' .. src.id
+      if fs.getInfo(root) then
+        for _, name in ipairs(fs.getDirectoryItems(root)) do
+          local from = root .. '/' .. name
+          local kind = fs.getInfo(from)
+          if not SKIP_TOP[name] and kind and kind.type == 'file' then
+            copyFile(from, 'mod_cache/' .. NEW .. '/' .. name)
           end
         end
       end
     end
   end
-  assert(fs.createDirectory('mod_cache/' .. NEW))
-  assert(fs.write(marker, 'Imported settings, storage and cache from gen2-aio / KIM_ARENA; originals retained.\n'))
+  -- the old voxel disk cache is a cache: free the space (every start until
+  -- it is gone, in the background like the copy)
+  if fs.getInfo('mod_cache/gen2-aio/voxel') then
+    table.insert(jobs, 1, { rm = 'mod_cache/gen2-aio/voxel' })
+  end
+
+  local total, done = 0, 0
+  local function finish()
+    if fs.getInfo(marker) then return end
+    assert(fs.createDirectory('mod_cache/' .. NEW))
+    assert(fs.write(marker, 'Imported settings, storage and cache from gen2-aio / KIM_ARENA; originals retained.\n'))
+  end
+  -- one unit of work; false when there is none left
+  local function work()
+    local job = jobs[#jobs]
+    if not job then return false end
+    jobs[#jobs] = nil
+    if job.rm then
+      local info = fs.getInfo(job.rm)
+      if info and info.type == 'directory' and not job.expanded then
+        job.expanded = true
+        jobs[#jobs + 1] = job                     -- the folder itself, after its contents
+        for _, name in ipairs(fs.getDirectoryItems(job.rm) or {}) do
+          if name ~= '.' and name ~= '..' and not name:find('[/\\]') then
+            jobs[#jobs + 1] = { rm = job.rm .. '/' .. name }
+          end
+        end
+      elseif info and fs.remove then
+        fs.remove(job.rm)
+      end
+      return true
+    end
+    local info = fs.getInfo(job.from)
+    if info and info.type == 'directory' then
+      assert(fs.createDirectory(job.to))
+      for _, name in ipairs(fs.getDirectoryItems(job.from)) do
+        assert(name ~= '.' and name ~= '..' and not name:find('[/\\]'))
+        jobs[#jobs + 1] = { from = job.from .. '/' .. name, to = job.to .. '/' .. name }
+      end
+    elseif info and info.type == 'file' then
+      copyFile(job.from, job.to)
+      done = done + 1
+    end
+    return true
+  end
+  local failed = nil
+  local clock = love and love.timer and love.timer.getTime or os.clock
+  -- run the import for up to `budget` seconds; true once everything is done
+  function M.step(budget)
+    if failed then return false, failed end
+    local deadline = clock() + (budget or 0.006)
+    repeat
+      local ok, more = pcall(work)
+      if not ok then
+        failed = tostring(more)
+        local d = rawget(mod, '_kimArenaDiag')
+        if d then pcall(d, 'import', 'stopped: ' .. failed:sub(1, 80) .. ' (retried next start)') end
+        return false, failed
+      end
+      if not more then
+        finish()
+        local d = rawget(mod, '_kimArenaDiag')
+        if d and total > 0 then pcall(d, 'import', ('gen2-aio files imported: %d'):format(done)) end
+        return true
+      end
+    until clock() >= deadline
+    local d = rawget(mod, '_kimArenaDiag')
+    if d then pcall(d, 'import', ('importing gen2-aio files: %d copied...'):format(done)) end
+    return false
+  end
+  total = #jobs
+  if #jobs == 0 then
+    finish()
+  elseif mod.hooks and type(mod.hooks.wrap) == 'function' then
+    local finished = false
+    mod.hooks:wrap('core.update', function(nextFn, ...)
+      if not finished and not failed then
+        local okS, fin = pcall(M.step)
+        finished = okS and fin == true
+      end
+      return nextFn(...)
+    end)
+  end
   return true
 end
 return M

@@ -32,9 +32,23 @@ local function boot(fs, options, stored)
     saveOptions = function(o) options = o; saves = saves + 1; return true end }
   local events = {}
   local mod = { options = { get = function(_, k) return stored[k] end },
-    events = { on = function(_, name, f) events[name] = f end } }
+    events = { on = function(_, name, f) events[name] = f end },
+    hooks = { wrap = function(_, name, f) events['hook:' .. name] = f end } }
   local ok, err = pcall(M.install, mod)
   return ok, err, mod, events, function() return options, saves end
+end
+-- 1.0.0: the mod.cache folders (the HD asset pack) copy in the background
+-- (core.update, a few ms a frame); drive that to the end
+local function drain(events)
+  local hook = events['hook:core.update']
+  if not hook then return true end
+  for _ = 1, 100000 do
+    local okS, fin, why = pcall(M.step, math.huge)
+    if not okS then return false, fin end
+    if fin then return true end
+    if why then return false, why end
+  end
+  return false, 'never finished'
 end
 
 -- ------------------------------------------------ a gen2-aio 0.9.x player
@@ -65,6 +79,13 @@ local options = { modOptions = {
 local stored = { volume = 8 }
 local ok, err, mod, events, state = boot(fs, options, stored)
 assert(ok, err)
+-- at start-up: settings and run data now, the art not yet
+assert(files['mod_storage/crystal/run2/crystal-aio/nz_run'] == 'deaths=7', 'run data imported at start-up')
+assert(files['mod_cache/crystal-aio/screen_zoom.lua'] == 'zoom=3', 'settings files handled at start-up')
+assert(files['mod_cache/crystal-aio/kim_assets/files/a.png'] == nil, 'the asset pack waits for the background')
+assert(not files['mod_cache/crystal-aio/identity_migrated.txt'], 'no marker until the import is through')
+assert(events['hook:core.update'], 'the background import is hooked')
+assert(drain(events))
 local opts, saves = state()
 local saved = opts.modOptions['crystal-aio']
 assert(saves == 1, 'options saved once')
@@ -138,12 +159,15 @@ files = {
 }
 fs = newFs(files)
 fs.fail = 'mod_cache/crystal-aio/kim_assets/files/c.png'
-ok = boot(fs, { modOptions = { ['gen2-aio'] = { volume = 4 } } }, {})
-assert(not ok, 'a failed write surfaces')
+ok, err, mod, events = boot(fs, { modOptions = { ['gen2-aio'] = { volume = 4 } } }, {})
+assert(ok, err)
+local fin, why = drain(events)
+assert(not fin and why, 'a failed write surfaces')
 assert(not files['mod_cache/crystal-aio/identity_migrated.txt'], 'no marker after a failure')
 fs.fail = nil
-ok, err = boot(fs, { modOptions = {} }, {})
+ok, err, mod, events = boot(fs, { modOptions = {} }, {})
 assert(ok, err)
+assert(drain(events))
 assert(files['mod_cache/crystal-aio/kim_assets/files/c.png'] == 'more', 'retry finishes the copy')
 assert(files['mod_storage/crystal/run1/crystal-aio/nz_run'] == 'deaths=1')
 assert(files['mod_cache/crystal-aio/identity_migrated.txt'])
@@ -156,6 +180,7 @@ ok, err, mod, events, state = boot(fs, { modOptions = { KIM_ARENA = { gen2UiThem
 assert(ok, err)
 assert(state().modOptions['crystal-aio'].gen2UiTheme == 'gen2_aio:gen3')
 assert(mod.options:get('gen2UiTheme') == 'gen2_aio:gen3')
+assert(drain(events))
 assert(files['mod_cache/crystal-aio/kim_assets/files/a.png'] == 'kim')
 
 -- ------------------------------------------------ a fresh install
@@ -168,4 +193,4 @@ assert(files['mod_cache/crystal-aio/identity_migrated.txt'])
 
 print('Identity migration: gen2-aio + KIM_ARENA -> crystal-aio settings (precedence, theme mapping, boot bridge), '
   .. 'mod.cache / mod.storage / save.modData copy, Nuzlocke data, non-overwrite, originals kept, '
-  .. 'voxel cache skipped and freed, idempotent second boot, retry PASS')
+  .. 'voxel cache skipped and freed, asset pack in the background, idempotent second boot, retry PASS')
