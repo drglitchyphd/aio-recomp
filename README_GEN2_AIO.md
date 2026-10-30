@@ -57,6 +57,21 @@ GitHub and overlay patches are not the updater's install package. The custom
 index is independent of the community index; a community listing would require
 a separate submission.
 
+## 0.9.86 changes
+
+- Battles with touch: the controls are part of the battle panel now.
+  - In wild battles the Poke Ball button sits inside the FIGHT /
+    POKEMON / PACK / RUN panel.
+  - The move list (and the forget-a-move list) has its own back arrow.
+  - The floating B / START / SELECT / ball buttons no longer cover the
+    battle or your Pokemon's HP box.
+  - During battle text and animations B stays on screen (to skip
+    animations), always clear of both HP boxes.
+- Drag a move onto another to swap their order, as SELECT does on the
+  cart. A still press-and-hold shows the move's info, and a tap picks the
+  move.
+- The move marked for a swap is outlined in the Modern move list.
+
 ## 0.9.85 changes
 
 - BUILD 3D CACHE now helps in the same session, not only after a restart.
