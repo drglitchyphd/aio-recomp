@@ -1,10 +1,35 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.90)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.91)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.91 (2026-10-30)
+
+- Docs:
+  - FEATURES.md is new and is packed by `tools/build_release.py`;
+  - THIRD_PARTY_NOTICES.md and ASSET_NOTICES.md were rewritten;
+  - the manifest description and mod.card summary/author no longer name
+    Battle Art / Stadium 2 models.
+- Cleanup (no behaviour change; all suites identical before and after):
+  - main.lua: removed the `gmarcEngine` / `ENGINES` / `BA_ART` / `BA_UI`
+    branches, the rowHidden entries for rows nothing defines, and the
+    per-launch `voxelEngine` option write;
+  - touch: removed the KEY BAR branch;
+  - unused locals and functions removed across lib/, nuzlocke/ and
+    gmarc/VoxelScene (`frameFor`). core_menus has about 4 more
+    main-chunk local slots free.
+- Left for a full-install release (overlay patches cannot delete files):
+  - unloaded `lib/gen2_clean_ui_passthrough.lua`,
+    `lib/potato_voxel_mobile_hud_boundary.lua`, `lib/gen2_gsc.lua`, and
+    the wilds true_size/dev images;
+  - `lib/modern_ui_integrated*.lua`, `lib/gen3_*` and kim_main's Gen-1
+    block, which never load on Crystal (the plain modern_ui_integrated.lua
+    is never selected at all).
+- Duplicate helpers across lib/gen2_aio (`enabled`, `opt`, `exportsOf`,
+  `activeGame`, `now`) could become a shared util module later.
 
 ## 0.9.90 (2026-10-30)
 

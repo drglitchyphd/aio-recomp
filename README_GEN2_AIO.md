@@ -63,6 +63,27 @@ GitHub and overlay patches are not the updater's install package. The custom
 index is independent of the community index; a community listing would require
 a separate submission.
 
+## 0.9.91 changes
+
+- New FEATURES.md: a tour of everything Gen2-AIO does and where each
+  setting lives.
+- THIRD_PARTY_NOTICES.md rewritten to credit every bundled mod and art
+  source:
+  - the Gen1Recomp engine;
+  - Kanto in Motion and the work it bundles;
+  - gmarcs' Gen 2 Voxel Mod;
+  - Stadium 2 Importer;
+  - Wilds of Kanto Revival and its sprite artists;
+  - Nuzlocke;
+  - Gen1Wild QOL and its module authors;
+  - Kenney, PMDCollab, PokeAPI, the Pixel Operator font.
+- ASSET_NOTICES.md updated to match.
+- Code cleanup: about 530 lines of dead code removed. These were leftovers
+  of features retired earlier (the Battle Art engine switch, the VOXEL
+  ENGINE and KEY BAR settings, an unused EXP-bar reroute) plus unused
+  helpers. Comments that still described the old Battle Art stage are
+  fixed. Gameplay, menus and settings are unchanged.
+
 ## 0.9.90 changes
 
 - Pokemon standing in the world (the Kiln's Farfetch'd, Azalea's Slowpoke
