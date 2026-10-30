@@ -1,10 +1,37 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.85)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.86)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.86 (2026-10-30)
+
+- Crystal battle buttons (engine BattleState):
+  - command menu: B does nothing; START only fires `battle.menu_auxiliary`
+    (unused); SELECT is the quick ball;
+  - move list: SELECT marks and swaps moves (`swapAllowed` / `swapMoves`;
+    no swap while Transformed); B goes back;
+  - forget list: B asks "stop learning?";
+  - messages: A/B; animations: B/START skip.
+- gen2_modern_battle_ui:
+  - with KIM Touch's floating controls up and TAP MENUS on, the panel
+    reserves a column on the hand side. It holds the "ball" tap cell in
+    the command menu (wild + throw possible, quick_ball readiness) and a
+    `Style.closeButton` back control (`opts.at`) in the move and forget
+    lists;
+  - publishes `tapTargets.touchUi`;
+  - outlines `moveSwapIndex`.
+  - `Style.closeIsBack` covers battle.
+- quick_ball: the ball art is shared as `_kimArenaQuickBallDraw`.
+- touch/main.lua:
+  - `shownButtons` is empty while `touchUi` is set; the cluster avoids
+    the battle HUD cards (`_kimArenaHudRects`);
+  - drag-to-reorder: past the dead zone it marks `moveSwapIndex`, and the
+    drop taps SELECT so the engine swaps;
+  - new exports `battleControls()` and `popupShown()`.
+- Test: `tests/battle_touch` (144 checks, 1080x2520 + 2184x1968).
 
 ## 0.9.85 (2026-10-30)
 
