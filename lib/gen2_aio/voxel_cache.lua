@@ -96,6 +96,31 @@ return function(host)
           Hub.write(game, "voxelCacheDone", buildId())
           diag("voxel cache", ("done: %d built, %d already saved, %d skipped"):format(
             builder.built, builder.skipped, builder.failed))
+          -- 0.9.85: what the build used goes back now (one full collect on
+          -- this page, not mid-walk), and the page says to restart: a game
+          -- restart is the one sure way to start the session lean, and a
+          -- mod cannot restart the game itself
+          collectgarbage("collect")
+          local done = {
+            { id = "kimArena.vc.done", label = "FINISHED",
+              help = "Every area's 3D scene is saved. Areas now load from storage instead of building.",
+              value = function() return ("%d NEW / %d SAVED"):format(builder.built, builder.skipped) end,
+              activate = function() end },
+            { id = "kimArena.vc.restart", label = "RESTART RECOMMENDED",
+              help = "SAVE your game, then close and reopen it so the cache is used from a fresh start "
+                .. "(the game cannot restart itself).",
+              value = function() return "SAVE + REOPEN" end,
+              activate = function() end },
+            { id = "kimArena.vc.close", label = "CLOSE",
+              help = "Back to the game.",
+              activate = function(g) closePage(g or game, r.page) end },
+          }
+          self.rows = done
+          self.view = {}
+          for i, row in ipairs(done) do self.view[i] = row end
+          self.view[#self.view + 1] = { label = "BACK", cancel = true, id = "cancel" }
+          self.index = 2   -- the restart row, so its help line is the one showing
+          self.scroll = 0
         end
       end
       if baseUpdate then return baseUpdate(self, dt, ...) end

@@ -1034,34 +1034,28 @@ end
 
 -- gen2-aio 0.9.84: a template's voxelEdits ship as one compact string
 -- ("x,y,z,i,r,d;" per edit, the voxel editor's own encoding) and become the
--- edit list here, the first time a map models that template -- not all
--- 300-odd of them when data/voxel_heights.lua loads (that was ~17 million
--- tables, 600 MB and seconds of load). A data-file pass that reworks the
--- decoded list (the Kanto roofs) rides along as t.editsFix, run once here.
--- The decoded list is kept on the template, so a template costs this once.
+-- edit list here, when a map models that template -- not all 300-odd of
+-- them when data/voxel_heights.lua loads (that was ~17 million tables,
+-- 600 MB and seconds of load). A data-file pass that reworks the decoded
+-- list (the Kanto roofs, which also set t.spriteRoof) rides along as
+-- t.editsFix and runs on every decode.
+-- 0.9.85: the list is NOT kept. model() runs once per template (twice with
+-- the far LOD) and `models` keeps what it builds, so a kept list only held
+-- memory -- and BUILD 3D CACHE, which models every template in the game,
+-- brought the whole 600 MB back until the next restart.
 local function editsOf(t)
   local edits = t.voxelEdits
-  if type(edits) == "string" then
-    local list, n = {}, 0
-    for x, y, z, i, r, d in edits:gmatch("([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^;]*);") do
-      local e = { x = tonumber(x), y = tonumber(y), z = tonumber(z), i = tonumber(i), region = tonumber(r) }
-      if d ~= "" then e.remove = d == "1" end
-      n = n + 1
-      list[n] = e
-      Budget.tick()
-    end
-    -- the decode yields, so another build may have finished this template
-    -- meanwhile: theirs (already fixed) wins over a second, unfixed copy
-    if t.voxelEdits ~= edits then return t.voxelEdits end
-    edits = list
+  if type(edits) ~= "string" then return edits end
+  local list, n = {}, 0
+  for x, y, z, i, r, d in edits:gmatch("([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^;]*);") do
+    local e = { x = tonumber(x), y = tonumber(y), z = tonumber(z), i = tonumber(i), region = tonumber(r) }
+    if d ~= "" then e.remove = d == "1" end
+    n = n + 1
+    list[n] = e
+    Budget.tick()
   end
-  if t.editsFix then
-    local fix = t.editsFix
-    t.editsFix = nil
-    edits = fix(t, edits or {})
-  end
-  t.voxelEdits = edits
-  return edits
+  if t.editsFix then list = t.editsFix(t, list) end
+  return list
 end
 Buildings.editsOf = editsOf
 
@@ -1713,6 +1707,13 @@ end
 -- Drop the prebuilt models (hot reload, or a mod shadowing the profile).
 function Buildings.invalidate()
   spec = nil
+  models = {}
+end
+
+-- gen2-aio 0.9.85: drop the prebuilt template models only (the profile
+-- stays loaded); BUILD 3D CACHE calls this as it goes so a whole-game build
+-- does not keep every template's quads for the rest of the session
+function Buildings.flushModels()
   models = {}
 end
 

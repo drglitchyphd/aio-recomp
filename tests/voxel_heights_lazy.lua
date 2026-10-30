@@ -31,21 +31,32 @@ local editsOf = assert(loadstring("local Budget = ...\n" .. body .. "\nreturn ed
 local total, roofs = 0, 0
 for _, list in pairs(data.buildings) do
   for _, t in ipairs(list) do
-    if t.surfaces and t.voxelEdits ~= nil then
+    if t.surfaces and type(t.voxelEdits) == "table" then
+      total = total + #t.voxelEdits   -- hand-built in the data file (mansion pieces)
+      check(editsOf(t) == t.voxelEdits, "a table list is used as it is")
+    end
+    if t.surfaces and type(t.voxelEdits) == "string" then
       local e = editsOf(t)
-      check(type(e) == "table" and t.voxelEdits == e and not t.editsFix, "decoded once and kept: " .. tostring(t.id))
+      -- 0.9.85: decoded per call and NOT kept on the template (a whole-game
+      -- BUILD 3D CACHE would otherwise bring every list back into memory)
+      check(type(e) == "table" and type(t.voxelEdits) == "string", "decoded, template stays compact: " .. tostring(t.id))
       total = total + #e
       if t.spriteRoof then roofs = roofs + 1 end
-      check(editsOf(t) == e, "a second call reuses the list")
+      local again = editsOf(t)
+      check(again ~= e and #again == #e, "a second call decodes the same list afresh")
     end
   end
 end
+-- every template decoded (what BUILD 3D CACHE does) leaves nothing behind
+collectgarbage(); collectgarbage()
+local afterMB = (collectgarbage("count") - base) / 1024
+check(afterMB < heapMB + 20, ("decoding every template keeps nothing (%.0f MB after, %.0f before)"):format(afterMB, heapMB))
 -- the count the fully expanded file produced (0.9.83), roof pass applied
 check(total == 2408364, "every edit decodes, same as the eager load: " .. total)
 check(roofs > 0, "pitched Kanto roofs get their spriteRoof on decode: " .. roofs)
 local sample = data.buildings.TILESET_CAVE and data.buildings.TILESET_CAVE[1]
 if sample and sample.voxelEdits then
-  local first = sample.voxelEdits[1]
+  local first = editsOf(sample)[1]
   check(type(first.x) == "number" and type(first.y) == "number" and type(first.z) == "number", "numeric coords")
 end
 print(("voxel heights lazy: %d checks PASS (load %.0f ms, %.0f MB)"):format(n, loadMs, heapMB))

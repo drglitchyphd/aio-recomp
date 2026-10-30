@@ -3961,6 +3961,14 @@ function Structures.invalidate(mapId)
   end
 end
 
+-- gen2-aio 0.9.85: drop the per-template caches (revolved templates, built
+-- building models) without touching any map's analysis -- for BUILD 3D
+-- CACHE, which visits every template in the game once
+function Structures.flushTemplates()
+  roundCache = {}
+  Buildings.flushModels()
+end
+
 Assets.register(function() Structures.invalidate() end)
 
 return Structures
