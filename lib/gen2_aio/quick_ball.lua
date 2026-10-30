@@ -1,5 +1,7 @@
 -- gen2-aio: Quick Poke Ball on SELECT, and (0.9.70) on KIM Touch's own
--- Poke Ball button, which shows in wild battles while a throw is possible.
+-- Poke Ball button, which shows in wild battles while a throw is possible
+-- (0.9.85: inside the Modern battle panel's command menu when that panel
+-- is up, floating beside B otherwise).
 --
 -- Wild battles, battle command menu (phase "menu") only: in the move list
 -- SELECT swaps moves, so it is never taken there. The throw goes through
@@ -117,6 +119,53 @@ return function(host)
     return origUpdate(self, ...)
   end
 
+  -- 0.9.85: the ball a throw would use (its HD item icon, or a drawn Poke
+  -- Ball) in a round button, with how many are left; dimmed when none
+  local function drawButton(m, G, cx, cy, r, a, th, fontFn)
+    local info
+    local fn = m._kimArenaQuickBallInfo
+    if type(fn) == "function" then
+      local okI, v = pcall(fn); info = okI and v or nil
+    end
+    local id = info and info.id
+    local dim = id == nil
+    local aa = dim and a * 0.45 or a
+    G.setColor(th.surface[1], th.surface[2], th.surface[3], aa * 0.85)
+    G.circle("fill", cx, cy, r)
+    G.setColor(th.frame[1], th.frame[2], th.frame[3], aa)
+    G.setLineWidth(math.max(2, r * 0.08)); G.circle("line", cx, cy, r)
+    local iconFn = m._kimArenaBallIcon
+    local img, quad
+    if type(iconFn) == "function" then
+      local okC, i, q = pcall(iconFn, id or "POKE_BALL"); if okC then img, quad = i, q end
+    end
+    local size = r * 1.25
+    if img and quad then
+      G.setColor(1, 1, 1, aa)
+      G.draw(img, quad, cx, cy, 0, size / 18, size / 18, 9, 9)
+    else
+      local br = size / 2
+      G.setColor(0.86, 0.2, 0.2, aa); G.arc("fill", cx, cy, br, math.pi, 2 * math.pi)
+      G.setColor(0.96, 0.96, 0.96, aa); G.arc("fill", cx, cy, br, 0, math.pi)
+      G.setColor(0.1, 0.1, 0.12, aa)
+      G.setLineWidth(math.max(2, br * 0.16)); G.line(cx - br, cy, cx + br, cy)
+      G.circle("line", cx, cy, br)
+      G.setColor(0.96, 0.96, 0.96, aa); G.circle("fill", cx, cy, br * 0.28)
+    end
+    -- the count in a badge at the lower right
+    local n = info and info.count or 0
+    local label = dim and "0" or tostring(n)
+    local bf = fontFn and fontFn(r * 0.42) or G.getFont()
+    local bw = math.max(bf:getWidth(label) + r * 0.3, r * 0.62)
+    local bh = bf:getHeight() * 1.05
+    local bx, by = cx + r * 0.95 - bw, cy + r * 0.95 - bh
+    G.setColor(th.frame[1], th.frame[2], th.frame[3], aa)
+    G.rectangle("fill", bx, by, bw, bh, bh / 2, bh / 2)
+    G.setFont(bf)
+    G.setColor(th.surface[1], th.surface[2], th.surface[3], math.min(1, aa + 0.15))
+    G.printf(label, bx, by + (bh - bf:getHeight()) / 2, bw, "center")
+  end
+
   local function topBattle()
     local G = rawget(live.mod, "_kantoInMotionActiveGame")
     local game = type(G) == "function" and G() or G
@@ -146,6 +195,11 @@ return function(host)
       if not (top and ready(top)) then return false end
       top._aioQuickBallPending = true
       return true
+    end
+    -- the button's art, shared by KIM Touch's floating button and the
+    -- Modern battle panel's own (window units; th = a UI theme; fontFn(px))
+    m._kimArenaQuickBallDraw = function(G, cx, cy, r, a, th, fontFn)
+      return drawButton(m, G, cx, cy, r, a, th, fontFn)
     end
   end
   export(mod)

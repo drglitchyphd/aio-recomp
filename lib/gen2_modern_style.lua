@@ -534,6 +534,11 @@ return function(mod)
     c=c or Style.theme()
     opts=opts or {}
     local bx,by,size=closeMetrics(x,y,w,h)
+    -- 0.9.85: opts.at={x,y,size} places it exactly (the battle panel's back
+    -- button, inside the panel beside its lists); its hit area is at.hit or
+    -- the button just padded, so the list's own cells keep their taps
+    local at=type(opts.at)=="table" and opts.at or nil
+    if at then bx,by,size=at[1],at[2],at[3] end
     local r=math.max(3,size*.22)
     local fill=opts.selected and (c.selected or c.accent) or (c.raised or c.surface)
     Style.color(fill,math.min(1,(fill[4] or 1)*Style.panelOpacity(1)))
@@ -548,7 +553,8 @@ return function(mod)
     Style._frameClose={x=bx,y=by,w=size,h=size,color=c.text or {1,1,1,1},
       -- 0.9.64: centred on the button (it used to stop halfway down it, so
       -- taps on its lower half were missed), larger toward the window edge
-      hit=(Style.closeCorner()=="tr")
+      hit=at and (at.hit or {x=bx-size*.08,y=by-size*.08,w=size*1.16,h=size*1.16})
+        or (Style.closeCorner()=="tr")
         and {x=bx-size*.7,y=by-size*1.1,w=size*2.6,h=size*2.6}
         or {x=bx-size*.7,y=by-size*.7,w=size*2.4,h=size*2.4}}
     return bx,by,size
@@ -564,6 +570,8 @@ return function(mod)
   end
   function Style.closeIsBack(game,top)
     if type(top)~="table" then return false end
+    -- 0.9.85: the battle panel's move / forget list steps back to the menu
+    if top.isBattle==true then return true end
     if isA(top,"src.ui.gen2.PartyMenu") then
       return top.submenu~=nil or top.switchFrom~=nil
     end
