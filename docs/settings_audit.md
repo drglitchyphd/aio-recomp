@@ -9,7 +9,7 @@ Read-only audit. No repository file was changed. Implemented in 0.9.66 (see "Dec
   - the real `ui.options.rows` chain, filed by `lib/gen2_aio/hub.lua`'s own `sectionOf`.
 - **Hub pages below are what the hub actually builds.** They are not a hand-applied version of RULES. Raw dump: `audit/out.txt`.
 - **Readers were traced by grep** in Gen-2-active files only. These are `kim_main.lua` (Gen-2 branches), `lib/gen2_modern_*.lua`, `lib/gen2_hud_color.lua`, `lib/battler_shadows.lua`, `lib/menu_icons.lua`, `lib/gen2_aio/*`, and the component folders.
-  - `lib/modern_ui_integrated*.lua` is Gen 1 only. It is never loaded on Crystal (kim_main.lua ~7600-7656 returns before it), so reads there do not count.
+  - `lib/modern_ui_integrated*.lua` was Gen 1 only and never loaded on Crystal, so reads there did not count. 1.0.0 removed it with the rest of the Gen 1 / Gen 3 code.
 - **Status legend:**
   - **OK**: works on Crystal.
   - **DEPENDS**: works only when another setting has a given value.

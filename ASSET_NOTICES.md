@@ -45,17 +45,16 @@ in the mod cache across updates.
   `wilds/THIRD_PARTY_NOTICES.md` and `wilds/THIRD_PARTY_ASSETS.md`.
   - The PMDCollab dialogue portraits are **CC BY-NC 4.0**: non-commercial use,
     with attribution.
-- **Kanto Rework animation sheets and sound effects** (`assets/animations/`,
-  `assets/sfx/`): integrated from **Faendra's** Kanto Rework Suite,
-  https://github.com/Faendra/kanto-rework-suite. These are used only by
-  the Gen 1 battle paths and are inactive on Crystal.
 - **Shiny encounter effect** (`assets/effects/shiny_sparkle.png`,
   `assets/sfx/shiny.wav`): kept from Kanto in Motion. The source is not
   recorded.
-- **Player trainer sprites, title art and pixel frames**
-  (`assets/battle/player-trainers-*/`, `assets/title/`,
-  `assets/pixel_frame*.png`): kept from Kanto in Motion. The source is not
-  recorded.
+- **Player trainer sprites and pixel frames**
+  (`assets/battle/player-trainers-*/`, `assets/pixel_frame*.png`): kept from
+  Kanto in Motion. The source is not recorded.
+
+1.0.0 removed the Gen 1-only assets (Kanto Rework's `assets/animations/` sheets
+and `assets/sfx/` move sounds, and the Red/Blue title art); see "Formerly
+bundled" in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## Trademark / affiliation notice
 

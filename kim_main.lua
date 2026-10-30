@@ -105,45 +105,8 @@ return function(mod)
       return 0
     end
   end
-  -- FireRed / LeafGreen run on Gen1Recomp's separate Game3 engine.  Keep the
-  -- existing R/B/Y implementation isolated: Gen 3 gets its own provider and
-  -- returns before any Gen 1 BattleState / Modern UI code is loaded.
-  if tonumber(mod.generation) == 3 then
-    local source, err = mod:read("lib/gen3_frlg.lua")
-    if not source then
-      if mod.log and mod.log.error then
-        mod.log:error("cannot read FireRed/LeafGreen bridge: %s", tostring(err))
-      end
-      return
-    end
-    local loader, compileErr = load(source, "@" .. mod.path .. "/lib/gen3_frlg.lua")
-    if not loader then
-      if mod.log and mod.log.error then
-        mod.log:error("cannot compile FireRed/LeafGreen bridge: %s", tostring(compileErr))
-      end
-      return
-    end
-    local ok, bridge = pcall(loader)
-    if not ok or type(bridge) ~= "function" then
-      if mod.log and mod.log.error then
-        mod.log:error("cannot load FireRed/LeafGreen bridge: %s", tostring(bridge))
-      end
-      return
-    end
-    local okRun, runErr = pcall(bridge, mod)
-    if not okRun and mod.log and mod.log.error then
-      mod.log:error("FireRed/LeafGreen bridge failed: %s", tostring(runErr))
-    end
-    return
-  end
-  -- Red/Blue/Yellow and Gold/Silver/Crystal share KIM's long-standing
-  -- animated-provider path. FireRed/LeafGreen already returned through the
-  -- isolated Game3 bridge above.
-  --
-  -- IMPORTANT: Gen 2 must continue through this file. KIM's proven Gen 2
-  -- Summary/Pokedex/Clean-UI bridges live below and are deliberately guarded
-  -- by IS_GEN2. Returning early here disables all of that working support.
-  local IS_GEN2 = tonumber(mod.generation) == 2
+  -- Crystal-AiO runs on Gold/Silver/Crystal only: main.lua returns before
+  -- this file on any other generation, so every path below is the Gen 2 one.
   local MOD_ID = "gen2-aio"
 
   -- Keep the live game handle explicitly. Some mobile Gen 2 builds do not
@@ -156,17 +119,10 @@ return function(mod)
     end)
   end
 
-  -- Gen 1 mobile graphics-transaction guard. It never adds its own graphics
-  -- state: it only remembers the caller's depth/canvas, runs the same function
-  -- through pcall(), and removes states that the callee leaked before returning
-  -- or throwing. Store helpers on mod instead of consuming outer locals because
-  -- this long installer is already close to Lua's 200-local function limit.
+  -- Gen 1 mobile graphics-transaction guard, kept as a probe for the shared
+  -- battle code below: Crystal never takes the Gen 1 mobile path.
   function mod._kantoInMotionNativeMobileGen1()
-    if IS_GEN2 then return false end
-    local system = love and love.system
-    if not (system and type(system.getOS) == "function") then return false end
-    local ok, host = pcall(system.getOS)
-    return ok and (host == "Android" or host == "iOS")
+    return false
   end
 
   function mod._kantoInMotionGraphicsDepth()
@@ -192,32 +148,9 @@ return function(mod)
     return repaired
   end
 
-  mod._kantoInMotionGen1GuardWarnings =
-    mod._kantoInMotionGen1GuardWarnings or {}
   function mod._kantoInMotionGuardedMobileCall(label, fn, ...)
     if type(fn) ~= "function" then return false, "missing function" end
-    if not mod._kantoInMotionNativeMobileGen1() then return pcall(fn, ...) end
-    local g = love and love.graphics
-    local baseDepth = mod._kantoInMotionGraphicsDepth()
-    local entryCanvas = nil
-    if g and type(g.getCanvas) == "function" then
-      local okCanvas, canvas = pcall(g.getCanvas)
-      if okCanvas then entryCanvas = canvas end
-    end
-    local result = { pcall(fn, ...) }
-    if baseDepth ~= nil then mod._kantoInMotionRestoreGraphicsDepth(baseDepth) end
-    if g and type(g.setCanvas) == "function" then
-      if entryCanvas then pcall(g.setCanvas, entryCanvas) else pcall(g.setCanvas) end
-    end
-    local ok = table.remove(result, 1)
-    if not ok and not mod._kantoInMotionGen1GuardWarnings[label] then
-      mod._kantoInMotionGen1GuardWarnings[label] = true
-      if mod.log and type(mod.log.warn) == "function" then
-        mod.log:warn("Gen1 mobile %s failed safely: %s",
-          tostring(label), tostring(result[1]))
-      end
-    end
-    return ok, unpackCompat(result)
+    return pcall(fn, ...)
   end
 
   -- Open compatibility registry. Third-party UI and battle mods can register
@@ -407,11 +340,6 @@ return function(mod)
   mod.exports.registerBattleCompatibility = mod.exports.kantoInMotionCompatibility.registerBattleOwner
   local HD_SPRITE_DATA_FILE = "data/hd_pokemon_sprites.lua"
 
-  -- Gen 1 v1.7.2 and earlier exposed MENU SPRITES as a boolean. Read the
-  -- stored value before redefining the schema so existing users who had it
-  -- OFF migrate naturally to VANILLA instead of being forced back to KIM HD.
-  local legacyGen1MenuSprites = (not IS_GEN2) and mod.options:get("enabled") or nil
-
   local optionSchema = {
     { key = "enabled", label = "MENU SPRITES", type = "toggle", default = true },
     { key = "menuIcons", label = "POKEMON ICONS", type = "toggle", default = true,
@@ -440,7 +368,7 @@ return function(mod)
 
   -- The title animation controls above belong to the Gen 1 title screen.
   -- Do not expose them in Gold/Silver/Crystal's settings menu.
-  if IS_GEN2 then
+  do
     local gen2Main = {}
     local gen1TitleKeys = {
       -- Gen 2 replaces the legacy MENU SPRITES boolean with an explicit
@@ -465,22 +393,6 @@ return function(mod)
       },
       description = "Choose Kanto in Motion HD animated menu Pokemon or the native Gold/Silver/Crystal Pokemon artwork. This is independent from POKEMON ICONS and BATTLE SPRITES.",
     })
-  else
-    -- Gen 1 now matches Gen 2's explicit source selector. VANILLA deliberately
-    -- means "yield the Pokemon artwork slot": with no sprite mod installed it
-    -- is the original R/B/Y art, while a compatible provider such as Crystal
-    -- Animated Sprites can supply that same slot without KIM replacing it.
-    local gen1Main = {}
-    for _, row in ipairs(optionSchema) do
-      if row.key ~= "enabled" then gen1Main[#gen1Main + 1] = row end
-    end
-    optionSchema = gen1Main
-    table.insert(optionSchema, 1, {
-      key = "gen1MenuSpriteSource", label = "MENU SPRITES", type = "choice",
-      default = (legacyGen1MenuSprites == false) and "vanilla" or "kim",
-      choices = { { "KIM HD", "kim" }, { "VANILLA", "vanilla" } },
-      description = "Choose Kanto in Motion HD animated Pokemon or yield Party, Pokedex, Summary, PC and Evolution artwork to the native Gen 1 sprite path. Compatible sprite mods such as Crystal Animated Sprites are honored on VANILLA. This is independent from POKEMON ICONS and BATTLE SPRITES.",
-    })
   end
 
   local gen2UiOptionSchema = {}
@@ -489,7 +401,7 @@ return function(mod)
   -- Modern UI presentation controls as Gen 1 through a dedicated UI submenu.
   -- Battle-state/HUD logic remains native; these rows only control KIM-owned
   -- final-window presentation.
-  if IS_GEN2 then
+  do
     optionSchema[#optionSchema + 1] = {
       key = "gen2IntegratedModernUi", label = "MODERN UI",
       type = "toggle", default = true,
@@ -808,28 +720,7 @@ return function(mod)
   }
 
   -- The custom battle presenter remains Gen1-only. Gen2 keeps its native/Clean UI battle owner.
-  if IS_GEN2 then
-    battleOptionSchema = {}
-  else
-    battleOptionSchema[#battleOptionSchema + 1] = {
-      key = "battleHudColor", label = "HUD COLOR", type = "choice",
-      default = "color", choices = {
-        { "COLOR", "color" }, { "INVERTED", "inverted" },
-      },
-      description = "HP/status glyph treatment. INVERTED uses light glyphs with a dark pixel shadow while preserving the green/yellow/red HP gauge colors.",
-    }
-  end
-
-  -- This preference belongs to Gen1 only. It defaults ON for new users, but
-  -- once a player turns it OFF the saved mod option is honored on later Gen1
-  -- launches. Gen2 never defines this row and never consults its saved value.
-  if not IS_GEN2 then
-    table.insert(optionSchema, 2, {
-      key = "integratedModernUi", label = "INTEGRATED MODERN UI",
-      type = "toggle", default = true,
-      description = "Gen 1 only. Defaults ON and remembers your choice across launches.",
-    })
-  end
+  battleOptionSchema = {}
 
   -- Modern UI re-defines this schema after it loads, so publish the complete
   -- option set even though the compact Kanto in Motion screen presents the
@@ -854,10 +745,7 @@ return function(mod)
 
   -- Gen 1 Modern UI ownership follows the saved preference (default ON).
   local function integratedModernUiEnabled()
-    if IS_GEN2 then
-      return mod.options:get("gen2IntegratedModernUi") ~= false
-    end
-    return mod.options:get("integratedModernUi") ~= false
+    return mod.options:get("gen2IntegratedModernUi") ~= false
   end
 
   local hdSprites = {}
@@ -889,8 +777,7 @@ return function(mod)
   -- to the game's native sprite for that surface.
   hdSprites = loadTable(HD_SPRITE_DATA_FILE, true)
   local nationalHdSprites = loadTable("data/hd_pokemon_national.lua", true)
-  mod._kimHdUnownForms = IS_GEN2 and loadTable("data/hd_unown_forms.lua", true) or {}
-  local titlePlayer = loadTable("data/title_player_red.lua", true)
+  mod._kimHdUnownForms = loadTable("data/hd_unown_forms.lua", true)
 
   local function selectedGeneration()
     return "hd"
@@ -938,7 +825,6 @@ return function(mod)
   end
 
   local function gen2NationalDex(species, normalized)
-    if not IS_GEN2 then return nil end
 
     -- Gen 2's numeric species ids already follow the National-Dex range.
     -- Take that fast path first so battle/menu objects do not depend on a
@@ -966,7 +852,7 @@ return function(mod)
   -- Crystal Unown is one species (#201) with 26 letter forms. The game
   -- remains authoritative for the form; KIM maps that form to matching HD art.
   mod._kimUnownCompat = mod._kimUnownCompat or {}
-  if IS_GEN2 then
+  do
     local okUnown, value = pcall(require, "src.core.gen2.Unown")
     if okUnown and type(value) == "table" then mod._kimUnownCompat.engine = value end
   end
@@ -986,7 +872,6 @@ return function(mod)
     return nil
   end
   mod._kimUnownCompat.isSpecies = function(species, normalized)
-    if not IS_GEN2 then return false end
     local numeric = tonumber(species)
     if numeric and math.floor(numeric) == 201 then return true end
     normalized = normalized or normalizedSpecies(species)
@@ -1018,7 +903,7 @@ return function(mod)
     local cacheSpecies = normalized
     local entry = normalized and hdSprites and hdSprites[normalized]
 
-    if IS_GEN2 and mod._kimUnownCompat.isSpecies(originalSpecies, normalized) then
+    if mod._kimUnownCompat.isSpecies(originalSpecies, normalized) then
       local letter = mod._kimUnownCompat.index(form) or mod._kimUnownCompat.letterForMon(mon) or 1
       if letter == 1 then
         entry = nationalHdSprites and nationalHdSprites[201] or entry
@@ -1026,7 +911,7 @@ return function(mod)
         entry = mod._kimHdUnownForms and mod._kimHdUnownForms[letter] or nil
       end
       cacheSpecies = "UNOWN_" .. tostring(letter)
-    elseif type(entry) ~= "table" and IS_GEN2 then
+    elseif type(entry) ~= "table" then
       -- Gen 2's HD import is National-Dex keyed for #152-251.
       local dex = gen2NationalDex(originalSpecies, normalized)
       local national = dex and nationalHdSprites and nationalHdSprites[dex]
@@ -1143,13 +1028,9 @@ return function(mod)
   end
 
   local function battleRecord(species, side, mon)
-    if IS_GEN2 then
-      -- Gen 2 menu artwork and battle artwork are independent choices.
-      -- MENU SPRITES may be VANILLA while BATTLE SPRITES stays ON.
-      if mod.options:get("battleSprites") == false then return nil end
-    elseif mod.options:get("battleSprites") == false then
-      return nil
-    end
+    -- Gen 2 menu artwork and battle artwork are independent choices.
+    -- MENU SPRITES may be VANILLA while BATTLE SPRITES stays ON.
+    if mod.options:get("battleSprites") == false then return nil end
     if side == "back" then
       local generation = battleBackGeneration()
       if isBattleShiny(mon) then
@@ -1375,10 +1256,7 @@ return function(mod)
   end
 
   local function menuSpritesEnabled()
-    if IS_GEN2 then
-      return tostring(mod.options:get("gen2MenuSpriteSource") or "kim") == "kim"
-    end
-    return tostring(mod.options:get("gen1MenuSpriteSource") or "kim") == "kim"
+    return tostring(mod.options:get("gen2MenuSpriteSource") or "kim") == "kim"
   end
 
   -- HD sheets are already authored at their intended presentation size, so
@@ -1397,7 +1275,7 @@ return function(mod)
     local forcedFrame = nil
     -- Gen 2's SPRITE ANIMATION setting is presentation-only: it freezes KIM
     -- menu/Pokedex/party artwork on frame 1 without changing battle animation.
-    if IS_GEN2 and mod.options:get("spriteAnimation") == false then forcedFrame = 1 end
+    if mod.options:get("spriteAnimation") == false then forcedFrame = 1 end
     if isBattleShiny(mon) then
       local shiny, actualGeneration, normalized = localShinyFrontRecord(species, generation, mon, form)
       if shiny then
@@ -1411,16 +1289,14 @@ return function(mod)
       forcedFrame, "front", "normal", false)
   end
 
-  if IS_GEN2 then
-    mod.exports.getGen2UnownSprite = function(letter, opts)
-      opts = opts or {}
-      return getSprite(201, {
-        generation = "hd",
-        kind = opts.kind or "unown",
-        form = letter,
-        mon = opts.mon,
-      })
-    end
+  mod.exports.getGen2UnownSprite = function(letter, opts)
+    opts = opts or {}
+    return getSprite(201, {
+      generation = "hd",
+      kind = opts.kind or "unown",
+      form = letter,
+      mon = opts.mon,
+    })
   end
 
   -- Title-only alternate-color lookup uses the same HD metadata as battles.
@@ -1527,7 +1403,7 @@ return function(mod)
   mod._kantoInMotionKimTrainerScaleActive = false
 
   local function battleSystemEnabled()
-    return not IS_GEN2 and mod.options:get("battleSystem") ~= false
+    return false   -- KIM's own Gen 1 battle presenter: never on Crystal
   end
 
   -- Original KIM 1.3.7 KRBA feature-level Battle Art probe. MOVE ANIMATIONS
@@ -1537,7 +1413,7 @@ return function(mod)
     if not (mod and type(mod.find) == "function") then return false end
     -- Gen 2 Battle Art has its own mod ID.  Looking up only the Gen 1 fork
     -- left desktop Gen 2 caught-icon reconstruction permanently dormant.
-    if IS_GEN2 then
+    do
       local ok2, handle2 = pcall(mod.find, mod, "BATTLE_ART_VOXEL_GEN2")
       if not ok2 or not handle2 then
         ok2, handle2 = pcall(mod.find, "BATTLE_ART_VOXEL_GEN2")
@@ -1558,27 +1434,6 @@ return function(mod)
       -- Battle Art for an active 3D scene.
       return false
     end
-    local ok, handle = pcall(mod.find, mod, "BATTLE_ART_VOXEL_FORK")
-    if not ok or not handle then
-      ok, handle = pcall(mod.find, "BATTLE_ART_VOXEL_FORK")
-    end
-    if not (ok and handle) then return false end
-    local exports = type(handle.exports) == "table" and handle.exports or nil
-    local stage = exports and exports.battleStage or nil
-    if type(stage) == "table" and type(stage.enabled) == "function" then
-      local okEnabled, enabled = pcall(stage.enabled)
-      if okEnabled then return enabled == true end
-    end
-    local lib = exports and exports.lib or nil
-    if type(lib) == "table" and type(lib.require) == "function" then
-      local okO, OverworldBattle = pcall(lib.require, "OverworldBattle")
-      if okO and type(OverworldBattle) == "table"
-          and type(OverworldBattle.enabled) == "function" then
-        local okEnabled, enabled = pcall(OverworldBattle.enabled)
-        if okEnabled then return enabled == true end
-      end
-    end
-    return false
   end
   mod._kantoInMotionBattleArt3DBattleEnabled = battleArt3DBattleEnabled
 
@@ -1597,13 +1452,9 @@ return function(mod)
   end
 
   local function battleLiteOwnsSprites()
-    if IS_GEN2 then
-      -- Gen 2 keeps the native G/S/C battle system. KIM supplies only the
-      -- Pokemon image through Gen1Recomp's existing pokemon.sprite seam.
-      return mod.options:get("battleSprites") ~= false
-    end
+    -- Gen 2 keeps the native G/S/C battle system. KIM supplies only the
+    -- Pokemon image through Gen1Recomp's existing pokemon.sprite seam.
     return mod.options:get("battleSprites") ~= false
-      and not externalBattleSpritesBlocked()
   end
 
   -- Full-screen KIM presentation is used only when the new HD background
@@ -1611,7 +1462,7 @@ return function(mod)
   -- Pokemon/HUD bridge available while yielding arena art to the game or a
   -- cooperating scene owner.
   local function hdBattleBackgroundsEnabled()
-    return not IS_GEN2 and mod.options:get("hdBattleBackgrounds") ~= false
+    return false   -- Gen 1 HD arenas: Crystal's live in lib/gen2_aio/backdrop.lua
   end
 
   local function battleLiteFullScreenActive()
@@ -1658,9 +1509,7 @@ return function(mod)
     -- returned by Assets.image(path). Refresh KIM's mutable native-slot Canvas
     -- here before returning the stable virtual path, so that cached object keeps
     -- advancing through the HD animation frames.
-    if IS_GEN2 then
-      battleProxy(record, generation, side, variant, normalized)
-    end
+    battleProxy(record, generation, side, variant, normalized)
 
     return BATTLE_BRIDGE_PREFIX .. generation .. "/" .. side .. "/"
       .. variant .. "/" .. normalized .. ".png"
@@ -2057,35 +1906,6 @@ return function(mod)
       end
     end
 
-    -- Select the trainer at the engine seam BEFORE BattleState caches
-    -- playerBackPic. This is the proven PotatoVoxel-compatible architecture.
-    if mod.hooks and type(mod.hooks.wrap)=="function" and not IS_GEN2
-        and not mod._kantoInMotionTrainerResolverV14 then
-      mod._kantoInMotionTrainerResolverV14=true
-      mod.hooks:wrap("player.sprite",function(nextFn,path,ctx)
-        local resolved=nextFn(path,ctx)
-        if type(ctx)~="table" or ctx.kind~="battle" or ctx.side~="back"
-            or ctx.demo or ctx.oakDemo then return resolved end
-
-        local ownsTrainer=battleSystemEnabled()
-          and not externalBattleSceneOwnerRegistered()
-        if not ownsTrainer then
-          local probe=mod._kantoInMotionExternalStageAllowsKimTrainer
-          if type(probe)=="function" then
-            local ok,value=pcall(probe,ctx.battle)
-            ownsTrainer=ok and value==true
-          end
-        end
-        if not ownsTrainer then return resolved end
-
-        local choice=mod.options:get("battleTrainerSprite") or "red"
-        if choice=="rom" then return resolved end
-        local custom=staticPath(choice)
-        if not custom then return resolved end
-        ctx.trueColor=true
-        return custom
-      end,9000)
-    end
   end
 
   -- Public/private bridge for cooperative staged-battle renderers.
@@ -2199,7 +2019,7 @@ return function(mod)
   end
 
   local function menuPresentationFrame(front)
-    if IS_GEN2 and mod.options:get("spriteAnimation") == false then return 1 end
+    if mod.options:get("spriteAnimation") == false then return 1 end
     return currentFrame(front)
   end
 
@@ -2364,7 +2184,7 @@ return function(mod)
   end
 
   local function installStockGen2CleanUiBridge()
-    if not IS_GEN2 or not gen2CleanUiHandle()
+    if not gen2CleanUiHandle()
         or not (love and love.graphics and type(love.graphics.newImage) == "function") then
       return false
     end
@@ -2534,7 +2354,7 @@ return function(mod)
   }
 
   gen2CleanUiHandle = function()
-    if not IS_GEN2 or type(mod.find) ~= "function" then return nil end
+    if type(mod.find) ~= "function" then return nil end
     local ok, handle = pcall(mod.find, "gen2_clean_ui")
     if ok and type(handle) == "table" then return handle end
     return nil
@@ -2564,7 +2384,7 @@ return function(mod)
         -- Gen2's battle UI resolves through Assets.image() and can hold our
         -- mutable Canvas. Gen1's ImageData path freezes the drawable, so the
         -- Gen1 source draw is swapped directly below instead.
-        if IS_GEN2 then
+        do
           local virtual = battleBridgePath(ctx.species, ctx.side, ctx.mon)
           if virtual then
             ctx.trueColor = true
@@ -2712,436 +2532,12 @@ return function(mod)
     return unpackCompat(result)
   end
 
-  -- Gen1 animated sprites are substituted only during drawPicsLayer so battle
-  -- state, Transform, faint/send-out state and third-party mechanics retain
-  -- the exact native battler tables. A registered external scene owner wins outright.
-  if not IS_GEN2 then
-    local okOW, OverworldController = pcall(require, "src.world.OverworldController")
-    if okOW and type(OverworldController) == "table"
-        and type(OverworldController.pushBattle) == "function"
-        and not OverworldController._kantoInMotionBattleLayout then
-      local nativePushBattle = OverworldController.pushBattle
-      OverworldController._kantoInMotionBattleLayout = nativePushBattle
-      OverworldController.pushBattle = function(self, battle, ...)
-        if battleSystemEnabled() and not externalBattleSceneOwnerRegistered() then
-          forceBattleLayoutOG(self and self.game)
-        end
-        return nativePushBattle(self, battle, ...)
-      end
-    end
-
-    local okBattle, BattleState = pcall(require, "src.battle.BattleState")
-    if okBattle and type(BattleState) == "table" then
-      if type(BattleState.newWild) == "function"
-          and not BattleState._kantoInMotionShinyOdds then
-        local nativeNewWild = BattleState.newWild
-        BattleState._kantoInMotionShinyOdds = nativeNewWild
-        BattleState.newWild = function(game_, species, level, opts)
-          local battle = nativeNewWild(game_, species, level, opts)
-          local mon = battle and battle.enemy and battle.enemy.mon
-          if mon then
-            local consume = mod.exports and mod.exports._kantoInMotionConsumePreparedWildIdentity
-            local prepared = type(consume) == "function" and consume(species, level) or nil
-            if type(prepared) == "table" and type(prepared.dvs) == "table" then
-              mon.dvs = type(mon.dvs) == "table" and mon.dvs or {}
-              for key, value in pairs(prepared.dvs) do mon.dvs[key] = value end
-              mon.shiny = prepared.shiny == true and true or nil
-            else
-              rollWildShiny(mon)
-            end
-          end
-          return battle
-        end
-      end
-      if type(BattleState.drawPicsLayer) == "function"
-          and not BattleState._kantoInMotionBattlePics then
-        local nativeDrawPicsLayer = BattleState.drawPicsLayer
-        BattleState._kantoInMotionBattlePics = nativeDrawPicsLayer
-        local transparentBattlePic = nil
-        local function transparentPic()
-          if transparentBattlePic then return transparentBattlePic end
-          if not (love and love.graphics and type(love.graphics.newCanvas) == "function") then
-            return nil
-          end
-          local ok, canvas = pcall(love.graphics.newCanvas, 1, 1, { dpiscale = 1 })
-          if not ok or not canvas then return nil end
-          if canvas.setFilter then pcall(canvas.setFilter, canvas, "nearest", "nearest") end
-          local prev = love.graphics.getCanvas and love.graphics.getCanvas() or nil
-          love.graphics.push("all")
-          love.graphics.setCanvas(canvas)
-          love.graphics.clear(0, 0, 0, 0)
-          if prev then love.graphics.setCanvas(prev) else love.graphics.setCanvas() end
-          love.graphics.pop()
-          transparentBattlePic = canvas
-          return canvas
-        end
-        BattleState.drawPicsLayer = function(self, ...)
-          local externalKimSprites = false
-          if type(mod._kantoInMotionExternalStageUsesKimSprites) == "function" then
-            local okExternal, valueExternal = pcall(
-              mod._kantoInMotionExternalStageUsesKimSprites, self)
-            externalKimSprites = okExternal and valueExternal == true
-          end
-          local externalPinnedBack = false
-          if externalKimSprites
-              and type(mod._kantoInMotionExternalStagePlayerBackPinned) == "function" then
-            local okPinned, valuePinned = pcall(
-              mod._kantoInMotionExternalStagePlayerBackPinned, self)
-            externalPinnedBack = okPinned and valuePinned == true
-          end
-          if not battleLiteOwnsSprites() and not externalKimSprites then
-            return nativeDrawPicsLayer(self, ...)
-          end
-          local oldEnemy = self.enemy and self.enemy.sprite
-          local oldPlayer = self.player and self.player.sprite
-          local oldPlayerBack = self.playerBackPic
-          local changedEnemy, changedPlayer, changedPlayerBack = false, false, false
-          local direct = battleLiteDirectStageActive()
-
-          -- Potato BACK SPRITES is a completely different player path from
-          -- its staged 3D billboard provider: the player's trainer/Pokemon is
-          -- intentionally left in Gen1Recomp's flat back-pic slot.
-          --
-          -- Resolve the mobile ownership branch FIRST. v22 referenced this
-          -- local before its declaration, which made the subsequent trainer
-          -- animation branch depend on a global/nil value on mobile.
-          local mobilePinnedTrainer = false
-          if externalPinnedBack and not battleSystemEnabled() and self.showPlayerBack
-              and type(mod._kantoInMotionNativeMobileHost) == "function" then
-            local okMobile, isMobile = pcall(mod._kantoInMotionNativeMobileHost)
-            mobilePinnedTrainer = okMobile and isMobile == true
-          end
-
-          -- Restore the original KIM trainer-animation seam.
-          --
-          -- The uploaded pre-cleanup v1.3.7 uses battleTrainerFrameForBattle()
-          -- from the native pics layer. PotatoVoxel BACK SPRITES deliberately
-          -- skips the player texture provider, so provider-side animation
-          -- patches cannot affect this path at all.
-          --
-          -- v14 proved that substituting this live 80x80 Image here animates.
-          -- v17 made the size correct by keeping the registered static path.
-          -- v22 combines those two paths; mobile size is corrected separately
-          -- at resolveBattleScale below without disabling this animation seam.
-          local potatoPinnedTrainer = externalPinnedBack
-            and self.showPlayerBack and not self.safari and not self.demo
-            and not mobilePinnedTrainer
-          if (not externalKimSprites or potatoPinnedTrainer)
-              and self.showPlayerBack and not self.safari and not self.demo then
-            local getter=mod.exports and mod.exports._kantoInMotionBattleTrainerFrame
-            if type(getter)=="function" then
-              local okTrainer,trainerFrame=pcall(getter,self)
-              if okTrainer and trainerFrame then
-                self.playerBackPic=trainerFrame
-                changedPlayerBack=true
-              end
-            end
-          end
-
-          -- On mobile with KIM's full battle system OFF, hide the malformed
-          -- source trainer for the one intro phase; potato_voxel_compat redraws
-          -- one complete trainer at final resolution in the pinned slot.
-          if mobilePinnedTrainer then
-            local blank = transparentPic()
-            if blank then
-              self.playerBackPic = blank
-              changedPlayerBack = true
-            end
-          end
-
-          if self.enemy and self.enemy.mon and not self.enemySendingOut then
-            local record, generation, species, shiny = battleRecord(
-              self.enemy.mon.species, "front", self.enemy.mon)
-            if record then
-              if direct and not self.showEnemyTrainer then
-                local blank = transparentPic()
-                if blank then self.enemy.sprite = blank; changedEnemy = true end
-              else
-                local image = battleProxy(record, generation, "front",
-                  shiny and "shiny" or "normal", species)
-                if image then self.enemy.sprite = image; changedEnemy = true end
-              end
-            end
-          end
-          -- While the native send-out state is active, leave player.sprite
-          -- completely untouched. Gen1Recomp temporarily uses that native pics
-          -- path for the thrown Pokeball/opening frames; replacing it with a
-          -- Pokemon proxy is what made the split/open effect appear without the
-          -- actual ball. Once sendingOut clears, resume the normal KIM proxy /
-          -- transparent fullscreen substitution.
-          if self.player and self.player.mon and not self.sendingOut then
-            local record, generation, species, shiny = battleRecord(
-              self.player.mon.species, "back", self.player.mon)
-            if record then
-              if direct and not self.showPlayerBack and not self.safari and not self.demo then
-                local blank = transparentPic()
-                if blank then self.player.sprite = blank; changedPlayer = true end
-              else
-                local variant = shiny and "shiny" or "normal"
-                local image
-                if externalPinnedBack then
-                  -- Potato's pinned back is redrawn from the native KIM atlas
-                  -- at final window resolution by potato_voxel_compat. Keep the
-                  -- original 160x144 source layer transparent so it cannot
-                  -- downsample the sprite first or leave a duplicate behind.
-                  image = transparentPic()
-                else
-                  image = battleProxy(record, generation, "back", variant, species)
-                end
-                if image then self.player.sprite = image; changedPlayer = true end
-              end
-            end
-          end
-          -- Keep Potato's integer-scale seam at 1x for the already-sized,
-          -- frame-stable KIM pinned back drawable. The flag lives only across
-          -- this synchronous native draw and is cleared even if the draw fails.
-          local previousPinnedScale = mod._kantoInMotionPotatoPinnedBackScaleActive
-          local previousTrainerScale = mod._kantoInMotionPotatoPinnedTrainerScaleActive
-          local previousKimTrainerScale = mod._kantoInMotionKimTrainerScaleActive
-          mod._kantoInMotionPotatoPinnedBackScaleActive = externalPinnedBack and changedPlayer
-          mod._kantoInMotionPotatoPinnedTrainerScaleActive =
-            potatoPinnedTrainer and changedPlayerBack
-          mod._kantoInMotionKimTrainerScaleActive =
-            changedPlayerBack and not potatoPinnedTrainer
-          local result = { pcall(nativeDrawPicsLayer, self, ...) }
-          mod._kantoInMotionPotatoPinnedBackScaleActive = previousPinnedScale
-          mod._kantoInMotionPotatoPinnedTrainerScaleActive = previousTrainerScale
-          mod._kantoInMotionKimTrainerScaleActive = previousKimTrainerScale
-          if changedEnemy and self.enemy then self.enemy.sprite = oldEnemy end
-          if changedPlayer and self.player then self.player.sprite = oldPlayer end
-          if changedPlayerBack then self.playerBackPic = oldPlayerBack end
-          local ok = table.remove(result, 1)
-          if not ok then error(result[1], 0) end
-          return unpackCompat(result)
-        end
-      end
-
-      -- KIM captures the complete 48-row HP/status bands, including Pokeball
-      -- Colorfix party rows. Suppress the source copy while the HD fullscreen
-      -- battle scene is active so the bands are drawn exactly once.
-      if type(BattleState.drawHUDs) == "function"
-          and not BattleState._kantoInMotionSourceHudBands then
-        local nativeDrawHUDs = BattleState.drawHUDs
-        BattleState._kantoInMotionSourceHudBands = nativeDrawHUDs
-        BattleState.drawHUDs = function(self, ...)
-          if battleLiteFullScreenActive() and not self._kantoInMotionHudCapture then
-            return
-          end
-          return nativeDrawHUDs(self, ...)
-        end
-      end
-
-      if type(BattleState.draw) == "function"
-          and not BattleState._kantoInMotionBattleDraw then
-        local nativeBattleDraw = BattleState.draw
-        BattleState._kantoInMotionBattleDraw = nativeBattleDraw
-        BattleState.draw = function(self, ...)
-          local ownsFullscreen = battleLiteFullScreenActive()
-          local ownsExternalMobileStageUi = false
-          if type(mod._kantoInMotionNativeMobileHost) == "function"
-              and mod._kantoInMotionNativeMobileHost()
-              and type(mod._kantoInMotionExternalStageUsesKimHud) == "function" then
-            local okExternal, value = pcall(mod._kantoInMotionExternalStageUsesKimHud, self)
-            ownsExternalMobileStageUi = okExternal and value == true
-          end
-          if not ownsFullscreen then
-            if pendingFullscreenBattle == self then pendingFullscreenBattle = nil end
-            -- A cooperative external stage can own the world without owning
-            -- KIM's lower battle UI. Keep the hybrid marker live on mobile so
-            -- Modern UI sees the same contract before render.compose.
-            self._kantoInMotionBattleLite = ownsExternalMobileStageUi and true or nil
-            if self._kantoInMotionOwnsBattlePaper then
-              self.letterboxWhite = nil
-              self._kantoInMotionOwnsBattlePaper = nil
-            end
-            local shot = rawget(self, "dramaticShapeShot")
-            if type(shot) == "table" and shot.kantoInMotion2D then
-              self.dramaticShapeShot = nil
-              self._kantoInMotionFlatShot = nil
-            end
-            return nativeBattleDraw(self, ...)
-          end
-
-          -- Publish ownership before render.zones/render.compose so the
-          -- integrated Modern UI can modernize only KIM's lower battle panel
-          -- without ever claiming another mod's battle scene. Mark only a
-          -- genuinely top-level BattleState for source-canvas removal; child
-          -- Bag/Party/etc. screens must keep their own UI canvas intact.
-          self._kantoInMotionBattleLite = true
-          local stack = self.game and self.game.stack
-          local top = stack and type(stack.top) == "function" and stack:top() or nil
-          if top == nil or top == self then pendingFullscreenBattle = self end
-
-          -- KIM owns one full-window HD battle scene. beginFrame has already
-          -- bound the UI canvas here, so clear that source canvas to alpha,
-          -- disable the white letterbox, and suppress only the source 160x144
-          -- white background fill. The engine still draws Pokemon, attack
-          -- effects and the lower battle UI normally into this transparent
-          -- overlay.
-          if type(setFlatBattleWorld) == "function" then
-            mod._kantoInMotionGuardedMobileCall("flat battle world",
-              setFlatBattleWorld, self.game, self)
-          end
-          self.letterboxWhite = false
-          self._kantoInMotionOwnsBattlePaper = true
-          love.graphics.clear(0, 0, 0, 0)
-
-          -- KIM no longer ships a replacement move-animation system. Native
-          -- Gen1Recomp flashes/effects remain authoritative; only the opaque
-          -- source battle paper is suppressed over the HD scene.
-          local result = { mod._kantoInMotionGuardedMobileCall("native battle source draw",
-            withoutBattleBackgroundFill, self, nativeBattleDraw, ...) }
-
-          local ok = table.remove(result, 1)
-          if not ok then error(result[1], 0) end
-
-          -- Quality of Life checks dramaticShapeShot after BattleState:draw.
-          -- KIM owns the fullscreen scene here, so reassert the already-published
-          -- flat-shot contract after the native source draw. This keeps QOL EXP
-          -- and caught indicators attached to KIM's final-resolution HUD geometry.
-          local flatShot = rawget(self, "_kantoInMotionFlatShot")
-          local desktopHost = not (type(mod._kantoInMotionNativeMobileHost) == "function"
-            and mod._kantoInMotionNativeMobileHost())
-          if desktopHost and type(flatShot) == "table" and flatShot.kantoInMotion2D then
-            self.dramaticShapeShot = flatShot
-            self.__qolDramaticShapeHudSnapped = true
-          end
-
-          return unpackCompat(result)
-        end
-      end
-
-      if type(BattleState.resolveBattleScale) == "function"
-          and not BattleState._kantoInMotionBattleScale then
-        local nativeResolveScale = BattleState.resolveBattleScale
-        BattleState._kantoInMotionBattleScale = nativeResolveScale
-        BattleState.resolveBattleScale = function(data, side, path, species)
-          local base = nativeResolveScale(data, side, path, species)
-
-          local mobileHost = false
-          if type(mod._kantoInMotionNativeMobileHost) == "function" then
-            local okMobile, valueMobile = pcall(mod._kantoInMotionNativeMobileHost)
-            mobileHost = okMobile and valueMobile == true
-          end
-
-          local kimTrainerPath = false
-          if side == "back" and type(path) == "string" then
-            kimTrainerPath =
-              path:find("assets/battle/player-trainers-frames/", 1, true) ~= nil
-          end
-
-          if side == "back"
-              and mod._kantoInMotionPotatoPinnedTrainerScaleActive then
-            -- Potato's pinned trainer was too small at v23's shared 65%.
-            -- Keep desktop v22 at 1x, but use an 85% mobile logical size for
-            -- this path only.
-            return mobileHost and 0.95 or 1
-          end
-
-          if side == "back"
-              and (mod._kantoInMotionKimTrainerScaleActive or kimTrainerPath) then
-            -- v23's effective 1.00x was too large; v24's 0.65x was too small.
-            -- Use the midpoint-ish 0.80x only on Android/iOS. Desktop keeps
-            -- the confirmed v22 1x trainer size and Potato's pinned trainer
-            -- continues to use its separate 0.85x mobile rule above.
-            return mobileHost and 0.95 or 1
-          end
-          if side == "back" and mod._kantoInMotionPotatoPinnedBackScaleActive then
-            -- The Potato-pinned KIM drawable is now a normal 48x48 logical
-            -- back slot, so preserve Gen1Recomp/Potato's native scale instead
-            -- of forcing 1x. This keeps the full fitted sprite at the same
-            -- authored size/anchor as an ordinary back pic.
-            return base
-          end
-          if not (battleSystemEnabled() and not externalBattleSceneOwnerRegistered() and species) then
-            -- Cooperative Potato sprite replacement intentionally leaves this
-            -- scale seam native. v51 used that path and rendered large back
-            -- sprites such as Charizard correctly; forcing a 1.25x logical
-            -- scale here shrank the already display-sized KIM proxy into the
-            -- clipped fragment seen in v53/v54.
-            return base
-          end
-
-          -- Fullscreen animated Pokemon are now painted at native atlas
-          -- resolution directly into the world canvas. Do not pre-shrink them
-          -- here: doing so resamples once into the 160x144 UI and a second time
-          -- when that UI reaches the window, which is what made v7.3 look
-          -- extremely blocky. This seam remains only for the non-fullscreen
-          -- fallback path.
-          if battleLiteDirectStageActive() then return base end
-
-          if side == "back" then
-            local record = battleLiteOwnsSprites() and battleRecord(species, side, nil) or nil
-            local authored = record and 1 or (tonumber(base) or 1)
-            local pct = tonumber(mod.options:get("battlePlayerSize")) or 100
-            pct = math.max(50, math.min(200, pct))
-            return authored * 1.15 * pct / 100
-          end
-          return base
-        end
-      end
-
-    end
-  end
-
   -- Platform probe used by the HD battle presentation and mobile HUD paths.
   mod._kantoInMotionNativeMobileHost = function()
     local system = love and love.system
     if not system or type(system.getOS) ~= "function" then return false end
     local ok, host = pcall(system.getOS)
     return ok and (host == "Android" or host == "iOS")
-  end
-
-  -- Gen 1 mobile HUD boundary: preserve the exact engine-owned entry state and
-  -- remove only pushes leaked during render.hud. This mirrors the proven
-  -- PotatoVoxel mobile strategy without resetting or rebinding the viewport.
-  do
-    if not IS_GEN2 and mod._kantoInMotionNativeMobileGen1() and mod.hooks
-        and type(mod.hooks.wrap) == "function" then
-      local warnedHud = false
-      mod.hooks:wrap("render.hud", function(nextFn, game, viewport)
-        if not battleSystemEnabled() then return nextFn(game, viewport) end
-        local baseDepth = mod._kantoInMotionGraphicsDepth()
-        local result = { pcall(nextFn, game, viewport) }
-        local repaired = baseDepth ~= nil and mod._kantoInMotionRestoreGraphicsDepth(baseDepth) or 0
-        if repaired > 0 and not warnedHud and mod.log
-            and type(mod.log.warn) == "function" then
-          warnedHud = true
-          mod.log:warn(
-            "Gen1 mobile render.hud leaked %d graphics state(s); repaired", repaired)
-        end
-        local ok = table.remove(result, 1)
-        if not ok then error(result[1], 0) end
-        return unpackCompat(result)
-      end, 115000)
-    end
-  end
-
-  -- Final boundary. GameViewport.finish() has completed before TouchControls,
-  -- so LOVE's graphics stack is expected to be depth zero. This is only a
-  -- fail-safe for a presentation leak missed above; it never lays out a scene.
-  do
-    if not IS_GEN2 and mod._kantoInMotionNativeMobileGen1() then
-      local okTouch, TouchControls = pcall(require, "src.core.TouchControls")
-      if okTouch and type(TouchControls) == "table"
-          and type(TouchControls.draw) == "function"
-          and not TouchControls._kantoInMotionGen1BoundaryV6 then
-        local originalTouchDraw = TouchControls.draw
-        TouchControls._kantoInMotionGen1BoundaryV6 = originalTouchDraw
-        local warnedTouch = false
-        TouchControls.draw = function(self, ...)
-          local repaired = battleSystemEnabled() and mod._kantoInMotionRestoreGraphicsDepth(0) or 0
-          if repaired > 0 and not warnedTouch and mod.log
-              and type(mod.log.warn) == "function" then
-            warnedTouch = true
-            mod.log:warn(
-              "Gen1 mobile repaired %d leaked graphics state(s) before TouchControls",
-              repaired)
-          end
-          return originalTouchDraw(self, ...)
-        end
-      end
-    end
   end
 
 
@@ -3225,7 +2621,7 @@ return function(mod)
   -- New 1920x950 HD battle arenas. The router reads the live Gen1 map/terrain/time
   -- state and chooses a complete authored sunrise/day/sunset/night image. Caves
   -- and other fixed locations stay static; there is no runtime shadow blending.
-  local hdArenaRouter = not IS_GEN2 and loadTable("data/hd_battle_backgrounds.lua", true) or {}
+  local hdArenaRouter = {}   -- Gen 1 arena router; Crystal routes in lib/gen2_aio/backdrop.lua
   if type(hdArenaRouter.bindMod)=="function" then pcall(hdArenaRouter.bindMod, mod) end
   local hdArenaImageCache = {}
   local function hdArenaBackdrop(game,battle)
@@ -4184,8 +3580,7 @@ return function(mod)
   -- duplicate native 160x96 layer because setFlatBattleWorld has already
   -- rendered the same session at final-window resolution.
   mod.exports._kantoInMotionKrsWideActive=function(battle)
-    return not IS_GEN2 and battle~=nil and battleLiteDirectStageActive()
-      and activeKrbaSession()~=nil
+    return false   -- Gen 1 KRBA wide stage only
   end
 
   -- Kanto in Motion owns the battlefield, animated battlers and one native-style
@@ -5305,40 +4700,7 @@ return function(mod)
     -- evolution/move-learning callbacks finish. Suppress only visual battle HUD
     -- passes while its EvolutionState is live; never alter the state machine.
     local function gen1EvolutionVisualActive(game)
-      if IS_GEN2 or tonumber(mod.generation) ~= 1 then return false end
-      local states=game and game.stack and game.stack.states
-      if type(states)~="table" or #states<2 then return false end
-      -- EvolutionState.new is wrapped in patchEvolutionScreen and stamps
-      -- _animatedMenuNewSpecies on the real native state. Do not rely on
-      -- package.loaded or the opaque evoClear screen: both were unreliable
-      -- in the v212 HUD hook even when Modern UI recognized the evolution.
-      -- Completion dialogue is pushed above EvolutionState. Search the live
-      -- stack rather than checking only the top entry; this must agree with
-      -- the Gen 1 overworld renderer's evolution-stack recognition.
-      local evolutionAt
-      for i=#states,1,-1 do
-        local candidate=states[i]
-        if type(candidate)=="table" and (
-            candidate._animatedMenuNewSpecies~=nil
-            or (candidate.mon~=nil and candidate.newSpecies~=nil
-              and (candidate.oldSprite~=nil or candidate.newSprite~=nil))) then
-          evolutionAt=i
-          break
-        end
-      end
-      if not evolutionAt then return false end
-      for i=1,evolutionAt-1 do
-        local st=states[i]
-        if type(st)=="table" and st~=game.overworld then
-          local mt=getmetatable(st)
-          local idx=mt and mt.__index
-          if type(idx)=="table" and idx==package.loaded["src.battle.BattleState"] then
-            return true
-          end
-          if st==currentBattleState(game) then return true end
-        end
-      end
-      return false
+      return false   -- Gen 1 only (Crystal evolves outside BattleState)
     end
 
     mod.hooks:wrap("battle.status_hud_visible", function(nextFn, state)
@@ -5582,92 +4944,10 @@ return function(mod)
   pcall(installColosseumAnimationAdapter)
 
 
-  -- Vanilla Gen1Recomp Summary and Pokedex entry pages cache their image once
-  -- when the screen opens. Refresh that image with our current animation frame
-  -- immediately before the native draw. Gen1 Modern UI consumes getSprite()
-  -- directly, so this path is only visible when the stock UI owns the screen.
-  local function patchVanillaScreens()
-    if IS_GEN2 then return end
-    local okSummary, SummaryMenu = pcall(require, IS_GEN2 and "src.ui.gen2.SummaryMenu" or "src.ui.SummaryMenu")
-    if okSummary and type(SummaryMenu) == "table" then
-      -- Seed the stock status screen with an animated frame when it opens.
-      -- This also prevents a blank portrait if another renderer calls the
-      -- object before its first normal draw pass.
-      if type(SummaryMenu.new) == "function" and not SummaryMenu._animatedMenuPokemonNew then
-        local originalNew = SummaryMenu.new
-        SummaryMenu._animatedMenuPokemonNew = originalNew
-        SummaryMenu.new = function(game, mon, ...)
-          local self = originalNew(game, mon, ...)
-          local animated = mon and getSprite(mon.species, { kind = "summary", mon = mon })
-          animated = animated and fitStockPortrait(animated, 56, 56) or nil
-          if self and animated then
-            self.sprite, self.spriteTrueColor = animated, true
-          end
-          return self
-        end
-      end
-
-      if type(SummaryMenu.draw) == "function" and not SummaryMenu._animatedMenuPokemonDraw then
-        local original = SummaryMenu.draw
-        SummaryMenu._animatedMenuPokemonDraw = original
-        SummaryMenu.draw = function(self, ...)
-          local mon = self and self.mon
-          local animated = mon and getSprite(mon.species, { kind = "summary", mon = mon })
-          animated = animated and fitStockPortrait(animated, 56, 56) or nil
-          if not animated then return original(self, ...) end
-          local oldSprite, oldTrue = self.sprite, self.spriteTrueColor
-          self.sprite, self.spriteTrueColor = animated, true
-          local okDraw, drawErr = pcall(original, self, ...)
-          self.sprite, self.spriteTrueColor = oldSprite, oldTrue
-          if not okDraw then error(drawErr, 0) end
-        end
-      end
-    end
-
-    local okDex, DexEntryMenu = false, nil
-    if not IS_GEN2 then okDex, DexEntryMenu = pcall(require, "src.ui.DexEntryMenu") end
-    if okDex and type(DexEntryMenu) == "table" then
-      if type(DexEntryMenu.new) == "function" and not DexEntryMenu._animatedMenuPokemonNew then
-        local originalNew = DexEntryMenu.new
-        DexEntryMenu._animatedMenuPokemonNew = originalNew
-        DexEntryMenu.new = function(game, speciesOrOpts, ...)
-          local self = originalNew(game, speciesOrOpts, ...)
-          local species = self and self.def and self.def.id
-          local animated = species and getSprite(species, { kind = "dex" })
-          animated = animated and fitStockPortrait(animated, 56, 56) or nil
-          if self and animated then
-            self.sprite, self.spriteTrueColor = animated, true
-          end
-          return self
-        end
-      end
-
-      -- Patch the shared static renderer rather than only DexEntryMenu:draw().
-      -- The stock Pokedex and printer paths both use this function, so the
-      -- animated portrait remains available anywhere the vanilla entry page is
-      -- rendered while Modern UI is disabled.
-      if type(DexEntryMenu.render) == "function" and not DexEntryMenu._animatedMenuPokemonRender then
-        local originalRender = DexEntryMenu.render
-        DexEntryMenu._animatedMenuPokemonRender = originalRender
-        DexEntryMenu.render = function(game, def, sprite, forceOwned, trueColor, page, ...)
-          local species = def and def.id
-          local animated = species and getSprite(species, { kind = "dex" })
-          animated = animated and fitStockPortrait(animated, 56, 56) or nil
-          if animated then
-            sprite, trueColor = animated, true
-          end
-          return originalRender(game, def, sprite, forceOwned, trueColor, page, ...)
-        end
-      end
-    end
-  end
-  patchVanillaScreens()
-
   -- Gold/Crystal have parallel menu classes rather than the Gen 1 Summary /
   -- DexEntry / EvolutionState classes.  Patch the actual Gen 2 picture
   -- methods directly so the selected Kanto in Motion atlas remains live.
   local function patchGen2Screens()
-    if not IS_GEN2 then return end
     -- gen2_clean_ui may own Summary/Pokedex presentation, but it does not own
     -- the native BattleState Pokemon draw. Keep KIM's direct-HD battle bridge
     -- installed even when that UI mod is present, then yield the non-battle
@@ -6235,829 +5515,6 @@ return function(mod)
   end
   patchGen2Screens()
 
-  -- A standalone Animated Menu Pokemon build and older Kanto in Motion builds
-  -- used the same generic SummaryMenu marker name. If one of those wrappers
-  -- was installed first, the normal injection above can be skipped even though
-  -- this mod owns the active sprite provider. Add a Kanto-specific final pass
-  -- for the stock Gen 1 status page. It redraws only the portrait box after the
-  -- native screen has finished, so the rest of the Gen 1 UI remains untouched.
-  local function installStockSummaryPortraitPass()
-    local okSummary, SummaryMenu = pcall(require, IS_GEN2 and "src.ui.gen2.SummaryMenu" or "src.ui.SummaryMenu")
-    if not (okSummary and type(SummaryMenu) == "table"
-        and type(SummaryMenu.draw) == "function") then return end
-    if SummaryMenu._kantoInMotionStockPortraitDraw then return end
-
-    local baseDraw = SummaryMenu.draw
-    SummaryMenu._kantoInMotionStockPortraitDraw = baseDraw
-    SummaryMenu.draw = function(self, ...)
-      local okDraw, drawErr = pcall(baseDraw, self, ...)
-      if not okDraw then error(drawErr, 0) end
-
-      if integratedModernUiEnabled()
-          or not menuSpritesEnabled()
-          or knownExternalUiPresent() then
-        return
-      end
-
-      local mon = self and self.mon
-      local animated = mon and getSprite(mon.species, { kind = "summary", mon = mon })
-      animated = animated and fitStockPortrait(animated, 56, 56) or nil
-      if not animated then return end
-
-      local pw, ph = animated:getDimensions()
-      local py = math.max(0, 56 - ph)
-      love.graphics.push("all")
-      love.graphics.setShader()
-      -- Erase the native portrait (and any oversized portrait from an older
-      -- wrapper) without touching the name column that begins at x=72.
-      love.graphics.setColor(1, 1, 1, 1)
-      love.graphics.rectangle("fill", 0, 0, 72, 56)
-      love.graphics.draw(animated, 8 + pw, py, 0, -1, 1)
-      require("src.render.PaletteFX").markTrueColor(8, py, pw, ph)
-      love.graphics.pop()
-    end
-  end
-  if not IS_GEN2 then installStockSummaryPortraitPass() end
-
-  -- Emerald's starter-choose screen is rendered inside Game3's native 240x160
-  -- fullscreen UI.  To preserve the original HD KIM pixels, remove only the
-  -- Pokemon from StarterChoose:draw(), let Game3 finish presenting the COMPLETE
-  -- screen, and then draw the current atlas frame from a Game3.draw() wrapper.
-  -- This wrapper is deliberately outside Display.present/render.hud so it runs
-  -- after every Game3 presentation path has completed.
-  local function patchGame3StarterChoose()
-    if IS_GEN2 then return end
-
-    local okStarter, StarterChoose = pcall(require, "src.ui.game3.rse.starter_choose")
-    local okDisplay, G3Display = pcall(require, "src.core.game3.display")
-    local okGame3, Game3 = pcall(require, "src.core.Game3")
-    if not (okStarter and type(StarterChoose) == "table"
-        and type(StarterChoose.draw) == "function"
-        and okDisplay and type(G3Display) == "table"
-        and type(G3Display.fit) == "function"
-        and okGame3 and type(Game3) == "table"
-        and type(Game3.draw) == "function") then
-      if mod.log and type(mod.log.warn) == "function" then
-        mod.log:warn("Emerald starter HD outer draw bridge unavailable")
-      end
-      return
-    end
-
-    -- Remove the Pokemon from Emerald's low-resolution fullscreen UI pass.
-    if not StarterChoose._kantoInMotionHdStarterDrawV31 then
-      local nativeStarterDraw = StarterChoose.draw
-      StarterChoose._kantoInMotionHdStarterDrawV31 = nativeStarterDraw
-      StarterChoose.draw = function(self, ...)
-        if not (self and self.mon and menuSpritesEnabled()) then
-          return nativeStarterDraw(self, ...)
-        end
-
-        local species = self.mon.species
-        local front = species and bridgeFront(species, selectedGeneration()) or nil
-        if not front then return nativeStarterDraw(self, ...) end
-
-        local savedMon = self.mon
-        self.mon = nil
-        local result = { pcall(nativeStarterDraw, self, ...) }
-        self.mon = savedMon
-        if not result[1] then error(result[2], 0) end
-        return unpackCompat(result, 2)
-      end
-    end
-
-    if not Game3._kantoInMotionHdStarterOuterDrawV31 then
-      local nativeGame3Draw = Game3.draw
-      Game3._kantoInMotionHdStarterOuterDrawV31 = nativeGame3Draw
-
-      Game3.draw = function(self, ...)
-        local result = { pcall(nativeGame3Draw, self, ...) }
-        if not result[1] then error(result[2], 0) end
-
-        local screen = type(StarterChoose.active) == "function"
-          and StarterChoose.active() or nil
-        if not (screen and screen.mon and menuSpritesEnabled()) then
-          return unpackCompat(result, 2)
-        end
-
-        local species = screen.mon.species
-        local front, generation, normalized = bridgeFront(species, selectedGeneration())
-        if not front then return unpackCompat(result, 2) end
-        local entry = cacheEntry(front, generation, normalized)
-        if not entry then return unpackCompat(result, 2) end
-
-        local frame = currentFrame(front)
-        local frameCount = math.max(1, math.floor(tonumber(front.frames) or 1))
-        frame = math.max(1, math.min(math.floor(tonumber(frame) or 1), frameCount))
-        local quad = quadFor(entry, frame)
-        if not quad then return unpackCompat(result, 2) end
-
-        local iw, ih = tonumber(entry.width), tonumber(entry.height)
-        if not (iw and ih and iw > 0 and ih > 0) then
-          return unpackCompat(result, 2)
-        end
-
-        local winW, winH = love.graphics.getDimensions()
-        local fit, ox, oy, _, _, fitY = G3Display.fit(winW, winH)
-        fitY = fitY or fit
-        if not (fit and fitY and fit > 0 and fitY > 0) then
-          return unpackCompat(result, 2)
-        end
-
-        -- Follow Emerald's native starter movement and affine zoom, but do not
-        -- enlarge an HD atlas cell above 1:1 source size. At confirmation this
-        -- makes the image intentionally smaller than the native 64x64 slot on a
-        -- large desktop window, but each source pixel stays a real screen pixel
-        -- instead of being blown up by the 240x160 presentation scale.
-        local affine = screen.mon.affine
-        local nativeScale = math.max(0,
-          (tonumber(affine and affine.scale) or 256) / 256)
-        local desiredW = 64 * nativeScale * fit
-        local desiredH = 64 * nativeScale * fitY
-        local drawScale = math.min(desiredW / iw, desiredH / ih, 1.0)
-        if not drawScale or drawScale <= 0 then
-          return unpackCompat(result, 2)
-        end
-
-        local cx = ox + (tonumber(screen.mon.x) or 120) * fit
-        local cy = oy + (tonumber(screen.mon.y) or 64) * fitY
-        local dw, dh = iw * drawScale, ih * drawScale
-        local dx, dy = cx - dw * 0.5, cy - dh * 0.5
-
-        love.graphics.push("all")
-        love.graphics.origin()
-        love.graphics.setCanvas()
-        love.graphics.setScissor()
-        love.graphics.setShader()
-        love.graphics.setBlendMode("alpha")
-        love.graphics.setColor(1, 1, 1, 1)
-        if entry.atlas.setFilter then
-          pcall(entry.atlas.setFilter, entry.atlas, "linear", "linear")
-        end
-        love.graphics.draw(entry.atlas, quad, dx, dy, 0, drawScale, drawScale)
-        if entry.atlas.setFilter then
-          pcall(entry.atlas.setFilter, entry.atlas, "nearest", "nearest")
-        end
-        love.graphics.pop()
-
-        if not mod._kantoInMotionEmeraldStarterOuterLogged
-            and mod.log and type(mod.log.info) == "function" then
-          mod._kantoInMotionEmeraldStarterOuterLogged = true
-          mod.log:info("Emerald starter HD atlas drawn from outer Game3 frame")
-        end
-
-        return unpackCompat(result, 2)
-      end
-    end
-
-    if mod.log and type(mod.log.info) == "function" then
-      mod.log:info("Emerald starter HD outer Game3 bridge enabled")
-    end
-  end
-  patchGame3StarterChoose()
-
-  -- Gen1Recomp's evolution movie caches the old and new front images once at
-  -- EvolutionState.new(), then alternates those two images while the sequence
-  -- accelerates. Replace those cached pictures only for the duration of draw
-  -- so the engine keeps its original timing, cancellation, cry, palette and
-  -- evolution logic while our selected animated collection supplies the art.
-  local function patchEvolutionScreen()
-    local okEvolution, EvolutionState = false, nil
-    if not IS_GEN2 then okEvolution, EvolutionState = pcall(require, "src.ui.EvolutionState") end
-    if not (okEvolution and type(EvolutionState) == "table") then return end
-
-    if type(EvolutionState.new) == "function"
-        and not EvolutionState._animatedMenuPokemonNew then
-      local originalNew = EvolutionState.new
-      EvolutionState._animatedMenuPokemonNew = originalNew
-      EvolutionState.new = function(game, mon, newSpecies, onDone, via)
-        local state = originalNew(game, mon, newSpecies, onDone, via)
-        if state then
-          -- Keep the pre-evolution species because Evolution.apply() mutates
-          -- mon.species before the final draw of the completed sequence.
-          state._animatedMenuOldSpecies = mon and mon.species or nil
-          state._animatedMenuNewSpecies = newSpecies
-        end
-        return state
-      end
-    end
-
-    if type(EvolutionState.draw) == "function"
-        and not EvolutionState._animatedMenuPokemonDraw then
-      local originalDraw = EvolutionState.draw
-      EvolutionState._animatedMenuPokemonDraw = originalDraw
-      EvolutionState.draw = function(self, ...)
-        if not (self and menuSpritesEnabled()) then
-          return originalDraw(self, ...)
-        end
-
-        local oldSpecies = self._animatedMenuOldSpecies
-          or (self.mon and self.mon.species)
-        local newSpecies = self._animatedMenuNewSpecies or self.newSpecies
-        local oldAnimated = oldSpecies and getSprite(oldSpecies, {
-          kind = "evolution", mon = self.mon,
-        }) or nil
-        local newAnimated = newSpecies and getSprite(newSpecies, {
-          kind = "evolution", mon = self.mon,
-        }) or nil
-
-        if not oldAnimated and not newAnimated then
-          return originalDraw(self, ...)
-        end
-
-        local oldSprite, oldTrue = self.oldSprite, self.oldSpriteTrueColor
-        local newSprite, newTrue = self.newSprite, self.newSpriteTrueColor
-        if oldAnimated then
-          self.oldSprite, self.oldSpriteTrueColor = oldAnimated, true
-        end
-        if newAnimated then
-          self.newSprite, self.newSpriteTrueColor = newAnimated, true
-        end
-
-        local okDraw, drawErr = pcall(originalDraw, self, ...)
-        self.oldSprite, self.oldSpriteTrueColor = oldSprite, oldTrue
-        self.newSprite, self.newSpriteTrueColor = newSprite, newTrue
-        if not okDraw then error(drawErr, 0) end
-      end
-    end
-  end
-  patchEvolutionScreen()
-
-  -- Title-screen integration. The title composition itself remains the stock
-  -- 160x144 Gen1Recomp screen, but the animated Pokemon and Red are presented
-  -- in render.hud at final window resolution. This avoids magnifying a tiny
-  -- nearest-filtered title canvas into large square pixels on high-resolution
-  -- displays such as the ROG Ally X.
-  --
-  -- Pokemon reuse this mod's selected Gen 2/3/4/5 animated front provider and
-  -- continue advancing normally. Red uses the bundled GIF-derived atlas,
-  -- begins its one-shot when the interactive title loop starts, then holds the
-  -- final frame until the TitleState is destroyed.
-  local function patchTitleScreen()
-    local okTitle, TitleState = pcall(require, IS_GEN2 and "src.ui.gen2.TitleState" or "src.ui.TitleState")
-    if not (okTitle and type(TitleState) == "table") then return end
-
-    local titlePlayerAtlas, titlePlayerQuads
-    local function titlePlayerImage()
-      if mod.options:get("titleTrainer") == "original" then return nil end
-      if titlePlayerAtlas == false then return nil end
-      if titlePlayerAtlas then return titlePlayerAtlas end
-      if type(titlePlayer) ~= "table" or type(titlePlayer.image) ~= "string" then
-        titlePlayerAtlas = false
-        return nil
-      end
-      titlePlayerAtlas = atlasImage(titlePlayer.image) or false
-      return titlePlayerAtlas ~= false and titlePlayerAtlas or nil
-    end
-
-
-    local titleLogoImageCache
-    local function titleLogoImage()
-      if titleLogoImageCache == false then return nil end
-      if titleLogoImageCache then return titleLogoImageCache end
-      titleLogoImageCache = atlasImage("assets/title/gen1recomppp_logo.png") or false
-      return titleLogoImageCache ~= false and titleLogoImageCache or nil
-    end
-
-
-    local titleLogoBalancedCanvasCache
-    local function titleLogoBalancedCanvas()
-      if titleLogoBalancedCanvasCache == false then return nil end
-      if titleLogoBalancedCanvasCache then return titleLogoBalancedCanvasCache end
-      local logo = titleLogoImage()
-      if not logo or not (love.graphics and love.graphics.newCanvas) then
-        titleLogoBalancedCanvasCache = false
-        return nil
-      end
-      local lw, lh = logo:getDimensions()
-      local upscale = 2
-      local okCanvas, canvas = pcall(love.graphics.newCanvas, lw * upscale, lh * upscale)
-      if not okCanvas or not canvas then
-        titleLogoBalancedCanvasCache = false
-        return nil
-      end
-      if canvas.setFilter then pcall(canvas.setFilter, canvas, "linear", "linear") end
-      local previousCanvas = love.graphics.getCanvas and love.graphics.getCanvas() or nil
-      love.graphics.push("all")
-      love.graphics.setCanvas(canvas)
-      love.graphics.origin()
-      love.graphics.clear(0, 0, 0, 0)
-      love.graphics.setColor(1, 1, 1, 1)
-      love.graphics.setShader()
-      if logo.setFilter then pcall(logo.setFilter, logo, "nearest", "nearest") end
-      love.graphics.draw(logo, 0, 0, 0, upscale, upscale)
-      if previousCanvas then love.graphics.setCanvas(previousCanvas) else love.graphics.setCanvas() end
-      love.graphics.pop()
-      titleLogoBalancedCanvasCache = canvas
-      return canvas
-    end
-
-    local function titlePlayerQuad(frame)
-      local atlas = titlePlayerImage()
-      if not atlas or not love.graphics.newQuad then return nil end
-      titlePlayerQuads = titlePlayerQuads or {}
-      if titlePlayerQuads[frame] then return titlePlayerQuads[frame] end
-      local width = math.max(1, math.floor(tonumber(titlePlayer.width) or 40))
-      local height = math.max(1, math.floor(tonumber(titlePlayer.height) or 56))
-      local columns = math.max(1, math.floor(tonumber(titlePlayer.columns) or 1))
-      local index = frame - 1
-      local col, row = index % columns, math.floor(index / columns)
-      local iw, ih = atlas:getDimensions()
-      local okQuad, quad = pcall(love.graphics.newQuad, col * width, row * height,
-        width, height, iw, ih)
-      if not okQuad then return nil end
-      titlePlayerQuads[frame] = quad
-      return quad
-    end
-
-    local titlePlayerBalancedCanvases
-    local function titlePlayerBalancedCanvas(frame)
-      local atlas = titlePlayerImage()
-      local quad = titlePlayerQuad(frame)
-      if not atlas or not quad or not (love.graphics and love.graphics.newCanvas) then
-        return nil
-      end
-      titlePlayerBalancedCanvases = titlePlayerBalancedCanvases or {}
-      if titlePlayerBalancedCanvases[frame] then return titlePlayerBalancedCanvases[frame] end
-      local width = math.max(1, math.floor(tonumber(titlePlayer.width) or 40))
-      local height = math.max(1, math.floor(tonumber(titlePlayer.height) or 56))
-      local upscale = 2
-      local okCanvas, canvas = pcall(love.graphics.newCanvas, width * upscale, height * upscale)
-      if not okCanvas or not canvas then return nil end
-      if canvas.setFilter then pcall(canvas.setFilter, canvas, "linear", "linear") end
-      local previousCanvas = love.graphics.getCanvas and love.graphics.getCanvas() or nil
-      love.graphics.push("all")
-      love.graphics.setCanvas(canvas)
-      love.graphics.origin()
-      love.graphics.clear(0, 0, 0, 0)
-      love.graphics.setColor(1, 1, 1, 1)
-      love.graphics.setShader()
-      if atlas.setFilter then pcall(atlas.setFilter, atlas, "nearest", "nearest") end
-      love.graphics.draw(atlas, quad, 0, 0, 0, upscale, upscale)
-      if previousCanvas then love.graphics.setCanvas(previousCanvas) else love.graphics.setCanvas() end
-      love.graphics.pop()
-      titlePlayerBalancedCanvases[frame] = canvas
-      return canvas
-    end
-
-    local function titlePokemonBalancedCanvas(sprite)
-      if not sprite or not (love.graphics and love.graphics.newCanvas) then return nil end
-      local sw, sh = sprite:getDimensions()
-      local fit = math.min(1, 56 / math.max(1, sw), 56 / math.max(1, sh))
-      local dw, dh = sw * fit, sh * fit
-      local dx, dy = (56 - dw) / 2, 56 - dh
-      local upscale = 2
-      local okCanvas, canvas = pcall(love.graphics.newCanvas, 56 * upscale, 56 * upscale)
-      if not okCanvas or not canvas then return nil end
-      if canvas.setFilter then pcall(canvas.setFilter, canvas, "linear", "linear") end
-      local previousCanvas = love.graphics.getCanvas and love.graphics.getCanvas() or nil
-      love.graphics.push("all")
-      love.graphics.setCanvas(canvas)
-      love.graphics.origin()
-      love.graphics.clear(0, 0, 0, 0)
-      love.graphics.setColor(1, 1, 1, 1)
-      love.graphics.setShader()
-      if sprite.setFilter then pcall(sprite.setFilter, sprite, "nearest", "nearest") end
-      love.graphics.draw(sprite, dx * upscale, dy * upscale, 0, fit * upscale, fit * upscale)
-      if sprite.setFilter then pcall(sprite.setFilter, sprite, "nearest", "nearest") end
-      if previousCanvas then love.graphics.setCanvas(previousCanvas) else love.graphics.setCanvas() end
-      love.graphics.pop()
-      return canvas
-    end
-
-    local TITLE_PLAYER_LOOP_DELAY_MS = 5000
-
-    local function oneShotPlayerFrame(self)
-      local frames = math.max(1, math.floor(tonumber(titlePlayer.frames) or 1))
-      if not mod.options:get("animate") or frames <= 1 then return 1 end
-      if not self or self.phase ~= "loop" then return 1 end
-      local now = love.timer and love.timer.getTime and love.timer.getTime() or 0
-      if self._animatedMenuTitlePlayerStart == nil then
-        self._animatedMenuTitlePlayerStart = now
-      end
-      local elapsed = math.max(0, (now - self._animatedMenuTitlePlayerStart) * 1000)
-      local durations = type(titlePlayer.durations) == "table" and titlePlayer.durations or {}
-
-      local seq = {}
-      for i = 1, frames do seq[#seq + 1] = i end
-      for i = frames - 1, 1, -1 do seq[#seq + 1] = i end
-
-      local seqTotal = 0
-      for i = 1, #seq - 1 do
-        local frame = seq[i]
-        seqTotal = seqTotal + math.max(1, tonumber(durations[frame]) or 100)
-      end
-      local cycleTotal = math.max(1, seqTotal + TITLE_PLAYER_LOOP_DELAY_MS)
-      local loopElapsed = elapsed % cycleTotal
-
-      local total = 0
-      for i = 1, #seq - 1 do
-        local frame = seq[i]
-        total = total + math.max(1, tonumber(durations[frame]) or 100)
-        if loopElapsed < total then return frame end
-      end
-      return 1
-    end
-
-    local KANTO_TITLE_SPECIES = {
-      "BULBASAUR", "IVYSAUR", "VENUSAUR", "CHARMANDER", "CHARMELEON", "CHARIZARD",
-      "SQUIRTLE", "WARTORTLE", "BLASTOISE", "CATERPIE", "METAPOD", "BUTTERFREE",
-      "WEEDLE", "KAKUNA", "BEEDRILL", "PIDGEY", "PIDGEOTTO", "PIDGEOT",
-      "RATTATA", "RATICATE", "SPEAROW", "FEAROW", "EKANS", "ARBOK",
-      "PIKACHU", "RAICHU", "SANDSHREW", "SANDSLASH", "NIDORAN_F", "NIDORINA",
-      "NIDOQUEEN", "NIDORAN_M", "NIDORINO", "NIDOKING", "CLEFAIRY", "CLEFABLE",
-      "VULPIX", "NINETALES", "JIGGLYPUFF", "WIGGLYTUFF", "ZUBAT", "GOLBAT",
-      "ODDISH", "GLOOM", "VILEPLUME", "PARAS", "PARASECT", "VENONAT", "VENOMOTH",
-      "DIGLETT", "DUGTRIO", "MEOWTH", "PERSIAN", "PSYDUCK", "GOLDUCK", "MANKEY",
-      "PRIMEAPE", "GROWLITHE", "ARCANINE", "POLIWAG", "POLIWHIRL", "POLIWRATH",
-      "ABRA", "KADABRA", "ALAKAZAM", "MACHOP", "MACHOKE", "MACHAMP",
-      "BELLSPROUT", "WEEPINBELL", "VICTREEBEL", "TENTACOOL", "TENTACRUEL",
-      "GEODUDE", "GRAVELER", "GOLEM", "PONYTA", "RAPIDASH", "SLOWPOKE", "SLOWBRO",
-      "MAGNEMITE", "MAGNETON", "FARFETCHD", "DODUO", "DODRIO", "SEEL", "DEWGONG",
-      "GRIMER", "MUK", "SHELLDER", "CLOYSTER", "GASTLY", "HAUNTER", "GENGAR",
-      "ONIX", "DROWZEE", "HYPNO", "KRABBY", "KINGLER", "VOLTORB", "ELECTRODE",
-      "EXEGGCUTE", "EXEGGUTOR", "CUBONE", "MAROWAK", "HITMONLEE", "HITMONCHAN",
-      "LICKITUNG", "KOFFING", "WEEZING", "RHYHORN", "RHYDON", "CHANSEY", "TANGELA",
-      "KANGASKHAN", "HORSEA", "SEADRA", "GOLDEEN", "SEAKING", "STARYU", "STARMIE",
-      "MR_MIME", "SCYTHER", "JYNX", "ELECTABUZZ", "MAGMAR", "PINSIR", "TAUROS",
-      "MAGIKARP", "GYARADOS", "LAPRAS", "DITTO", "EEVEE", "VAPOREON", "JOLTEON",
-      "FLAREON", "PORYGON", "OMANYTE", "OMASTAR", "KABUTO", "KABUTOPS",
-      "AERODACTYL", "SNORLAX", "ARTICUNO", "ZAPDOS", "MOLTRES", "DRATINI",
-      "DRAGONAIR", "DRAGONITE", "MEWTWO", "MEW",
-    }
-
-    local function ensureFullKantoTitleCycle(state)
-      if state._animatedMenuFullKantoCycle then return end
-
-      local currentSpecies = state.cycleSpecies
-        and state.cycleSpecies[state.cycleIndex or 1] or nil
-      local list = {}
-      local currentIndex = 1
-      for i = 1, #KANTO_TITLE_SPECIES do
-        list[i] = KANTO_TITLE_SPECIES[i]
-        if KANTO_TITLE_SPECIES[i] == currentSpecies then currentIndex = i end
-      end
-      state.cycleSpecies = list
-      state.cycleIndex = currentIndex
-      state._animatedMenuFullKantoCycle = true
-      state._animatedMenuKantoShuffleBag = nil
-    end
-
-    local function isLiveTitle(state)
-      if not (state and getmetatable(state) == TitleState) then return false end
-      if state.yellowLayout then return false end
-      if not menuSpritesEnabled() or not mod.options:get("titleScreen") then
-        return false
-      end
-      ensureFullKantoTitleCycle(state)
-      return true
-    end
-
-    -- Gen1Recomp's stock Red/Blue title uses a small TitleMons list, which can
-    -- make the same handful of Pokemon appear repeatedly. Use all 151 Kanto
-    -- species in a shuffled bag instead: the order is random, but a species
-    -- cannot repeat until the other 150 have been shown. The last species from
-    -- the previous bag is also excluded from the first slot of the next bag.
-    local function refillTitleShuffleBag(self)
-      local count = #self.cycleSpecies
-      local current = self.cycleIndex
-      local bag = {}
-      for i = 1, count do
-        if i ~= current then bag[#bag + 1] = i end
-      end
-      local random = love.math and love.math.random or math.random
-      for i = #bag, 2, -1 do
-        local j = random(1, i)
-        bag[i], bag[j] = bag[j], bag[i]
-      end
-      self._animatedMenuKantoShuffleBag = bag
-      self._animatedMenuKantoShufflePos = 1
-    end
-
-    if type(TitleState.pickNewMon) == "function"
-        and not TitleState._animatedMenuPokemonFullKantoPick then
-      local originalPickNewMon = TitleState.pickNewMon
-      TitleState._animatedMenuPokemonFullKantoPick = originalPickNewMon
-      TitleState.pickNewMon = function(self, ...)
-        if not isLiveTitle(self) then return originalPickNewMon(self, ...) end
-        local count = #self.cycleSpecies
-        if count < 2 then return end
-
-        local bag = self._animatedMenuKantoShuffleBag
-        local pos = tonumber(self._animatedMenuKantoShufflePos) or 1
-        if type(bag) ~= "table" or pos > #bag then
-          refillTitleShuffleBag(self)
-          bag = self._animatedMenuKantoShuffleBag
-          pos = self._animatedMenuKantoShufflePos or 1
-        end
-        if not bag or not bag[pos] then return end
-
-        self.cycleIndex = bag[pos]
-        self._animatedMenuKantoShufflePos = pos + 1
-      end
-    end
-
-    local function titlePokemonScale()
-      local pct = tonumber(mod.options:get("titlePokemonSize")) or 75
-      pct = math.max(50, math.min(125, pct))
-      return pct / 100
-    end
-
-    local function titleCycleExtraFrames()
-      local speed = mod.options:get("titleCycleSpeed")
-      if speed == "slower" then return 120 end
-      if speed == "slow" then return 60 end
-      return 0
-    end
-
-    -- Delay only the stock title hold phase. Temporarily subtract the selected
-    -- delay before calling updateCycle so NORMAL remains exactly stock while
-    -- SLOW/SLOWER add 60/120 frames without duplicating HOLD_FRAMES here.
-    if type(TitleState.updateCycle) == "function"
-        and not TitleState._animatedMenuPokemonCycleSpeed then
-      local originalUpdateCycle = TitleState.updateCycle
-      TitleState._animatedMenuPokemonCycleSpeed = originalUpdateCycle
-      TitleState.updateCycle = function(self, ...)
-        local extra = isLiveTitle(self) and titleCycleExtraFrames() or 0
-        if extra > 0 and self.scrollPhase == "hold" and type(self.timer) == "number" then
-          local savedTimer = self.timer
-          self.timer = math.max(0, savedTimer - extra)
-          local result = originalUpdateCycle(self, ...)
-          if self.scrollPhase == "hold" then self.timer = savedTimer end
-          return result
-        end
-        return originalUpdateCycle(self, ...)
-      end
-    end
-
-    local TITLE_ALT_COLOR_PERCENT = 27
-    local TITLE_ALT_COLOR_REPEAT_PERCENT = 5
-
-    local function titlePokemon(state)
-      if not isLiveTitle(state) or state.scrollPhase == "ball" then return nil end
-      local species = state.cycleSpecies and state.cycleSpecies[state.cycleIndex]
-      if not species then return nil end
-
-      -- Roll exactly once for each newly selected title Pokemon. Keeping the
-      -- result on TitleState prevents the variant from changing between draw
-      -- calls while that Pokemon is on screen.
-      if state._animatedMenuTitleVariantIndex ~= state.cycleIndex
-          or state._animatedMenuTitleVariantSpecies ~= species then
-        local random = love.math and love.math.random or math.random
-        state._animatedMenuTitleVariantIndex = state.cycleIndex
-        state._animatedMenuTitleVariantSpecies = species
-
-        -- Always present the first Pokemon of a fresh title-screen session in
-        -- its normal colors. Starting with the second Pokemon, roll the normal
-        -- title shiny chance once per newly selected species.
-        if not state._animatedMenuTitleFirstPokemonShown then
-          state._animatedMenuTitleFirstPokemonShown = true
-          state._animatedMenuTitleAltColor = false
-        else
-          -- Keep the normal 27% chance, but heavily reduce the chance of a
-          -- second shiny immediately following one that was actually shown.
-          -- This still permits rare back-to-back shinies without allowing long
-          -- streaks to occur nearly as often as independent 27% rolls do.
-          local chance = state._animatedMenuTitlePreviousWasAltColor
-            and TITLE_ALT_COLOR_REPEAT_PERCENT or TITLE_ALT_COLOR_PERCENT
-          state._animatedMenuTitleAltColor = (random(1, 100) <= chance)
-        end
-      end
-
-      local generation = selectedGeneration()
-      if state._animatedMenuTitleAltColor then
-        local shiny = getTitleShinySprite(species, generation)
-        if shiny then
-          state._animatedMenuTitlePreviousWasAltColor = true
-          return shiny
-        end
-      end
-
-      -- Track what was actually displayed rather than only the random roll, so
-      -- a missing alternate-color asset cannot accidentally suppress the next
-      -- Pokemon's normal chance.
-      state._animatedMenuTitlePreviousWasAltColor = false
-
-      -- Normal animated sprite is the first fallback. Returning nil if that is
-      -- unavailable intentionally leaves TitleState's stock Gen1 sprite alone.
-      return getSprite(species, { kind = "title", generation = generation })
-    end
-
-    -- Suppress only the two stock low-resolution title sprites while TitleState
-    -- itself is the top screen. If a title menu is opened, leave the original
-    -- sprites in the 160x144 background so our final-resolution HUD overlay
-    -- never draws over the menu box.
-    if type(TitleState.draw) == "function"
-        and not TitleState._animatedMenuPokemonHdTitleDraw then
-      local originalDraw = TitleState.draw
-      TitleState._animatedMenuPokemonHdTitleDraw = originalDraw
-      TitleState.draw = function(self, ...)
-        local top = self.game and self.game.stack and self.game.stack:top()
-        local useHd = top == self and isLiveTitle(self)
-        if not useHd then return originalDraw(self, ...) end
-
-        local suppressMon = titlePokemon(self) ~= nil
-        local suppressPlayer = titlePlayerImage() ~= nil
-        local oldPlayer, oldQuads, oldBall = self.player, self.playerQuads, self.ballQuad
-        local ownCurrent = rawget(self, "currentSprite")
-        if suppressMon then self.currentSprite = function() return nil end end
-        if suppressPlayer then self.player, self.playerQuads, self.ballQuad = nil, nil, nil end
-
-        local okDraw, drawErr = pcall(originalDraw, self, ...)
-
-        -- Remove the stock Pokemon wordmark on the SOURCE title canvas while
-        -- KIM's replacement logo is active. Earlier builds only painted over
-        -- it later in render.hud; changing SCREEN LOCATION moved the native
-        -- title but left KIM's overlay centred, exposing the original logo /
-        -- intro art behind it. Blank the source band here so there is nothing
-        -- underneath to reveal regardless of final screen placement.
-        if okDraw and titleLogoImage() then
-          love.graphics.push("all")
-          love.graphics.setShader()
-          love.graphics.setColor(1,1,1,1)
-          love.graphics.rectangle("fill",0,0,160,60)
-          love.graphics.pop()
-        end
-
-        if ownCurrent ~= nil then self.currentSprite = ownCurrent
-        else self.currentSprite = nil end
-        self.player, self.playerQuads, self.ballQuad = oldPlayer, oldQuads, oldBall
-        if not okDraw then error(drawErr, 0) end
-      end
-    end
-
-    local function drawBalancedCanvas(canvas, x, y, sx, sy)
-      if not canvas then return false end
-      local premultiplied = false
-      if love.graphics.setBlendMode then
-        premultiplied = pcall(love.graphics.setBlendMode, "alpha", "premultiplied")
-      end
-      love.graphics.draw(canvas, x, y, 0, sx, sy)
-      if premultiplied and love.graphics.setBlendMode then
-        pcall(love.graphics.setBlendMode, "alpha", "alphamultiply")
-      end
-      return true
-    end
-
-    -- Draw the animated title sprites directly at the completed window scale.
-    -- Linear sampling now operates across the actual hundreds of screen pixels
-    -- occupied by a sprite instead of across a 40/56px intermediate texture
-    -- that the engine later nearest-upscales.
-    mod.hooks:wrap("render.hud", function(next, game, viewport)
-      next(game, viewport)
-      local state = game and game.stack and game.stack:top()
-      if not isLiveTitle(state) then return end
-
-      -- Follow Gen1Recomp's ACTUAL title UI rect rather than independently
-      -- re-centering KIM's HD overlays in the window. Renderer:frameRects()
-      -- includes SCREEN LOCATION (CENTER/UPPER/TOP), TouchSkin cutouts,
-      -- GameViewport captures and Android's per-axis DPI conversion. Using its
-      -- uiFill rect keeps KIM's trainer, Pokemon and logo locked to the native
-      -- title presentation when the user moves the game screen.
-      local originX,originY,scaleX,scaleY
-      local renderer=game and game.renderer
-      if renderer and type(renderer.frameRects)=="function" then
-        local ok,r=pcall(renderer.frameRects,renderer)
-        if ok and type(r)=="table"
-            and tonumber(r.uox) and tonumber(r.uoy)
-            and tonumber(r.Ux) and tonumber(r.Uy)
-            and r.Ux>0 and r.Uy>0 then
-          originX,originY=r.uox,r.uoy
-          scaleX,scaleY=r.Ux,r.Uy
-        end
-      end
-      if not originX then
-        local vw = tonumber(viewport and viewport.width)
-        local vh = tonumber(viewport and viewport.height)
-        if not (vw and vh and vw > 0 and vh > 0) then
-          vw, vh = love.graphics.getDimensions()
-        end
-        local scale=math.min(vw/160,vh/144)
-        originX=(vw-160*scale)*0.5
-        originY=(vh-144*scale)*0.5
-        scaleX,scaleY=scale,scale
-      end
-
-      love.graphics.push("all")
-      love.graphics.origin()
-      love.graphics.setShader()
-      love.graphics.setColor(1, 1, 1, 1)
-
-      local titleLogo = titleLogoImage()
-      if titleLogo then
-        -- Cover only the stock Pokemon wordmark area and leave the original
-        -- "Red Version" subtitle visible underneath it.
-        -- Use the title screen white background and cover a little more
-        -- of the original Pokemon wordmark so no Gen 1 logo fragments remain,
-        -- while still leaving the stock Red Version subtitle visible.
-        love.graphics.setColor(1, 1, 1, 1)
-        love.graphics.rectangle("fill",
-          originX,
-          originY,
-          160 * scaleX,
-          60 * scaleY)
-        love.graphics.setColor(1, 1, 1, 1)
-
-        local lw, lh = titleLogo:getDimensions()
-        local fit = math.min(140 / math.max(1, lw), 52 / math.max(1, lh))
-        local dw, dh = lw * fit, lh * fit
-        local lx = 80 - (dw / 2)
-        -- Sit the custom logo just above the stock Red Version subtitle.
-        local ly = 8 + (52 - dh) / 2
-        local balancedLogo = titleLogoBalancedCanvas()
-        if balancedLogo then
-          -- Present the logo with the same balanced two-stage treatment used
-          -- by Red and the cycling Pokemon: real low-resolution pixels first,
-          -- then a lightly smoothed final upscale so it belongs to the same
-          -- visual plane without becoming harsh or unreadable.
-          drawBalancedCanvas(balancedLogo,
-            originX + lx * scaleX,
-            originY + ly * scaleY,
-            0.5 * fit * scaleX, 0.5 * fit * scaleY)
-        else
-          if titleLogo.setFilter then pcall(titleLogo.setFilter, titleLogo, "nearest", "nearest") end
-          love.graphics.draw(titleLogo,
-            originX + lx * scaleX,
-            originY + ly * scaleY,
-            0, fit * scaleX, fit * scaleY)
-        end
-      end
-
-      local sprite = titlePokemon(state)
-      if sprite then
-        local titleScale = titlePokemonScale()
-        local slotSize = 56
-
-        -- Borderless/large desktop windows can raise the final title scale even
-        -- though the 160x144 composition itself has not changed. Keep the HD
-        -- Pokemon at the same maximum physical scale as the user's accepted
-        -- 800px-high test window while continuing to scale down normally on
-        -- smaller windows/mobile.
-        local acceptedTitleViewportScale = 800 / 144
-        local pokemonViewportScale = math.min(scaleX, scaleY,
-          acceptedTitleViewportScale)
-
-        -- Position in SCREEN space so the smaller/capped Pokemon remains
-        -- centered in the normal 56px title slot and keeps the exact same
-        -- bottom baseline beside Red.
-        local slotLeft = originX
-          + (40 + (state.monOffset or 0)) * scaleX
-        local slotWidth = slotSize * scaleX
-        local slotBottom = originY + 136 * scaleY
-
-        local balancedMon = titlePokemonBalancedCanvas(sprite)
-        if balancedMon then
-          local drawSize = slotSize * titleScale * pokemonViewportScale
-          local drawX = slotLeft + (slotWidth - drawSize) * 0.5
-          local drawY = slotBottom - drawSize
-          drawBalancedCanvas(balancedMon,
-            drawX, drawY,
-            0.5 * titleScale * pokemonViewportScale,
-            0.5 * titleScale * pokemonViewportScale)
-        else
-          local sw, sh = sprite:getDimensions()
-          local fit = math.min(1, 56 / math.max(1, sw), 56 / math.max(1, sh))
-          local finalFit = fit * titleScale
-          local dw = sw * finalFit * pokemonViewportScale
-          local dh = sh * finalFit * pokemonViewportScale
-          local drawX = slotLeft + (slotWidth - dw) * 0.5
-          local drawY = slotBottom - dh
-          if sprite.setFilter then pcall(sprite.setFilter, sprite, "linear", "linear", 8) end
-          love.graphics.draw(sprite,
-            drawX, drawY,
-            0, finalFit * pokemonViewportScale,
-            finalFit * pokemonViewportScale)
-          if sprite.setFilter then pcall(sprite.setFilter, sprite, "nearest", "nearest") end
-        end
-      end
-
-      local frame = oneShotPlayerFrame(state)
-      local balanced = titlePlayerBalancedCanvas(frame)
-      if balanced then
-        -- Balanced trainer presentation: render Red crisply into a 2x
-        -- intermediate canvas, then let the final screen upscale smooth only
-        -- that larger composite. This keeps him sharper than full linear
-        -- filtering, but less harsh than pure nearest, so he sits better with
-        -- the slightly softened HD Pokemon.
-        drawBalancedCanvas(balanced,
-          originX + 82 * scaleX,
-          originY + 80 * scaleY,
-          0.5 * scaleX, 0.5 * scaleY)
-      else
-        local atlas = titlePlayerImage()
-        local quad = titlePlayerQuad(frame)
-        if atlas and quad then
-          if atlas.setFilter then pcall(atlas.setFilter, atlas, "linear", "linear", 8) end
-          love.graphics.draw(atlas, quad,
-            originX + 82 * scaleX,
-            originY + 80 * scaleY,
-            0, scaleX, scaleY)
-          if atlas.setFilter then pcall(atlas.setFilter, atlas, "nearest", "nearest") end
-        end
-      end
-      love.graphics.pop()
-    end)
-  end
-  if not IS_GEN2 then patchTitleScreen() end
 
   local function setOption(game, key, value)
     local options = game and game.save and game.save.options
@@ -7112,7 +5569,7 @@ return function(mod)
         id = MOD_ID .. ":" .. row.key, label = row.label,
         right = optionLabel(row), option = row,
       }
-      if IS_GEN2 and row.key == "gen2IntegratedModernUi" and #gen2UiOptionSchema > 0 then
+      if row.key == "gen2IntegratedModernUi" and #gen2UiOptionSchema > 0 then
         items[#items + 1] = {
           id = MOD_ID .. ":ui_open", label = "UI SETTINGS",
           right = "OPEN", submenu = UI_SETTINGS_SCREEN,
@@ -7377,7 +5834,7 @@ return function(mod)
     and mod.ui.ListMenu.new and mod.ui.push
   if submenuReady then
     mod.content.screens:register(SETTINGS_SCREEN, { new = function(game) return newSettingsMenu(game) end })
-    if IS_GEN2 and #gen2UiOptionSchema > 0 then
+    if #gen2UiOptionSchema > 0 then
       mod.content.screens:register(UI_SETTINGS_SCREEN, { new = function(game) return newUiSettingsMenu(game) end })
     end
     mod.content.screens:register(BATTLE_SETTINGS_SCREEN, { new = function(game) return newBattleSettingsMenu(game) end })
@@ -7394,321 +5851,242 @@ return function(mod)
     return out
   end
 
-  local function activeExternalUiOverhaul()
-    -- Full third-party UI overhauls own the same presentation surfaces as the
-    -- bundled Modern UI. They are optional dependencies so recognized builds
-    -- load first and Kanto in Motion can yield presentation while keeping its
-    -- independent animation provider active. Registered generic owners are
-    -- also honored if they are already available during KIM bootstrap.
-    if mod._kantoInMotionInterop then
-      local registered = mod._kantoInMotionInterop:uiOwnerFor(nil, nil, "menu")
-      if registered and (registered.kinds == nil
-          or mod._kantoInMotionInterop:_uiKindClaimed(registered, "battle")) then
-        return registered.owner
-      end
-    end
-    if type(mod.find) == "function" then
-      for _, id in ipairs({ "gen3_battle_ui", "colosseum_ui_overhaul" }) do
-        local ok, handle = pcall(mod.find, id)
-        if ok and handle then return id end
-      end
-    end
-    return nil
-  end
-
   local function installIntegratedModernUi()
-    if IS_GEN2 then
-      -- Shared Gen 2 Modern UI appearance/settings bridge. Load this before
-      -- every presenter so font, scale, opacity, frame and presenter toggles
-      -- resolve consistently across menus, Pokemon screens, dialogue and battle.
-      local styleSource, styleReadErr = mod:read("lib/gen2_modern_style.lua")
-      if styleSource then
-        local styleChunk, styleCompileErr = load(styleSource,
-          "@" .. mod.path .. "/lib/gen2_modern_style.lua")
-        if styleChunk then
-          local okStyleModule, styleSetup = pcall(styleChunk)
-          if okStyleModule and type(styleSetup) == "function" then
-            local okStyleInstall, styleInstallErr = pcall(styleSetup, mod)
-            if okStyleInstall then
-              mod.log:info("Gen2 Modern shared UI settings/style bridge installed")
-            else
-              mod.log:error("Gen2 Modern shared UI settings/style bridge failed: %s",
-                tostring(styleInstallErr))
-            end
+    -- Shared Gen 2 Modern UI appearance/settings bridge. Load this before
+    -- every presenter so font, scale, opacity, frame and presenter toggles
+    -- resolve consistently across menus, Pokemon screens, dialogue and battle.
+    local styleSource, styleReadErr = mod:read("lib/gen2_modern_style.lua")
+    if styleSource then
+      local styleChunk, styleCompileErr = load(styleSource,
+        "@" .. mod.path .. "/lib/gen2_modern_style.lua")
+      if styleChunk then
+        local okStyleModule, styleSetup = pcall(styleChunk)
+        if okStyleModule and type(styleSetup) == "function" then
+          local okStyleInstall, styleInstallErr = pcall(styleSetup, mod)
+          if okStyleInstall then
+            mod.log:info("Gen2 Modern shared UI settings/style bridge installed")
           else
-            mod.log:error("cannot load Gen2 Modern shared UI settings/style bridge: %s",
-              tostring(styleSetup))
+            mod.log:error("Gen2 Modern shared UI settings/style bridge failed: %s",
+              tostring(styleInstallErr))
           end
         else
-          mod.log:error("cannot compile Gen2 Modern shared UI settings/style bridge: %s",
-            tostring(styleCompileErr))
+          mod.log:error("cannot load Gen2 Modern shared UI settings/style bridge: %s",
+            tostring(styleSetup))
         end
       else
-        mod.log:error("cannot read Gen2 Modern shared UI settings/style bridge: %s",
-          tostring(styleReadErr))
+        mod.log:error("cannot compile Gen2 Modern shared UI settings/style bridge: %s",
+          tostring(styleCompileErr))
       end
-
-      -- The native G/S/C HP graphics are independent of the lower Modern UI.
-      local hudColorSource = mod:read("lib/gen2_hud_color.lua")
-      if hudColorSource then
-        local hudColorChunk, hudColorErr = load(hudColorSource,
-          "@" .. mod.path .. "/lib/gen2_hud_color.lua")
-        if hudColorChunk then
-          local okHudModule, hudInstaller = pcall(hudColorChunk)
-          if okHudModule and type(hudInstaller) == "function" then
-            local okHudInstall, hudInstallErr = pcall(hudInstaller, mod)
-            if not okHudInstall then mod.log:error("Gen2 HUD color: " .. tostring(hudInstallErr)) end
-          end
-        elseif hudColorErr then
-          mod.log:error("Gen2 HUD color compile: " .. tostring(hudColorErr))
-        end
-      end
-
-      -- Gen 2 uses a dedicated adapter. It modernizes only the lower battle
-      -- interface and deliberately leaves the native G/S/C HP/status HUD,
-      -- battle state, commands, item/party flows and move animations intact.
-      local source, readErr = mod:read("lib/gen2_modern_battle_ui.lua")
-      if source then
-        local chunk, compileErr = load(source,
-          "@" .. mod.path .. "/lib/gen2_modern_battle_ui.lua")
-        if chunk then
-          local okModule, setup = pcall(chunk)
-          if okModule and type(setup) == "function" then
-            local okInstall, installErr = pcall(setup, mod)
-            if okInstall then
-              mod._kantoInMotionGen2ModernBattleUiInstalled = true
-              mod.log:info("Gen2 Modern Battle UI adapter installed; native HP/status HUD retained")
-            else
-              mod.log:error("Gen2 Modern Battle UI failed to install: %s",
-                tostring(installErr))
-            end
-          else
-            mod.log:error("cannot load Gen2 Modern Battle UI: %s",
-              tostring(setup))
-          end
-        else
-          mod.log:error("cannot compile Gen2 Modern Battle UI: %s",
-            tostring(compileErr))
-        end
-      else
-        mod.log:error("cannot read Gen2 Modern Battle UI: %s", tostring(readErr))
-      end
-
-      -- Party is the first non-battle Gen 2 menu modernized in v1.5.2.
-      -- The adapter replaces presentation only; the native PartyMenu object
-      -- continues to own cursor/input, switching, items, field moves, battle
-      -- switching, HP animation, and every callback.
-      local partySource, partyReadErr = mod:read("lib/gen2_modern_party_ui.lua")
-      if partySource then
-        local partyChunk, partyCompileErr = load(partySource,
-          "@" .. mod.path .. "/lib/gen2_modern_party_ui.lua")
-        if partyChunk then
-          local okPartyModule, partySetup = pcall(partyChunk)
-          if okPartyModule and type(partySetup) == "function" then
-            local okPartyInstall, partyInstallErr = pcall(partySetup, mod)
-            if okPartyInstall then
-              mod._kantoInMotionGen2ModernPartyUiInstalled = true
-              mod.log:info("Gen2 Modern Party UI v6 installed; larger readable overworld overlay active")
-            else
-              mod.log:error("Gen2 Modern Party UI failed to install: %s",
-                tostring(partyInstallErr))
-            end
-          else
-            mod.log:error("cannot load Gen2 Modern Party UI: %s",
-              tostring(partySetup))
-          end
-        else
-          mod.log:error("cannot compile Gen2 Modern Party UI: %s",
-            tostring(partyCompileErr))
-        end
-      else
-        mod.log:error("cannot read Gen2 Modern Party UI: %s",
-          tostring(partyReadErr))
-      end
-
-      -- Gen 2 Summary/Status is presentation-only too: the native SummaryMenu
-      -- keeps page switching, party cycling, move management, cries and callbacks.
-      local summarySource, summaryReadErr = mod:read("lib/gen2_modern_summary_ui.lua")
-      if summarySource then
-        local summaryChunk, summaryCompileErr = load(summarySource,
-          "@" .. mod.path .. "/lib/gen2_modern_summary_ui.lua")
-        if summaryChunk then
-          local okSummaryModule, summarySetup = pcall(summaryChunk)
-          if okSummaryModule and type(summarySetup) == "function" then
-            local okSummaryInstall, summaryInstallErr = pcall(summarySetup, mod)
-            if okSummaryInstall then
-              mod._kantoInMotionGen2ModernSummaryUiInstalled = true
-              mod.log:info("Gen2 Modern Summary/Status UI installed; native SummaryMenu state/input retained")
-            else
-              mod.log:error("Gen2 Modern Summary UI failed to install: %s",
-                tostring(summaryInstallErr))
-            end
-          else
-            mod.log:error("cannot load Gen2 Modern Summary UI: %s",
-              tostring(summarySetup))
-          end
-        else
-          mod.log:error("cannot compile Gen2 Modern Summary UI: %s",
-            tostring(summaryCompileErr))
-        end
-      else
-        mod.log:error("cannot read Gen2 Modern Summary UI: %s",
-          tostring(summaryReadErr))
-      end
-
-      -- The Pokédex bridge deliberately consumes Gen2 Clean UI 0.4.1's
-      -- detached Pokedex model when that optional mod is installed, while KIM
-      -- owns the final Modern UI theme/layout and keeps source navigation native.
-      local dexSource, dexReadErr = mod:read("lib/gen2_modern_pokedex_ui.lua")
-      if dexSource then
-        local dexChunk, dexCompileErr = load(dexSource,
-          "@" .. mod.path .. "/lib/gen2_modern_pokedex_ui.lua")
-        if dexChunk then
-          local okDexModule, dexSetup = pcall(dexChunk)
-          if okDexModule and type(dexSetup) == "function" then
-            local okDexInstall, dexInstallErr = pcall(dexSetup, mod)
-            if okDexInstall then
-              mod._kantoInMotionGen2ModernPokedexUiInstalled = true
-              mod.log:info("Gen2 Modern Pokedex UI v4 installed; exact Gen2 Clean UI 0.4.1 adapter/presenter vendored")
-            else
-              mod.log:error("Gen2 Modern Pokedex bridge failed to install: %s",
-                tostring(dexInstallErr))
-            end
-          else
-            mod.log:error("cannot load Gen2 Modern Pokedex bridge: %s",
-              tostring(dexSetup))
-          end
-        else
-          mod.log:error("cannot compile Gen2 Modern Pokedex bridge: %s",
-            tostring(dexCompileErr))
-        end
-      else
-        mod.log:error("cannot read Gen2 Modern Pokedex bridge: %s",
-          tostring(dexReadErr))
-      end
-
-      local coreMenuSource, coreMenuReadErr =
-        mod:read("lib/gen2_modern_core_menus.lua")
-      if coreMenuSource then
-        local coreMenuChunk, coreMenuCompileErr = load(coreMenuSource,
-          "@" .. mod.path .. "/lib/gen2_modern_core_menus.lua")
-        if coreMenuChunk then
-          local okCoreModule, coreSetup = pcall(coreMenuChunk)
-          if okCoreModule and type(coreSetup) == "function" then
-            local okCoreInstall, coreInstallErr = pcall(coreSetup, mod)
-            if okCoreInstall then
-              mod._kantoInMotionGen2ModernCoreMenusInstalled = true
-              mod.log:info("Gen2 Modern Title/Start/Pack/Pokegear/Trainer Card overlays v4 installed")
-            else
-              mod.log:error("Gen2 Modern core menus failed to install: %s",
-                tostring(coreInstallErr))
-            end
-          else
-            mod.log:error("cannot load Gen2 Modern core menus: %s",
-              tostring(coreSetup))
-          end
-        else
-          mod.log:error("cannot compile Gen2 Modern core menus: %s",
-            tostring(coreMenuCompileErr))
-        end
-      else
-        mod.log:error("cannot read Gen2 Modern core menus: %s",
-          tostring(coreMenuReadErr))
-      end
-
-      -- Shared Gen 2 dialogue layer: NPC speech, PokéCenter nurse prompts,
-      -- item/field text, phone text, script choices, Poké Mart flows and
-      -- battle level-up/stat prompts all use the same Modern UI presentation.
-      local dialogSource, dialogReadErr =
-        mod:read("lib/gen2_modern_dialog_ui.lua")
-      if dialogSource then
-        local dialogChunk, dialogCompileErr = load(dialogSource,
-          "@" .. mod.path .. "/lib/gen2_modern_dialog_ui.lua")
-        if dialogChunk then
-          local okDialogModule, dialogSetup = pcall(dialogChunk)
-          if okDialogModule and type(dialogSetup) == "function" then
-            local okDialogInstall, dialogInstallErr = pcall(dialogSetup, mod)
-            if okDialogInstall then
-              mod._kantoInMotionGen2ModernDialogsInstalled = true
-              mod.log:info("Gen2 Modern Dialog UI installed; shared TextBox/Choice/Mart/Script surfaces modernized")
-            else
-              mod.log:error("Gen2 Modern Dialog UI failed to install: %s",
-                tostring(dialogInstallErr))
-            end
-          else
-            mod.log:error("cannot load Gen2 Modern Dialog UI: %s",
-              tostring(dialogSetup))
-          end
-        else
-          mod.log:error("cannot compile Gen2 Modern Dialog UI: %s",
-            tostring(dialogCompileErr))
-        end
-      else
-        mod.log:error("cannot read Gen2 Modern Dialog UI: %s",
-          tostring(dialogReadErr))
-      end
-
-      if gen2CleanUiHandle() then
-        local okBridge, bridgeResult = pcall(installStockGen2CleanUiBridge)
-        if not okBridge or bridgeResult ~= true then
-          mod.log:warn("Gen2 Clean UI detected but animated portrait bridge did not install: %s",
-            tostring(okBridge and bridgeResult or bridgeResult))
-        end
-      end
-      return
-    end
-    local externalUi = activeExternalUiOverhaul()
-    if externalUi then
-      mod.log:info("%s detected; bundled Gen1 Modern UI suppressed so the external UI can own presentation", externalUi)
-      return
-    end
-    -- Always install the Gen1 presenter implementation, even when the saved
-    -- preference is OFF. v8.6.56 made every presentation/input seam fail open
-    -- while integratedModernUi is false, so the resident module is dormant and
-    -- vanilla remains the owner. Keeping it resident is what allows phones (and
-    -- cold-start desktop installs) to switch VANILLA -> MODERN live without a
-    -- restart; the toggle now controls ownership rather than module lifetime.
-    local modernUiStartsEnabled = integratedModernUiEnabled()
-    local hostOs = ""
-    local system = love and love.system
-    if system and type(system.getOS) == "function" then
-      local okOs, value = pcall(system.getOS)
-      if okOs and value then hostOs = tostring(value) end
-    end
-    local modernUiFile
-    if hostOs == "Android" or hostOs == "iOS" then
-      modernUiFile = "lib/modern_ui_integrated_mobile.lua"
     else
-      -- Windows (and other desktop hosts) deliberately use the desktop
-      -- presenter implementation. This file never treats TouchControls as
-      -- mobile battle chrome.
-      modernUiFile = "lib/modern_ui_integrated_windows.lua"
+      mod.log:error("cannot read Gen2 Modern shared UI settings/style bridge: %s",
+        tostring(styleReadErr))
     end
-    local source, readErr = mod:read(modernUiFile)
-    if not source then
-      mod.log:error("cannot read integrated Modern UI (%s): %s", modernUiFile, tostring(readErr))
-      return
+
+    -- The native G/S/C HP graphics are independent of the lower Modern UI.
+    local hudColorSource = mod:read("lib/gen2_hud_color.lua")
+    if hudColorSource then
+      local hudColorChunk, hudColorErr = load(hudColorSource,
+        "@" .. mod.path .. "/lib/gen2_hud_color.lua")
+      if hudColorChunk then
+        local okHudModule, hudInstaller = pcall(hudColorChunk)
+        if okHudModule and type(hudInstaller) == "function" then
+          local okHudInstall, hudInstallErr = pcall(hudInstaller, mod)
+          if not okHudInstall then mod.log:error("Gen2 HUD color: " .. tostring(hudInstallErr)) end
+        end
+      elseif hudColorErr then
+        mod.log:error("Gen2 HUD color compile: " .. tostring(hudColorErr))
+      end
     end
-    local chunk, compileErr = load(source, "@" .. mod.path .. "/" .. modernUiFile)
-    if not chunk then
-      mod.log:error("cannot compile integrated Modern UI (%s): %s", modernUiFile, tostring(compileErr))
-      return
-    end
-    local okModule, setup = pcall(chunk)
-    if not okModule or type(setup) ~= "function" then
-      mod.log:error("cannot load integrated Modern UI: %s", tostring(setup))
-      return
-    end
-    local okInstall, installErr = pcall(setup, mod)
-    if not okInstall then
-      mod._kantoInMotionModernUiInstalled = nil
-      mod.log:error("integrated Modern UI failed to install: %s", tostring(installErr))
-    else
-      mod._kantoInMotionModernUiInstalled = true
-      if modernUiStartsEnabled then
-        mod.log:info("Gen1 detected: integrated customized Modern UI 0.9.12 enabled via %s implementation", modernUiFile)
+
+    -- Gen 2 uses a dedicated adapter. It modernizes only the lower battle
+    -- interface and deliberately leaves the native G/S/C HP/status HUD,
+    -- battle state, commands, item/party flows and move animations intact.
+    local source, readErr = mod:read("lib/gen2_modern_battle_ui.lua")
+    if source then
+      local chunk, compileErr = load(source,
+        "@" .. mod.path .. "/lib/gen2_modern_battle_ui.lua")
+      if chunk then
+        local okModule, setup = pcall(chunk)
+        if okModule and type(setup) == "function" then
+          local okInstall, installErr = pcall(setup, mod)
+          if okInstall then
+            mod._kantoInMotionGen2ModernBattleUiInstalled = true
+            mod.log:info("Gen2 Modern Battle UI adapter installed; native HP/status HUD retained")
+          else
+            mod.log:error("Gen2 Modern Battle UI failed to install: %s",
+              tostring(installErr))
+          end
+        else
+          mod.log:error("cannot load Gen2 Modern Battle UI: %s",
+            tostring(setup))
+        end
       else
-        mod.log:info("Gen1 detected: integrated customized Modern UI 0.9.12 loaded dormant via %s implementation; vanilla owns presentation until the toggle is enabled", modernUiFile)
+        mod.log:error("cannot compile Gen2 Modern Battle UI: %s",
+          tostring(compileErr))
+      end
+    else
+      mod.log:error("cannot read Gen2 Modern Battle UI: %s", tostring(readErr))
+    end
+
+    -- Party is the first non-battle Gen 2 menu modernized in v1.5.2.
+    -- The adapter replaces presentation only; the native PartyMenu object
+    -- continues to own cursor/input, switching, items, field moves, battle
+    -- switching, HP animation, and every callback.
+    local partySource, partyReadErr = mod:read("lib/gen2_modern_party_ui.lua")
+    if partySource then
+      local partyChunk, partyCompileErr = load(partySource,
+        "@" .. mod.path .. "/lib/gen2_modern_party_ui.lua")
+      if partyChunk then
+        local okPartyModule, partySetup = pcall(partyChunk)
+        if okPartyModule and type(partySetup) == "function" then
+          local okPartyInstall, partyInstallErr = pcall(partySetup, mod)
+          if okPartyInstall then
+            mod._kantoInMotionGen2ModernPartyUiInstalled = true
+            mod.log:info("Gen2 Modern Party UI v6 installed; larger readable overworld overlay active")
+          else
+            mod.log:error("Gen2 Modern Party UI failed to install: %s",
+              tostring(partyInstallErr))
+          end
+        else
+          mod.log:error("cannot load Gen2 Modern Party UI: %s",
+            tostring(partySetup))
+        end
+      else
+        mod.log:error("cannot compile Gen2 Modern Party UI: %s",
+          tostring(partyCompileErr))
+      end
+    else
+      mod.log:error("cannot read Gen2 Modern Party UI: %s",
+        tostring(partyReadErr))
+    end
+
+    -- Gen 2 Summary/Status is presentation-only too: the native SummaryMenu
+    -- keeps page switching, party cycling, move management, cries and callbacks.
+    local summarySource, summaryReadErr = mod:read("lib/gen2_modern_summary_ui.lua")
+    if summarySource then
+      local summaryChunk, summaryCompileErr = load(summarySource,
+        "@" .. mod.path .. "/lib/gen2_modern_summary_ui.lua")
+      if summaryChunk then
+        local okSummaryModule, summarySetup = pcall(summaryChunk)
+        if okSummaryModule and type(summarySetup) == "function" then
+          local okSummaryInstall, summaryInstallErr = pcall(summarySetup, mod)
+          if okSummaryInstall then
+            mod._kantoInMotionGen2ModernSummaryUiInstalled = true
+            mod.log:info("Gen2 Modern Summary/Status UI installed; native SummaryMenu state/input retained")
+          else
+            mod.log:error("Gen2 Modern Summary UI failed to install: %s",
+              tostring(summaryInstallErr))
+          end
+        else
+          mod.log:error("cannot load Gen2 Modern Summary UI: %s",
+            tostring(summarySetup))
+        end
+      else
+        mod.log:error("cannot compile Gen2 Modern Summary UI: %s",
+          tostring(summaryCompileErr))
+      end
+    else
+      mod.log:error("cannot read Gen2 Modern Summary UI: %s",
+        tostring(summaryReadErr))
+    end
+
+    -- The Pokédex bridge deliberately consumes Gen2 Clean UI 0.4.1's
+    -- detached Pokedex model when that optional mod is installed, while KIM
+    -- owns the final Modern UI theme/layout and keeps source navigation native.
+    local dexSource, dexReadErr = mod:read("lib/gen2_modern_pokedex_ui.lua")
+    if dexSource then
+      local dexChunk, dexCompileErr = load(dexSource,
+        "@" .. mod.path .. "/lib/gen2_modern_pokedex_ui.lua")
+      if dexChunk then
+        local okDexModule, dexSetup = pcall(dexChunk)
+        if okDexModule and type(dexSetup) == "function" then
+          local okDexInstall, dexInstallErr = pcall(dexSetup, mod)
+          if okDexInstall then
+            mod._kantoInMotionGen2ModernPokedexUiInstalled = true
+            mod.log:info("Gen2 Modern Pokedex UI v4 installed; exact Gen2 Clean UI 0.4.1 adapter/presenter vendored")
+          else
+            mod.log:error("Gen2 Modern Pokedex bridge failed to install: %s",
+              tostring(dexInstallErr))
+          end
+        else
+          mod.log:error("cannot load Gen2 Modern Pokedex bridge: %s",
+            tostring(dexSetup))
+        end
+      else
+        mod.log:error("cannot compile Gen2 Modern Pokedex bridge: %s",
+          tostring(dexCompileErr))
+      end
+    else
+      mod.log:error("cannot read Gen2 Modern Pokedex bridge: %s",
+        tostring(dexReadErr))
+    end
+
+    local coreMenuSource, coreMenuReadErr =
+      mod:read("lib/gen2_modern_core_menus.lua")
+    if coreMenuSource then
+      local coreMenuChunk, coreMenuCompileErr = load(coreMenuSource,
+        "@" .. mod.path .. "/lib/gen2_modern_core_menus.lua")
+      if coreMenuChunk then
+        local okCoreModule, coreSetup = pcall(coreMenuChunk)
+        if okCoreModule and type(coreSetup) == "function" then
+          local okCoreInstall, coreInstallErr = pcall(coreSetup, mod)
+          if okCoreInstall then
+            mod._kantoInMotionGen2ModernCoreMenusInstalled = true
+            mod.log:info("Gen2 Modern Title/Start/Pack/Pokegear/Trainer Card overlays v4 installed")
+          else
+            mod.log:error("Gen2 Modern core menus failed to install: %s",
+              tostring(coreInstallErr))
+          end
+        else
+          mod.log:error("cannot load Gen2 Modern core menus: %s",
+            tostring(coreSetup))
+        end
+      else
+        mod.log:error("cannot compile Gen2 Modern core menus: %s",
+          tostring(coreMenuCompileErr))
+      end
+    else
+      mod.log:error("cannot read Gen2 Modern core menus: %s",
+        tostring(coreMenuReadErr))
+    end
+
+    -- Shared Gen 2 dialogue layer: NPC speech, PokéCenter nurse prompts,
+    -- item/field text, phone text, script choices, Poké Mart flows and
+    -- battle level-up/stat prompts all use the same Modern UI presentation.
+    local dialogSource, dialogReadErr =
+      mod:read("lib/gen2_modern_dialog_ui.lua")
+    if dialogSource then
+      local dialogChunk, dialogCompileErr = load(dialogSource,
+        "@" .. mod.path .. "/lib/gen2_modern_dialog_ui.lua")
+      if dialogChunk then
+        local okDialogModule, dialogSetup = pcall(dialogChunk)
+        if okDialogModule and type(dialogSetup) == "function" then
+          local okDialogInstall, dialogInstallErr = pcall(dialogSetup, mod)
+          if okDialogInstall then
+            mod._kantoInMotionGen2ModernDialogsInstalled = true
+            mod.log:info("Gen2 Modern Dialog UI installed; shared TextBox/Choice/Mart/Script surfaces modernized")
+          else
+            mod.log:error("Gen2 Modern Dialog UI failed to install: %s",
+              tostring(dialogInstallErr))
+          end
+        else
+          mod.log:error("cannot load Gen2 Modern Dialog UI: %s",
+            tostring(dialogSetup))
+        end
+      else
+        mod.log:error("cannot compile Gen2 Modern Dialog UI: %s",
+          tostring(dialogCompileErr))
+      end
+    else
+      mod.log:error("cannot read Gen2 Modern Dialog UI: %s",
+        tostring(dialogReadErr))
+    end
+
+    if gen2CleanUiHandle() then
+      local okBridge, bridgeResult = pcall(installStockGen2CleanUiBridge)
+      if not okBridge or bridgeResult ~= true then
+        mod.log:warn("Gen2 Clean UI detected but animated portrait bridge did not install: %s",
+          tostring(okBridge and bridgeResult or bridgeResult))
       end
     end
   end
@@ -7744,7 +6122,7 @@ return function(mod)
   end)
 
   installIntegratedModernUi()
-  if IS_GEN2 and gen2CleanUiHandle() then
+  if gen2CleanUiHandle() then
     local okBridge, bridgeResult = pcall(installStockGen2CleanUiBridge)
     if not okBridge and mod.log and type(mod.log.warn) == "function" then
       mod.log:warn("late Gen2 Clean UI portrait bridge install failed: %s",
@@ -7758,7 +6136,7 @@ return function(mod)
   -- battle slots, so that extra capture would throw most of the HD detail
   -- away. Install a KIM-only supersampled card bridge when Battle Art Gen2 is
   -- present; Battle Art itself remains untouched.
-  if IS_GEN2 then
+  do
     local okHelper, helper = pcall(function()
       local src = assert(mod:read("lib/battle_art_gen2_212_compat.lua"))
       local loader = loadstring or load
@@ -7796,296 +6174,6 @@ return function(mod)
       mod.log:error("Battle Art Gen2 compatibility bridge failed: %s",
         tostring(helper))
     end
-  end
-
-  -- Integrated Gen 1 battle helpers. The move-animation code/data is the same
-  -- KIM 1.3.7 implementation, now paired with the remediated animation/SFX
-  -- asset set that passed the user's follow-up scanner.
-  if not IS_GEN2 then
-    local okHelper,helper=pcall(function()
-      local src=assert(mod:read("lib/integrated_krba.lua"))
-      local loader=loadstring or load
-      return assert(loader(src,"@"..mod.path.."/lib/integrated_krba.lua"))()
-    end)
-    if okHelper and type(helper)=="function" then
-      local okRun,err=pcall(helper,mod)
-      if not okRun then
-        mod.log:error("integrated KRBA failed: %s",tostring(err))
-      end
-    else
-      mod.log:error("cannot load integrated KRBA: %s",tostring(helper))
-    end
-
-    okHelper,helper=pcall(function()
-      local src=assert(mod:read("lib/integrated_pokeball_colorfix.lua"))
-      local loader=loadstring or load
-      return assert(loader(src,"@"..mod.path.."/lib/integrated_pokeball_colorfix.lua"))()
-    end)
-    if okHelper and type(helper)=="function" then
-      local okRun,err=pcall(helper,mod)
-      if okRun then mod.exports.integratedPokeballColorfix=true
-      else mod.log:error("integrated Pokeball Colorfix failed: %s",tostring(err)) end
-    else
-      mod.log:error("cannot load integrated Pokeball Colorfix: %s",tostring(helper))
-    end
-
-    -- Keep the accepted native catch-animation target correction. This module
-    -- adjusts only Gen1Recomp's own Pokeball animation; it contains no bundled
-    -- move art or move SFX.
-    okHelper,helper=pcall(function()
-      local src=assert(mod:read("lib/pokeball_target_fix.lua"))
-      local loader=loadstring or load
-      return assert(loader(src,"@"..mod.path.."/lib/pokeball_target_fix.lua"))()
-    end)
-    if okHelper and type(helper)=="function" then
-      okHelper,helper=pcall(helper,mod,
-        directStageGeometry,directSideMetrics,battleWorldMetrics)
-      if okHelper then
-        mod._kantoInMotionPokeballTargetFix=helper
-        mod.exports.integratedPokeballTargetFix=true
-      else
-        mod.log:error("integrated Pokeball target fix failed: %s",tostring(helper))
-      end
-    else
-      mod.log:error("cannot load integrated Pokeball target fix: %s",tostring(helper))
-    end
-
-    -- Battle Art 1.11+ remains a cooperative external 3D scene owner. KIM
-    -- supplies the new HD animated Pokemon, integrated KRBA move-animation
-    -- lane and Modern lower UI while Battle Art keeps arena/camera ownership.
-    okHelper,helper=pcall(function()
-      local src=assert(mod:read("lib/battle_art_111_compat.lua"))
-      local loader=loadstring or load
-      return assert(loader(src,"@"..mod.path.."/lib/battle_art_111_compat.lua"))()
-    end)
-    if okHelper and type(helper)=="function" then
-      okHelper,helper=pcall(helper,mod,battleRecord,renderPresentationFrame,currentFrame)
-    end
-    if okHelper and helper then
-      mod._kantoInMotionBattleArtCompat=helper
-
-      -- Windows/desktop: restore the exact KIM 1.3.7 Battle Art HUD geometry
-      -- and QOL overlay anchor systems. These are intentionally separate from
-      -- the mobile reconstruction path.
-      if not mod._kantoInMotionNativeMobileHost() then
-        local okDesktop,desktopInstaller=pcall(function()
-          local src=assert(mod:read("lib/battle_art_desktop_hud_geometry.lua"))
-          local loader=loadstring or load
-          return assert(loader(src,
-            "@"..mod.path.."/lib/battle_art_desktop_hud_geometry.lua"))()
-        end)
-        if okDesktop and type(desktopInstaller)=="function" then
-          okDesktop,desktopInstaller=pcall(desktopInstaller,mod,
-            battleSystemEnabled,battleArt3DBattleEnabled,
-            mod._kantoInMotionNativeMobileHost)
-        end
-        if okDesktop and desktopInstaller then
-          mod._kantoInMotionBattleArtDesktopHudGeometry=true
-        elseif not okDesktop then
-          mod.log:error("Battle Art desktop HUD geometry bridge failed: %s",
-            tostring(desktopInstaller))
-        end
-
-        -- Gen 2 already installs a generation-specific caught-icon route
-        -- above. Do not add the generic Gen 1/QOL rectangle router on top:
-        -- its wrapper intercepts the caught pixels before Gen 2 can map them
-        -- to the final Battle Art enemy HUD rectangle.
-        if not IS_GEN2 then
-        okDesktop,desktopInstaller=pcall(function()
-          local src=assert(mod:read(
-            "lib/battle_art_desktop_qol_overlay_alignment.lua"))
-          local loader=loadstring or load
-          return assert(loader(src,
-            "@"..mod.path..
-            "/lib/battle_art_desktop_qol_overlay_alignment.lua"))()
-        end)
-        if okDesktop and type(desktopInstaller)=="function" then
-          okDesktop,desktopInstaller=pcall(desktopInstaller,mod,
-            battleArt3DBattleEnabled,mod._kantoInMotionNativeMobileHost,
-            battleHudGeometry,integratedModernUiEnabled)
-        end
-        if okDesktop and desktopInstaller then
-          mod._kantoInMotionBattleArtDesktopQolOverlayAlignment=true
-        elseif not okDesktop then
-          mod.log:error("Battle Art desktop QOL overlay alignment failed: %s",
-            tostring(desktopInstaller))
-        end
-        end -- not IS_GEN2
-      end
-
-      -- Android/iOS: restore the proven top-level graphics-stack handoff used
-      -- by the pre-cleanup KIM mobile Battle Art path. This is intentionally
-      -- separate from the 1.11 sprite/card bridge above: it touches only the
-      -- render.hud -> GameViewport.finish -> TouchControls boundary.
-      if mod._kantoInMotionNativeMobileHost() then
-        local okBoundary,boundary=pcall(function()
-          local src=assert(mod:read("lib/battle_art_111_mobile_hud_boundary.lua"))
-          local loader=loadstring or load
-          return assert(loader(src,
-            "@"..mod.path.."/lib/battle_art_111_mobile_hud_boundary.lua"))()
-        end)
-        if okBoundary and type(boundary)=="function" then
-          okBoundary,boundary=pcall(boundary,mod,battleSystemEnabled,helper)
-        end
-        if okBoundary and boundary then
-          mod._kantoInMotionBattleArt111MobileHudBoundary=true
-        elseif not okBoundary then
-          mod.log:error("Battle Art 1.11 mobile HUD boundary failed: %s",
-            tostring(boundary))
-        end
-      end
-
-      if mod._kantoInMotionNativeMobileHost() then
-        local okStageOnly,stageOnly=pcall(function()
-          local src=assert(mod:read("lib/battle_art_111_mobile_stage_only.lua"))
-          local loader=loadstring or load
-          return assert(loader(src,
-            "@"..mod.path.."/lib/battle_art_111_mobile_stage_only.lua"))()
-        end)
-        if okStageOnly and type(stageOnly)=="function" then
-          okStageOnly,stageOnly=pcall(stageOnly,mod,battleSystemEnabled,helper)
-        end
-        if okStageOnly and stageOnly then
-          mod._kantoInMotionBattleArt111MobileStageOnly=stageOnly
-
-          -- Restore the exact mobile QOL overlay-anchor system from the
-          -- user's original pre-cleanup KIM 1.3.7. Quality of Life draws its
-          -- EXP fill/burst and caught-Pokedex ball in Battle Art's source
-          -- coordinates; this bridge recognizes only those tiny primitives and
-          -- rebases them onto KIM's live player/enemy HUD bands.
-          local okQol,qolInstaller=pcall(function()
-            local src=assert(mod:read("lib/mobile_qol_exp_reconstruction.lua"))
-            local loader=loadstring or load
-            return assert(loader(src,
-              "@"..mod.path.."/lib/mobile_qol_exp_reconstruction.lua"))()
-          end)
-          if okQol and type(qolInstaller)=="function" then
-            local function battleArtMobileStageActive()
-              return stageOnly and type(stageOnly.isActive)=="function"
-                and stageOnly:isActive() == true
-            end
-            okQol,qolInstaller=pcall(qolInstaller,mod,
-              battleArtMobileStageActive,battleHudGeometry)
-          end
-          if okQol and qolInstaller then
-            mod._kantoInMotionMobileQolExpReconstruction=true
-          elseif not okQol then
-            mod.log:error("Battle Art mobile QOL anchor bridge failed: %s",
-              tostring(qolInstaller))
-          end
-        elseif not okStageOnly then
-          mod.log:error("Battle Art 1.11 mobile stage-only bridge failed: %s",
-            tostring(stageOnly))
-        end
-      end
-
-      -- iOS/LÖVE 12 Metal: Battle Art's own current code documents that a
-      -- Canvas sampled into another Canvas can arrive vertically inverted.
-      -- Its Gen 2 branch fixes the final WORLD image only, before UI/touch
-      -- composition. KIM's mobile stage-only path needs the same narrow
-      -- correction for Battle Art's Gen 1 worldOverride; Android/desktop and
-      -- all non-Battle-Art scenes are untouched.
-      do
-        local okOrientation,orientationInstaller=pcall(function()
-          local src=assert(mod:read(
-            "lib/battle_art_111_ios_world_orientation.lua"))
-          local loader=loadstring or load
-          return assert(loader(src,
-            "@"..mod.path..
-            "/lib/battle_art_111_ios_world_orientation.lua"))()
-        end)
-        if okOrientation and type(orientationInstaller)=="function" then
-          okOrientation,orientationInstaller=pcall(orientationInstaller,mod,
-            battleSystemEnabled,mod._kantoInMotionBattleArtCompat)
-        end
-        if okOrientation and orientationInstaller then
-          mod._kantoInMotionBattleArtIosWorldOrientation=orientationInstaller
-        elseif not okOrientation then
-          mod.log:error("Battle Art iOS world-orientation bridge failed: %s",
-            tostring(orientationInstaller))
-        end
-      end
-    elseif not okHelper then
-      mod.log:error("Battle Art 1.11 compatibility bridge failed: %s",tostring(helper))
-    end
-
-    -- PotatoVoxel remains a cooperative external scene owner. KIM can supply
-    -- HD animated Pokemon, the integrated KRBA move-animation lane, Modern
-    -- lower UI, HUD/QOL alignment and shiny cues.
-    okHelper,helper=pcall(function()
-      local src=assert(mod:read("lib/potato_voxel_compat.lua"))
-      local loader=loadstring or load
-      return assert(loader(src,"@"..mod.path.."/lib/potato_voxel_compat.lua"))()
-    end)
-    if okHelper and type(helper)=="function" then
-      okHelper,helper=pcall(helper,mod,battleSystemEnabled,battleHudGeometry)
-    end
-    if okHelper and helper then
-      mod._kantoInMotionPotatoVoxelCompat=helper
-      if mod._kantoInMotionNativeMobileHost()
-          and type(mod._kantoInMotionPotatoKimHudActive)=="function" then
-        local okGuard,guard=pcall(function()
-          local src=assert(mod:read("lib/potato_voxel_mobile_touch_guard.lua"))
-          local loader=loadstring or load
-          return assert(loader(src,"@"..mod.path.."/lib/potato_voxel_mobile_touch_guard.lua"))()
-        end)
-        if okGuard and type(guard)=="function" then
-          okGuard,guard=pcall(guard,mod,mod._kantoInMotionPotatoKimHudActive)
-        end
-        if okGuard and guard then
-          mod._kantoInMotionPotatoMobileTouchGuard=true
-        elseif not okGuard then
-          mod.log:error("PotatoVoxel mobile TouchControls guard failed: %s",tostring(guard))
-        end
-      end
-    elseif not okHelper then
-      mod.log:error("PotatoVoxel compatibility bridge failed: %s",tostring(helper))
-    end
-
-    -- Both cooperative mobile 3D renderers feed the same final-window KIM HUD
-    -- and Modern lower-panel compositor. PotatoVoxel installs the historical
-    -- predicate first; extend it rather than replacing it.
-    if mod._kantoInMotionNativeMobileHost()
-        and mod._kantoInMotionBattleArt111MobileStageOnly then
-      local previousStageUsesKimHud=mod._kantoInMotionExternalStageUsesKimHud
-      local battleArtStageOnly=mod._kantoInMotionBattleArt111MobileStageOnly
-      mod._kantoInMotionExternalStageUsesKimHud=function(battle)
-        if type(previousStageUsesKimHud)=="function" then
-          local okPrev,valuePrev=pcall(previousStageUsesKimHud,battle)
-          if okPrev and valuePrev==true then return true end
-        end
-        if battle and type(battleArtStageOnly.isActive)=="function" then
-          local okBa,valueBa=pcall(battleArtStageOnly.isActive,battleArtStageOnly)
-          if okBa and valueBa==true then return true end
-        end
-        return false
-      end
-    end
-
-    -- HGSS Visual Overhaul compatibility:
-    -- When KIM's master BATTLE SYSTEM is ON, do not allow HGSS's independent
-    -- Gen-1 battle system to participate at all.  The bridge snapshots the
-    -- complete KIM/Battle Art/Potato battle chain before HGSS loads, then
-    -- dispatches around HGSS's later battle wrappers.  Turning BATTLE SYSTEM
-    -- OFF immediately gives the normal HGSS battle path back.
-    do
-      local okHgssBlock,hgssBlock=pcall(function()
-        local src=assert(mod:read("lib/hgss_battle_hard_block.lua"))
-        local loader=loadstring or load
-        return assert(loader(src,
-          "@"..mod.path.."/lib/hgss_battle_hard_block.lua"))()
-      end)
-      if okHgssBlock and type(hgssBlock)=="function" then
-        okHgssBlock,hgssBlock=pcall(hgssBlock,mod,battleSystemEnabled)
-      end
-      if okHgssBlock and hgssBlock then
-        mod._kantoInMotionHgssBattleHardBlock=hgssBlock
-      elseif not okHgssBlock then
-        mod.log:error("HGSS battle hard-block bridge failed: %s",
-          tostring(hgssBlock))
-      end
-    end
-
   end
 
   -- HD Rescaled menu-icon bridge. Install this last so it wraps the final

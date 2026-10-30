@@ -244,9 +244,8 @@ GAME FREAK inc.
 
 ## Integrated code
 
-The following projects are integrated into Kanto in Motion's code in this
-bundle. Some of them are used only on Gen 1 (Red/Blue/Yellow) paths and are
-inactive on Crystal. They are still in the repository, so they stay credited.
+The following project is integrated into Kanto in Motion's code in this
+bundle.
 
 ### Gen1 Modern UI — ArmstrongThomas
 
@@ -254,34 +253,31 @@ https://github.com/ArmstrongThomas/gen1-modern-ui
 
 Kanto in Motion integrates a customized Gen1 Modern UI presentation. It is the
 basis of the Modern UI and of several of the UI THEMES (Classic Mono, Crimson,
-Modern Glass, Pocket Green, Midnight, Frost, Light, Dark).
-
-### Kanto Rework Suite — Faendra
-
-https://github.com/Faendra/kanto-rework-suite
-
-Kanto in Motion integrates adapted Kanto Rework / Pokémon Essentials-style move
-animation and routing work for its Gen 1 battle presentation (`lib/integrated_krba.lua`,
-`lib/krba_essentials_player*.lua`, `data/gen1_anims.lua`). The animation sheets
-and sound effects it uses are `assets/animations/PRAS- *.png` and
-`assets/sfx/PRSFX- *.wav`. This code only loads on Gen 1; it is inactive on
-Crystal.
-
-### Poké Ball Colorfix — keberos
-
-https://github.com/keberos/pokeball-colorfix
-
-`lib/integrated_pokeball_colorfix.lua`: Poké Ball palette and presentation
-fixes for the battle path, with Kanto in Motion's fullscreen and mobile
-compatibility on top. This code only loads on Gen 1; it is inactive on Crystal.
+Modern Glass, Pocket Green, Midnight, Frost, Light, Dark). The Gen 1 presenter
+itself was removed in 1.0.0; the Crystal Modern UI that remains is derived
+from it.
 
 ### Dex Radar — Zetto22
 
 https://github.com/Zetto22/dex_radar
 
 Kanto in Motion includes presentation-only interoperability with the unmodified
-Dex Radar mod (Gen 1 code paths). Dex Radar is not bundled and keeps ownership
-of its own data, state and logic.
+Dex Radar mod (the Modern UI draws its screen in the Crystal theme). Dex Radar
+is not bundled and keeps ownership of its own data, state and logic.
+
+### Formerly bundled
+
+1.0.0 made the bundle Crystal-only and removed Kanto in Motion's Gen 1
+(Red/Blue/Yellow) and Gen 3 (FireRed/LeafGreen) code. Nothing derived from the
+following projects remains in the mod; they are listed for the history of the
+code:
+
+- **Kanto Rework Suite — Faendra**
+  (https://github.com/Faendra/kanto-rework-suite): Gen 1 move animations and
+  routing, with their `PRAS-` animation sheets and `PRSFX-` sound effects.
+- **Poké Ball Colorfix — keberos**
+  (https://github.com/keberos/pokeball-colorfix): Gen 1 Poké Ball palette and
+  presentation fixes.
 
 ## Optional external compatibility
 
@@ -319,13 +315,9 @@ recorded for them in the bundle. The maintainer should fill these in.
   asset repository is recorded).
 - **Player trainer battle sprites** (`assets/battle/player-trainers-*/`): Ash,
   Brock, Bulma, Gary, Misty, Red and Gen 1–5 player sprites.
-- **Title art** (`assets/title/red_title.png`, `assets/title/gen1recomppp_logo.png`).
 - **Pixel frames** (`assets/pixel_frame1-3.png`, `assets/gen2_aio/frames/pixel_frame_gen3.png`).
 - **Shiny encounter effect** (`assets/effects/shiny_sparkle.png`, `assets/sfx/shiny.wav`).
   Kanto in Motion's notes say it "retains" these, without naming a source.
-- **Original source of the `PRAS-` animation sheets, the `PRSFX-` sound
-  effects and `Wind7.ogg` / `Wind8.ogg`** (`assets/animations/`, `assets/sfx/`).
-  These are credited above only as part of the Kanto Rework integration.
 - **Wilds generated sprite sheets** (`wilds/assets/atlas/`, `wilds/assets/wilds_generated/`).
   These are derived from the third-party follower and overworld sprites credited
   above. Wilds says they inherit those sprites' terms.

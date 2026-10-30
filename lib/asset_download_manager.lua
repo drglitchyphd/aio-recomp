@@ -6,7 +6,6 @@
 -- engine's asynchronous Fetch.download path, then reopens that launcher-owned
 -- save-directory ZIP through Gen1Recomp's native file helper for extraction.
 return function(mod)
-  local IS_GEN3 = tonumber(mod.generation) == 3
   local SCREEN_ID = "gen2-aio:asset_manager"
   local REPO = "HaseoSora/Kanto-in-Motion-Assets"
   -- The HD pack is layered: v1.0.0 is the full base, v1.1.0 adds Unown
@@ -141,18 +140,9 @@ return function(mod)
     return okPortable and active == true
   end
 
-  local function mobilePlatformActive()
-    if not (love and love.system and type(love.system.getOS) == "function") then
-      return false
-    end
-    local ok, name = pcall(love.system.getOS)
-    return ok and (name == "Android" or name == "iOS")
-  end
-
   -- Fetch.download is engine-owned and always writes its temporary file into
-  -- LÖVE's real save directory. Portable mode and the Game3 mobile sandbox can
-  -- both make the mod-visible filesystem differ from that worker-owned path,
-  -- so ask an engine-owned path helper for the real directory and reopen the
+  -- LÖVE's real save directory. Portable mode can make the mod-visible
+  -- filesystem differ from that worker-owned path, so ask an engine-owned path helper for the real directory and reopen the
   -- completed ZIP natively. ShaderFX.presetDir normally prefers the portable
   -- root; suppress only that preference for this synchronous path query, then
   -- restore it immediately. No persistence routing is changed.
@@ -1117,11 +1107,9 @@ return function(mod)
       return setError("Gen1Recomp streaming downloader is unavailable.")
     end
     -- Keep the engine's binary-safe asynchronous file downloader everywhere.
-    -- When start() resolved an engine-owned native handoff path (portable mode
-    -- or FR/LG on Android/iOS), reopen that finished worker-owned ZIP by its
-    -- real native path instead of asking the mod-visible filesystem to find it.
-    -- Portable v4 originally introduced this path; Game3 mobile now uses the
-    -- same handoff because its sandbox can expose a different save view.
+    -- When start() resolved an engine-owned native handoff path (portable
+    -- mode), reopen that finished worker-owned ZIP by its real native path
+    -- instead of asking the mod-visible filesystem to find it.
     manager.downloadMode = (manager.nativeFs and manager.portableTempPath)
       and "portable_native" or "raw"
     manager.downloadHandle = Fetch.download(release.zip.url, manager.tempName, {
@@ -1296,40 +1284,20 @@ return function(mod)
       return true
     end
     self.portableMode = portableModeActive()
-    local gen3MobileNative = IS_GEN3 and mobilePlatformActive()
-    local useNativeHandoff = self.portableMode or gen3MobileNative
-    self.downloadMode = useNativeHandoff and "portable_native" or "raw"
+    self.downloadMode = self.portableMode and "portable_native" or "raw"
     self.rawFs = nil
     self.nativeFs = nil
     self.portableTempPath = nil
-    if useNativeHandoff then
+    if self.portableMode then
       local nativePath, SaveData, pathErr = resolveEngineSaveDirectory()
       if nativePath then
         self.portableTempPath = nativePath
         self.nativeFs = SaveData
-        if self.portableMode then
-          logInfo("KIM portable asset download: engine temp handoff ready")
-        else
-          logInfo("KIM FR/LG mobile asset download: engine temp handoff ready")
-        end
-      elseif self.portableMode then
+        logInfo("KIM portable asset download: engine temp handoff ready")
+      else
         self.state = "error"
         self.error = pathErr or "Portable ZIP download path is unavailable on this Gen1Recomp build."
         return false
-      else
-        -- A few older mobile engine builds may not expose native helpers even
-        -- though their persistence filesystem can still see the worker's save
-        -- directory. Preserve v7's raw path as a compatibility fallback.
-        local fs, fsErr = resolveRawFilesystem()
-        if not fs then
-          self.state = "error"
-          self.error = pathErr or fsErr
-            or "FR/LG mobile ZIP installation is unavailable on this Gen1Recomp build."
-          return false
-        end
-        self.downloadMode = "raw"
-        self.rawFs = fs
-        logInfo("KIM FR/LG mobile asset download: native handoff unavailable; using raw fallback")
       end
     else
       local fs, fsErr = resolveRawFilesystem()
@@ -1373,322 +1341,153 @@ return function(mod)
     return string.format("%.1f", n)
   end
 
-  if not IS_GEN3 then
-    mod.content.screens:register(SCREEN_ID, {
-      new = function(game)
-        local self = { isOpaque = true, game = game }
-        function self:update(dt)
-          manager:update()
-          local input = game and game.input
-          if not input then return end
-          if manager.state == "checking" or manager.state == "downloading" then
-            if input:wasPressed("b") then manager:cancel(); game.stack:pop() end
-            return
-          end
-          if manager.state == "extracting" or manager.state == "migrating" or manager.state == "deleting" then
-            -- Do not interrupt installation/migration/removal midway. Cache work is
-            -- incremental and a later run can safely recover from partial progress.
-            return
-          end
-          if manager.state == "confirm_delete" then
-            if input:wasPressed("a") then manager:beginDelete(); return end
-            if input:wasPressed("b") then manager.state = "done"; return end
-            return
-          end
-          if manager.state == "delete_error" then
-            if input:wasPressed("a") then manager:beginDelete(); return end
-            if input:wasPressed("b") then game.stack:pop(); return end
-            return
-          end
-          if manager.state == "deleted" then
-            if input:wasPressed("a") then manager:start(); return end
-            if input:wasPressed("b") then game.stack:pop(); return end
-            return
-          end
-          if manager.state == "error" then
-            if input:wasPressed("a") then manager:start(); return end
-            if input:wasPressed("b") then manager:defer(); game.stack:pop(); return end
-            return
-          end
-          if manager.state == "done" or manager:isComplete() then
-            if input:wasPressed("a") then game.stack:pop(); return end
-            if input:wasPressed("b") then manager.state = "confirm_delete"; return end
-            return
-          end
-          if input:wasPressed("a") then manager:start(); return end
-          if input:wasPressed("b") then manager:defer(); game.stack:pop(); return end
-        end
-        function self:draw()
-          local Font = mod.ui and mod.ui.Font
-          if not Font then return end
-          Font.drawBox(0, 0, 20, 18)
-          Font.draw("KANTO IN MOTION", 8, 8)
-          Font.draw("HD ASSET MANAGER", 8, 24)
-          if manager.state == "checking" then
-            Font.draw("CHECKING RELEASE...", 8, 52)
-            Font.draw("B CANCEL", 8, 120)
-          elseif manager.state == "downloading" then
-            Font.draw("DOWNLOADING ZIP", 8, 48)
-            if manager.downloadTotal > 0 then
-              Font.draw(string.format("DATA %s/%s MB", mb10(manager.downloadBytes), mb10(manager.downloadTotal)), 8, 68)
-            else
-              Font.draw(string.format("DATA %s MB", mb10(manager.downloadBytes)), 8, 68)
-            end
-            Font.draw("ONE-TIME DOWNLOAD", 8, 92)
-            Font.draw("B CANCEL", 8, 120)
-          elseif manager.state == "extracting" then
-            Font.draw("EXTRACTING...", 8, 48)
-            Font.draw(string.format("FILES %d/%d", manager.extractedCount, #manager.extractFiles), 8, 68)
-            if manager.extractTotalBytes > 0 then
-              Font.draw(string.format("DATA %s/%s MB", mb10(manager.extractedBytes), mb10(manager.extractTotalBytes)), 8, 84)
-            end
-            Font.draw("PLEASE WAIT", 8, 116)
-          elseif manager.state == "migrating" then
-            Font.draw("MIGRATING LOCAL ASSETS", 8, 44)
-            Font.draw("NO DOWNLOAD REQUIRED", 8, 58)
-            Font.draw(string.format("FILES %d/%d", manager.legacyCount, #manager.legacyFiles), 8, 78)
-            if manager.legacyTotalBytes > 0 then
-              Font.draw(string.format("DATA %s/%s MB", mb10(manager.legacyBytes), mb10(manager.legacyTotalBytes)), 8, 94)
-            end
-            Font.draw("PLEASE WAIT", 8, 120)
-          elseif manager.state == "deleting" then
-            Font.draw("REMOVING HD ASSETS", 8, 48)
-            Font.draw(string.format("FILES %d/%d", manager.deletedCount, #manager.deleteFiles), 8, 70)
-            Font.draw("PLEASE WAIT", 8, 104)
-          elseif manager.state == "confirm_delete" then
-            Font.draw("REMOVE HD ASSETS?", 8, 48)
-            Font.draw("FREES CACHE SPACE", 8, 66)
-            Font.draw("CAN DOWNLOAD AGAIN", 8, 82)
-            Font.draw("A REMOVE", 8, 108)
-            Font.draw("B CANCEL", 88, 108)
-          elseif manager.state == "delete_error" then
-            Font.draw("REMOVE ERROR", 8, 48)
-            local first = tostring(manager.error or "Unknown error"):gsub("\n", " ")
-            local line1 = first:sub(1, 20)
-            local line2 = first:sub(21, 40)
-            local line3 = first:sub(41, 60)
-            Font.draw(line1, 8, 64)
-            if #line2 > 0 then Font.draw(line2, 8, 78) end
-            if #line3 > 0 then Font.draw(line3, 8, 92) end
-            Font.draw("A RETRY", 8, 112)
-            Font.draw("B CANCEL", 88, 112)
-          elseif manager.state == "deleted" then
-            Font.draw("ASSETS REMOVED", 8, 52)
-            Font.draw("HD CACHE CLEARED", 8, 68)
-            Font.draw("RESTART TO APPLY", 8, 84)
-            Font.draw("A DOWNLOAD AGAIN", 8, 102)
-            Font.draw("B CLOSE", 8, 118)
-          elseif manager.state == "error" then
-            Font.draw("DOWNLOAD ERROR", 8, 48)
-            local first = tostring(manager.error or "Unknown error"):gsub("\n", " ")
-            local function chunks(text, width, limit)
-              local out = {}
-              while #text > 0 and #out < limit do
-                if #text <= width then out[#out + 1] = text; break end
-                local cut = text:sub(1, width)
-                local at = cut:match("^.*()%s+")
-                if at and at > 4 then cut = text:sub(1, at - 1); text = text:sub(at + 1)
-                else text = text:sub(width + 1) end
-                out[#out + 1] = cut
-              end
-              return out
-            end
-            for i, line in ipairs(chunks(first, 20, 3)) do Font.draw(line, 8, 60 + (i - 1) * 14) end
-            Font.draw("A RETRY", 8, 108)
-            Font.draw("B LATER", 88, 108)
-          elseif manager.state == "done" or manager:isComplete() then
-            Font.draw("ASSETS READY", 8, 52)
-            local source = manager.installSource or manager:completionSource()
-            if source == "legacy" then
-              local count = manager.legacyCount > 0 and manager.legacyCount or LEGACY_EXPECTED_FILES
-              Font.draw(string.format("%d FILES MIGRATED", count), 8, 70)
-              Font.draw("NO DOWNLOAD NEEDED", 8, 86)
-            else
-              Font.draw(string.format("%d FILES INSTALLED", manager.extractedCount > 0 and manager.extractedCount or 0), 8, 70)
-              Font.draw("TEMP ZIP DELETED", 8, 86)
-            end
-            Font.draw("A CONTINUE", 8, 104)
-            Font.draw("B REMOVE", 88, 104)
-          else
-            Font.draw("HD POKEMON +", 8, 48)
-            Font.draw("BATTLE BACKGROUNDS", 8, 64)
-            Font.draw("DOWNLOAD ASSET ZIP", 8, 80)
-            Font.draw("A DOWNLOAD", 8, 104)
-            Font.draw("B USE VANILLA", 8, 120)
-          end
-        end
-        return self
-      end,
-    })
-  end
-
-
-  -- FireRed/LeafGreen use Game3's separate 240x160 singleton UI stack. The
-  -- normal mod.content.screens registry is intentionally unavailable there,
-  -- so give the same asset manager a small native Game3 host instead of
-  -- silently failing installation before gen3_frlg.lua can start.
-  local gen3Stack, gen3Host
-  if IS_GEN3 then
-    local okStack, Stack = pcall(require, "src.ui.game3.stack")
-    local okWindow, Window = pcall(require, "src.ui.game3.window")
-    if okStack and type(Stack) == "table" and okWindow and type(Window) == "table" then
-      gen3Stack = Stack
-      local function closeGen3()
-        Stack.pop(SCREEN_ID)
-      end
-      local function pressed(input, key)
-        return input and type(input.wasPressed) == "function" and input:wasPressed(key)
-      end
-      local function handleInput(input)
+  mod.content.screens:register(SCREEN_ID, {
+    new = function(game)
+      local self = { isOpaque = true, game = game }
+      function self:update(dt)
+        manager:update()
+        local input = game and game.input
+        if not input then return end
         if manager.state == "checking" or manager.state == "downloading" then
-          if pressed(input, "b") then manager:cancel(); closeGen3() end
+          if input:wasPressed("b") then manager:cancel(); game.stack:pop() end
           return
         end
-        if manager.state == "extracting" or manager.state == "migrating"
-            or manager.state == "deleting" then
+        if manager.state == "extracting" or manager.state == "migrating" or manager.state == "deleting" then
+          -- Do not interrupt installation/migration/removal midway. Cache work is
+          -- incremental and a later run can safely recover from partial progress.
           return
         end
         if manager.state == "confirm_delete" then
-          if pressed(input, "a") then manager:beginDelete(); return end
-          if pressed(input, "b") then manager.state = "done"; return end
+          if input:wasPressed("a") then manager:beginDelete(); return end
+          if input:wasPressed("b") then manager.state = "done"; return end
           return
         end
         if manager.state == "delete_error" then
-          if pressed(input, "a") then manager:beginDelete(); return end
-          if pressed(input, "b") then closeGen3(); return end
+          if input:wasPressed("a") then manager:beginDelete(); return end
+          if input:wasPressed("b") then game.stack:pop(); return end
           return
         end
         if manager.state == "deleted" then
-          if pressed(input, "a") then manager:start(); return end
-          if pressed(input, "b") then closeGen3(); return end
+          if input:wasPressed("a") then manager:start(); return end
+          if input:wasPressed("b") then game.stack:pop(); return end
           return
         end
         if manager.state == "error" then
-          if pressed(input, "a") then manager:start(); return end
-          if pressed(input, "b") then manager:defer(); closeGen3(); return end
+          if input:wasPressed("a") then manager:start(); return end
+          if input:wasPressed("b") then manager:defer(); game.stack:pop(); return end
           return
         end
         if manager.state == "done" or manager:isComplete() then
-          -- Game3's asset screen is an explicit maintenance menu. Make the
-          -- destructive action match the on-screen prompt: A opens the
-          -- confirmation, while B simply closes/returns to the Start menu.
-          if pressed(input, "a") then manager.state = "confirm_delete"; return end
-          if pressed(input, "b") then closeGen3(); return end
+          if input:wasPressed("a") then game.stack:pop(); return end
+          if input:wasPressed("b") then manager.state = "confirm_delete"; return end
           return
         end
-        if pressed(input, "a") then manager:start(); return end
-        if pressed(input, "b") then manager:defer(); closeGen3(); return end
+        if input:wasPressed("a") then manager:start(); return end
+        if input:wasPressed("b") then manager:defer(); game.stack:pop(); return end
       end
-
-      local function splitError(text, width, limit)
-        text = tostring(text or "Unknown error"):gsub("\n", " ")
-        local out = {}
-        while #text > 0 and #out < (limit or 3) do
-          if #text <= width then out[#out + 1] = text; break end
-          local cut = text:sub(1, width)
-          local at = cut:match("^.*()%s+")
-          if at and at > 4 then
-            out[#out + 1] = text:sub(1, at - 1)
-            text = text:sub(at + 1)
-          else
-            out[#out + 1] = cut
-            text = text:sub(width + 1)
-          end
-        end
-        return out
-      end
-
-      local function line(text, y)
-        Window.printPx(tostring(text or ""), 16, y, { maxWidth = 208 })
-      end
-
-      gen3Host = {}
-      function gen3Host.update(_dt)
-        manager:update()
-      end
-      function gen3Host.handleInput(input)
-        handleInput(input)
-      end
-      function gen3Host.draw()
-        local G = love and love.graphics
-        if not G then return end
-        G.setShader()
-        G.setColor(1, 1, 1, 1)
-        G.rectangle("fill", 0, 0, 240, 160)
-        Window.stdFrame(Window.template(1, 1, 28, 18))
-        line("KANTO IN MOTION", 14)
-        line("HD ASSET MANAGER", 30)
-
+      function self:draw()
+        local Font = mod.ui and mod.ui.Font
+        if not Font then return end
+        Font.drawBox(0, 0, 20, 18)
+        Font.draw("KANTO IN MOTION", 8, 8)
+        Font.draw("HD ASSET MANAGER", 8, 24)
         if manager.state == "checking" then
-          line("CHECKING RELEASE...", 56)
-          line("B CANCEL", 128)
+          Font.draw("CHECKING RELEASE...", 8, 52)
+          Font.draw("B CANCEL", 8, 120)
         elseif manager.state == "downloading" then
-          line("DOWNLOADING ZIP", 52)
+          Font.draw("DOWNLOADING ZIP", 8, 48)
           if manager.downloadTotal > 0 then
-            line(string.format("DATA %s/%s MB", mb10(manager.downloadBytes), mb10(manager.downloadTotal)), 72)
+            Font.draw(string.format("DATA %s/%s MB", mb10(manager.downloadBytes), mb10(manager.downloadTotal)), 8, 68)
           else
-            line(string.format("DATA %s MB", mb10(manager.downloadBytes)), 72)
+            Font.draw(string.format("DATA %s MB", mb10(manager.downloadBytes)), 8, 68)
           end
-          line("ONE-TIME DOWNLOAD", 92)
-          line("B CANCEL", 128)
+          Font.draw("ONE-TIME DOWNLOAD", 8, 92)
+          Font.draw("B CANCEL", 8, 120)
         elseif manager.state == "extracting" then
-          line("EXTRACTING...", 52)
-          line(string.format("FILES %d/%d", manager.extractedCount, #manager.extractFiles), 72)
+          Font.draw("EXTRACTING...", 8, 48)
+          Font.draw(string.format("FILES %d/%d", manager.extractedCount, #manager.extractFiles), 8, 68)
           if manager.extractTotalBytes > 0 then
-            line(string.format("DATA %s/%s MB", mb10(manager.extractedBytes), mb10(manager.extractTotalBytes)), 92)
+            Font.draw(string.format("DATA %s/%s MB", mb10(manager.extractedBytes), mb10(manager.extractTotalBytes)), 8, 84)
           end
-          line("PLEASE WAIT", 128)
+          Font.draw("PLEASE WAIT", 8, 116)
         elseif manager.state == "migrating" then
-          line("MIGRATING LOCAL ASSETS", 50)
-          line(string.format("FILES %d/%d", manager.legacyCount, #manager.legacyFiles), 72)
-          line("NO DOWNLOAD REQUIRED", 92)
-          line("PLEASE WAIT", 128)
+          Font.draw("MIGRATING LOCAL ASSETS", 8, 44)
+          Font.draw("NO DOWNLOAD REQUIRED", 8, 58)
+          Font.draw(string.format("FILES %d/%d", manager.legacyCount, #manager.legacyFiles), 8, 78)
+          if manager.legacyTotalBytes > 0 then
+            Font.draw(string.format("DATA %s/%s MB", mb10(manager.legacyBytes), mb10(manager.legacyTotalBytes)), 8, 94)
+          end
+          Font.draw("PLEASE WAIT", 8, 120)
         elseif manager.state == "deleting" then
-          line("REMOVING HD ASSETS", 54)
-          line(string.format("FILES %d/%d", manager.deletedCount, #manager.deleteFiles), 76)
-          line("PLEASE WAIT", 112)
+          Font.draw("REMOVING HD ASSETS", 8, 48)
+          Font.draw(string.format("FILES %d/%d", manager.deletedCount, #manager.deleteFiles), 8, 70)
+          Font.draw("PLEASE WAIT", 8, 104)
         elseif manager.state == "confirm_delete" then
-          line("REMOVE HD ASSETS?", 52)
-          line("FREES CACHE SPACE", 72)
-          line("CAN DOWNLOAD AGAIN", 92)
-          line("A REMOVE   B CANCEL", 120)
+          Font.draw("REMOVE HD ASSETS?", 8, 48)
+          Font.draw("FREES CACHE SPACE", 8, 66)
+          Font.draw("CAN DOWNLOAD AGAIN", 8, 82)
+          Font.draw("A REMOVE", 8, 108)
+          Font.draw("B CANCEL", 88, 108)
         elseif manager.state == "delete_error" then
-          line("REMOVE ERROR", 48)
-          for i, value in ipairs(splitError(manager.error, 26, 3)) do line(value, 66 + (i - 1) * 16) end
-          line("A RETRY   B CANCEL", 124)
+          Font.draw("REMOVE ERROR", 8, 48)
+          local first = tostring(manager.error or "Unknown error"):gsub("\n", " ")
+          local line1 = first:sub(1, 20)
+          local line2 = first:sub(21, 40)
+          local line3 = first:sub(41, 60)
+          Font.draw(line1, 8, 64)
+          if #line2 > 0 then Font.draw(line2, 8, 78) end
+          if #line3 > 0 then Font.draw(line3, 8, 92) end
+          Font.draw("A RETRY", 8, 112)
+          Font.draw("B CANCEL", 88, 112)
         elseif manager.state == "deleted" then
-          line("ASSETS REMOVED", 52)
-          line("HD CACHE CLEARED", 72)
-          line("RESTART TO APPLY", 92)
-          line("A DOWNLOAD AGAIN", 112)
-          line("B CLOSE", 130)
+          Font.draw("ASSETS REMOVED", 8, 52)
+          Font.draw("HD CACHE CLEARED", 8, 68)
+          Font.draw("RESTART TO APPLY", 8, 84)
+          Font.draw("A DOWNLOAD AGAIN", 8, 102)
+          Font.draw("B CLOSE", 8, 118)
         elseif manager.state == "error" then
-          line("DOWNLOAD ERROR", 46)
-          for i, value in ipairs(splitError(manager.error, 26, 3)) do line(value, 64 + (i - 1) * 16) end
-          line("A RETRY   B LATER", 124)
+          Font.draw("DOWNLOAD ERROR", 8, 48)
+          local first = tostring(manager.error or "Unknown error"):gsub("\n", " ")
+          local function chunks(text, width, limit)
+            local out = {}
+            while #text > 0 and #out < limit do
+              if #text <= width then out[#out + 1] = text; break end
+              local cut = text:sub(1, width)
+              local at = cut:match("^.*()%s+")
+              if at and at > 4 then cut = text:sub(1, at - 1); text = text:sub(at + 1)
+              else text = text:sub(width + 1) end
+              out[#out + 1] = cut
+            end
+            return out
+          end
+          for i, line in ipairs(chunks(first, 20, 3)) do Font.draw(line, 8, 60 + (i - 1) * 14) end
+          Font.draw("A RETRY", 8, 108)
+          Font.draw("B LATER", 88, 108)
         elseif manager.state == "done" or manager:isComplete() then
-          line("ASSETS READY", 52)
+          Font.draw("ASSETS READY", 8, 52)
           local source = manager.installSource or manager:completionSource()
           if source == "legacy" then
             local count = manager.legacyCount > 0 and manager.legacyCount or LEGACY_EXPECTED_FILES
-            line(string.format("%d FILES MIGRATED", count), 72)
+            Font.draw(string.format("%d FILES MIGRATED", count), 8, 70)
+            Font.draw("NO DOWNLOAD NEEDED", 8, 86)
           else
-            line(string.format("%d FILES INSTALLED", manager.extractedCount > 0 and manager.extractedCount or 0), 72)
+            Font.draw(string.format("%d FILES INSTALLED", manager.extractedCount > 0 and manager.extractedCount or 0), 8, 70)
+            Font.draw("TEMP ZIP DELETED", 8, 86)
           end
-          line("A REMOVE   B CLOSE", 112)
+          Font.draw("A CONTINUE", 8, 104)
+          Font.draw("B REMOVE", 88, 104)
         else
-          line("HD POKEMON +", 52)
-          line("BATTLE BACKGROUNDS", 72)
-          line("DOWNLOAD ASSET ZIP", 92)
-          line("A DOWNLOAD", 112)
-          line("B USE VANILLA", 130)
+          Font.draw("HD POKEMON +", 8, 48)
+          Font.draw("BATTLE BACKGROUNDS", 8, 64)
+          Font.draw("DOWNLOAD ASSET ZIP", 8, 80)
+          Font.draw("A DOWNLOAD", 8, 104)
+          Font.draw("B USE VANILLA", 8, 120)
         end
-        G.setColor(1, 1, 1, 1)
       end
-    else
-      logError("Game3 asset-manager UI unavailable")
-    end
-  end
+      return self
+    end,
+  })
+
 
 
   local function openManager(game)
@@ -1699,17 +1498,7 @@ return function(mod)
       manager:beginLegacyMigration()
     end
     manager.opening = true
-    local ok, err
-    if IS_GEN3 then
-      ok, err = pcall(function()
-        if not (gen3Stack and gen3Host) then
-          error("Game3 asset-manager UI is unavailable")
-        end
-        gen3Stack.push(SCREEN_ID, gen3Host, { hideBelow = true, fullscreen = true })
-      end)
-    else
-      ok, err = pcall(function() mod.ui.push(game, SCREEN_ID) end)
-    end
+    local ok, err = pcall(function() mod.ui.push(game, SCREEN_ID) end)
     manager.opening = false
     if not ok then logError("could not open KIM asset manager: %s", tostring(err)) end
   end
@@ -1721,57 +1510,7 @@ return function(mod)
     manager.game = ev and ev.game or nil
   end)
 
-  if IS_GEN3 then
-    -- Game3 does not expose mod.content.screens. Expose KIM ASSETS in the
-    -- native Start menu only while the shared pack is missing/incomplete.
-    -- Once the cache validates as complete, keep the normal Start menu clean.
-    local function addGen3AssetItem(nextFn, game, items)
-      local out = nextFn(game, items)
-      if type(out) ~= "table" or manager:isComplete() then return out end
-      for _, row in ipairs(out) do
-        if type(row) == "table" and row.id == SCREEN_ID then return out end
-      end
-      local copy = {}
-      local inserted = false
-      for _, row in ipairs(out) do
-        if not inserted and type(row) == "table"
-            and (row.id == "option" or row.id == "exit") then
-          copy[#copy + 1] = { id = SCREEN_ID, label = "KIM ASSETS" }
-          inserted = true
-        end
-        copy[#copy + 1] = row
-      end
-      if not inserted then copy[#copy + 1] = { id = SCREEN_ID, label = "KIM ASSETS" } end
-      return copy
-    end
-    mod.hooks:wrap("ui.start_menu.items", addGen3AssetItem)
-
-    local okStart, StartMenu = pcall(require, "src.ui.game3.start_menu")
-    if okStart and type(StartMenu) == "table" and type(StartMenu.confirm) == "function" then
-      if not StartMenu.__kantoInMotionAssetManagerBridge then
-        StartMenu.__kantoInMotionAssetManagerBridge = {
-          confirm = StartMenu.confirm,
-          open = nil,
-        }
-        StartMenu.confirm = function(...)
-          local bridge = StartMenu.__kantoInMotionAssetManagerBridge
-          local entry = StartMenu.ENTRIES and StartMenu.ENTRIES[StartMenu.cursor]
-          if entry and entry.id == SCREEN_ID and type(bridge.open) == "function" then
-            return bridge.open()
-          end
-          return bridge.confirm(...)
-        end
-      end
-      StartMenu.__kantoInMotionAssetManagerBridge.open = function()
-        local game = StartMenu._game
-          or (StartMenu._session and StartMenu._session.game)
-          or manager.game
-        openManager(game)
-      end
-    else
-      logError("could not install FR/LG KIM ASSETS Start-menu bridge")
-    end
-  else
+  do
     mod.events:on("screen.pushed", function()
       if not manager.autoPromptArmed or not manager.game or manager.opening then return end
       manager.autoPromptArmed = false

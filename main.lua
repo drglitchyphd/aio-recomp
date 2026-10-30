@@ -44,6 +44,14 @@ return function(mod)
     return nil
   end
 
+  -- 1.0.0: Crystal-only. The manifest lists only gen2; a player can still
+  -- force a mod onto another game, and the Gen 1 / Gen 3 paths are gone.
+  local generation = tonumber(mod.generation)
+  if generation and generation ~= 2 then
+    log("warn", "Crystal-AiO runs on Gold/Silver/Crystal only (this is Gen %d); not loading", generation)
+    return
+  end
+
   -- Import settings and downloaded assets before any component reads them.
   local migration = loadOwn("lib/gen2_aio/identity_migration.lua")
   if migration then
