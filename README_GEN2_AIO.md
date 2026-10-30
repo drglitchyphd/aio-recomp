@@ -1,4 +1,4 @@
-# Gen2-AIO 0.9.64 (mod id `gen2-aio`)
+# Gen2-AIO (mod id `gen2-aio`)
 
 One mod for Pokemon Crystal on Gen1Recomp, now using `gen2-aio` as its internal ID.
 
