@@ -122,5 +122,5 @@ local ok, err = pcall(entry, mod)
 io.stderr:write("main ok " .. tostring(ok) .. " " .. tostring(err) .. "\n")
 for _, fn in ipairs(listeners["game.ready"] or {}) do pcall(fn, { game = {} }) end
 
-return { mod = mod, hooks = hooks, Runtime = Runtime, defined = function() return defined end,
+return { mod = mod, hooks = hooks, Runtime = Runtime, listeners = listeners, defined = function() return defined end,
   defineCalls = defineCalls, OPTS = OPTS, readFile = readFile }
