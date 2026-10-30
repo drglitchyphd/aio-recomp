@@ -1,7 +1,7 @@
 -- Cave water: an underground lake. Both battlers ride log rafts on dark,
 -- still water; stalactites hang overhead, rock pillars rise out of the lake
 -- and glowing teal crystals and mushrooms light the rocky shore.
-local Kit=require('mods.gen2-aio.stadium2.lib.scene_kit')
+local Kit=require('mods.crystal-aio.stadium2.lib.scene_kit')
 
 local SHORE=130
 local function height(x,z)

@@ -1,4 +1,4 @@
--- gen2-aio 0.9.75: the Modern story screens (lib/gen2_aio/modern_story.lua)
+-- gen2-aio 0.9.75: the Modern story screens (lib/crystal_aio/modern_story.lua)
 -- over the ENGINE's own HallOfFame, Diploma, EggHatchAnim, UnownPuzzle and
 -- UnownPrinter.
 --
@@ -154,9 +154,9 @@ function love.load()
   local function run(rel,...)
     return assert(loadstring(assert(readFile(rel)),"@"..rel))()(...)
   end
-  run("lib/gen2_aio/font.lua",{mod=mod})
+  run("lib/crystal_aio/font.lua",{mod=mod})
   local S=run("lib/gen2_modern_style.lua",mod)
-  run("lib/gen2_aio/modern_story.lua",{mod=mod})
+  run("lib/crystal_aio/modern_story.lua",{mod=mod})
   mod.exports.screenTapTargets=function()return rawget(mod,"_kimScreenTapTargets") end
   mod.exports.menuCloseRect=function()return rawget(mod,"_kimMenuClose")end
   -- MENU SPRITES = KIM: the HD menu icons on disk stand in for the HD sheets

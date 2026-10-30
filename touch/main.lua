@@ -129,7 +129,7 @@ return function(mod)
   end
 
   local function kim()
-    local handle = mod.find and mod.find("gen2-aio")
+    local handle = mod.find and mod.find("crystal-aio")
     return handle and handle.exports or nil
   end
   -- gen2-aio 0.9.46: QUICK MENU / KEY ITEM WHEEL / info cards (host module)
@@ -283,7 +283,7 @@ return function(mod)
     local pw = r * 1.5
     local startX = left and (bx - r + pw / 2) or (bx + r - pw / 2)
     local selectX = left and (startX + pw + margin * 0.6) or (startX - pw - margin * 0.6)
-    -- never on the overworld HUD (lib/gen2_aio/overworld_hud.lua): with the
+    -- never on the overworld HUD (lib/crystal_aio/overworld_hud.lua): with the
     -- HUD along the bottom edge, B and its pills move up to clear it
     local hud = freshRect(mod._kimArenaOverworldHudRect)
     if hud and not landscape then
@@ -462,7 +462,7 @@ return function(mod)
     return false
   end
   -- 0.9.70: in a wild battle's command menu, a Poke Ball button beside B
-  -- throws the quick ball (lib/gen2_aio/quick_ball.lua) -- the touch
+  -- throws the quick ball (lib/crystal_aio/quick_ball.lua) -- the touch
   -- version of SELECT there
   local function ballZone(b)
     local ready = mod._kimArenaQuickBallReady

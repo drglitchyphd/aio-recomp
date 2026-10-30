@@ -1,4 +1,4 @@
-local Mat = require("mods.gen2-aio.stadium2.lib.renderer")
+local Mat = require("mods.crystal-aio.stadium2.lib.renderer")
 
 local Shadow = { resolution=1024, dark=.68, bias=.003 }
 local color, depth, allocated

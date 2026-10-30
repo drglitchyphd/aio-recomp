@@ -2,7 +2,7 @@
 -- a red carpet through the battle, rows of tall columns with braziers,
 -- banners, and stairs up to a statue dais, lit by firelight.
 -- Kenney Graveyard, Castle and Mini Arena meshes (CC0).
-local Kit=require('mods.gen2-aio.stadium2.lib.scene_kit')
+local Kit=require('mods.crystal-aio.stadium2.lib.scene_kit')
 
 local HX,HZ,H=120,190,120
 local BRAZIERS={{-70,-110},{70,-110},{-70,-30},{70,-30},{-70,60},{70,60}}

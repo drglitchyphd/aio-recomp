@@ -1,7 +1,7 @@
 -- Sonic Boom, US family 12. Four pool records, three emitted projectiles,
 -- fifteen history nodes each. Verified against 841580C8/84163B4C/84163E60.
-local f=require('mods.gen2-aio.stadium2.lib.stadium2_battle_fx_float')
-local Needle=require('mods.gen2-aio.stadium2.lib.stadium2_battle_fx_needle')
+local f=require('mods.crystal-aio.stadium2.lib.stadium2_battle_fx_float')
+local Needle=require('mods.crystal-aio.stadium2.lib.stadium2_battle_fx_needle')
 local FourStream={families={[12]=true}}
 local function copy(v)if type(v)~='table' then return v end local t={} for k,x in pairs(v) do t[k]=copy(x) end return t end
 local function vec(v)return {f(v[1]),f(v[2]),f(v[3])}end

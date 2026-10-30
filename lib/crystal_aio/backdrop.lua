@@ -19,7 +19,7 @@
 -- uses KIM HD; KIM HD art that has not been downloaded yet shows the voxel
 -- world.
 
-local SROOT = "mods.gen2-aio.stadium2.lib."
+local SROOT = "mods.crystal-aio.stadium2.lib."
 
 return function(host)
   local mod = host.mod
@@ -296,7 +296,7 @@ return function(host)
     if not ok or type(sel) ~= "table" then return nil end
     if sel.mode == "arena" then sel = sel.fallback end   -- gyms: painted gym
     if not (sel and sel.mode == "environment" and sel.scene) then return nil end
-    local scene = newScene({ actors = {}, label = "Gen2-AIO Kenney backdrop",
+    local scene = newScene({ actors = {}, label = "Crystal-AiO Kenney backdrop",
       warn = function(message) warn("%s", tostring(message)) end })
     if not scene then return nil end
     scene.battleContext = ctx
@@ -307,7 +307,7 @@ return function(host)
   end
 
 
-  local KimHd = host.load("lib/gen2_aio/kim_hd_crystal.lua")
+  local KimHd = host.load("lib/crystal_aio/kim_hd_crystal.lua")
   -- KIM's authored feet positions for each painted background (1920x950).
   local KimRouter = host.load("data/hd_battle_backgrounds.lua")
   local function kimAnchors(file, image)

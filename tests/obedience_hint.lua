@@ -1,4 +1,4 @@
--- Obedience (lib/gen2_aio/obedience_hint.lua) on the engine's real Battle.
+-- Obedience (lib/crystal_aio/obedience_hint.lua) on the engine's real Battle.
 --
 -- Crystal's CheckObedience only tests a mon whose OT ID is not the player's;
 -- such a mon obeys up to Lv10 until the HIVEBADGE (the ZEPHYRBADGE does not
@@ -15,7 +15,7 @@ local Battle = require("src.battle.gen2.Battle")
 local n = 0
 local function check(c, m) if not c then error("FAIL: " .. m, 2) end n = n + 1 end
 
-local factory = assert(loadfile("lib/gen2_aio/obedience_hint.lua"))
+local factory = assert(loadfile("lib/crystal_aio/obedience_hint.lua"))
 check(factory()({ mod = {} }) ~= nil, "installs on the real Battle")
 -- a relaunch in the same Lua state must not wrap twice
 check(factory()({ mod = {} }) ~= nil, "second session installs")

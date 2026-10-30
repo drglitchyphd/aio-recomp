@@ -98,7 +98,7 @@ return function(host)
     local out = next(class, member, roster)
     local ok, scaled = pcall(M.scale, out, activeGame(), class, member)
     if ok and scaled then return scaled end
-    if not ok then log("warn", "Gen2-AIO trainer levels: %s", tostring(scaled)) end
+    if not ok then log("warn", "Crystal-AiO trainer levels: %s", tostring(scaled)) end
     return out
   end, 50)
 

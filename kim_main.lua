@@ -107,7 +107,7 @@ return function(mod)
   end
   -- Crystal-AiO runs on Gold/Silver/Crystal only: main.lua returns before
   -- this file on any other generation, so every path below is the Gen 2 one.
-  local MOD_ID = "gen2-aio"
+  local MOD_ID = "crystal-aio"
 
   -- Keep the live game handle explicitly. Some mobile Gen 2 builds do not
   -- expose it as mod.game, which previously made National-Dex lookup for
@@ -617,7 +617,7 @@ return function(mod)
     { key = "battleBgMode", label = "BATTLE BG MODE", type = "choice",
       default = "auto", choices = {
         { "AUTO", "auto" }, { "FULLSCREEN", "fullscreen" }, { "NATIVE FIT", "native" },
-      }, description = "How KIM fits HD battle backgrounds. AUTO uses FULLSCREEN with KIM battle sprites and NATIVE FIT with vanilla/default battle sprites. FULLSCREEN keeps the current edge-to-edge Gen2-AIO. NATIVE FIT keeps Gen1Recomp's original 160x144 battler positions while showing the arena through a wider FR/LG-style 240x160 viewing window so more of the HD artwork remains visible." },
+      }, description = "How KIM fits HD battle backgrounds. AUTO uses FULLSCREEN with KIM battle sprites and NATIVE FIT with vanilla/default battle sprites. FULLSCREEN keeps the current edge-to-edge Crystal-AiO. NATIVE FIT keeps Gen1Recomp's original 160x144 battler positions while showing the arena through a wider FR/LG-style 240x160 viewing window so more of the HD artwork remains visible." },
     { key = "battleTrainerSprite", label = "PLAYER TRAINER", type = "choice",
       default = "red", choices = {
         { "RED", "red" },
@@ -1462,7 +1462,7 @@ return function(mod)
   -- Pokemon/HUD bridge available while yielding arena art to the game or a
   -- cooperating scene owner.
   local function hdBattleBackgroundsEnabled()
-    return false   -- Gen 1 HD arenas: Crystal's live in lib/gen2_aio/backdrop.lua
+    return false   -- Gen 1 HD arenas: Crystal's live in lib/crystal_aio/backdrop.lua
   end
 
   local function battleLiteFullScreenActive()
@@ -2621,7 +2621,7 @@ return function(mod)
   -- New 1920x950 HD battle arenas. The router reads the live Gen1 map/terrain/time
   -- state and chooses a complete authored sunrise/day/sunset/night image. Caves
   -- and other fixed locations stay static; there is no runtime shadow blending.
-  local hdArenaRouter = {}   -- Gen 1 arena router; Crystal routes in lib/gen2_aio/backdrop.lua
+  local hdArenaRouter = {}   -- Gen 1 arena router; Crystal routes in lib/crystal_aio/backdrop.lua
   if type(hdArenaRouter.bindMod)=="function" then pcall(hdArenaRouter.bindMod, mod) end
   local hdArenaImageCache = {}
   local function hdArenaBackdrop(game,battle)
@@ -5559,9 +5559,9 @@ return function(mod)
     setOption(game, row.key, choices[index][2])
   end
 
-  local SETTINGS_SCREEN = "gen2-aio:settings"
-  local UI_SETTINGS_SCREEN = "gen2-aio:ui_settings"
-  local BATTLE_SETTINGS_SCREEN = "gen2-aio:battle_settings"
+  local SETTINGS_SCREEN = "crystal-aio:settings"
+  local UI_SETTINGS_SCREEN = "crystal-aio:ui_settings"
+  local BATTLE_SETTINGS_SCREEN = "crystal-aio:battle_settings"
   local function buildItems()
     local items = {}
     for _, row in ipairs(optionSchema) do
@@ -6098,7 +6098,7 @@ return function(mod)
     -- screen is no longer a hub row: its settings sit on the hub's pages)
     if assetManager and type(assetManager.open) == "function" then
       out[#out + 1] = {
-        id = "gen2-aio:asset_manager", label = "ASSET MANAGER",
+        id = "crystal-aio:asset_manager", label = "ASSET MANAGER",
         value = function()
           if type(assetManager.statusLabel) == "function" then
             local okS, s = pcall(assetManager.statusLabel, assetManager)
@@ -6111,7 +6111,7 @@ return function(mod)
     end
     if submenuReady then
       return insertOpenRow(out, {
-        id = "gen2-aio:settings_open",
+        id = "crystal-aio:settings_open",
         label = "KANTO IN MOTION",
         text = function() return "OPEN" end,
         value = function() return "OPEN" end,

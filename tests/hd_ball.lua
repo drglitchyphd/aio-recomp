@@ -13,7 +13,7 @@ G.transformPoint=function(x,y)return x*tx,y*ty end
 G.draw=function(img,q,x,y,r,sx,sy)drawn={sx,sy}end
 G.setShader=function()end;G.setColor=function()end
 love={graphics=G,filesystem={newFileData=function()end},image={newImageData=function()end}}
-local factory=assert(loadfile("lib/gen2_aio/hd_ball.lua"))()
+local factory=assert(loadfile("lib/crystal_aio/hd_ball.lua"))()
 local enabled=true
 local mod={read=function()return "image"end,options={get=function()return enabled end}}
 factory({mod=mod})

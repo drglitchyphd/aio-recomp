@@ -1,14 +1,14 @@
--- gen2-aio: the GEN2-AIO hub.
+-- gen2-aio: the CRYSTAL-AIO hub.
 --
 -- Every component (the bundle itself, KIM, Wilds, QOL, Touch, Nuzlocke...)
 -- adds its settings to Crystal's OPTION screen through ui.options.rows. This
 -- hook runs OUTERMOST: it lets them all add their rows, then takes every row
 -- that is not Crystal's own out of the root and files it into topic pages
--- of the hub. Crystal's OPTION keeps its own rows plus one GEN2-AIO row.
+-- of the hub. Crystal's OPTION keeps its own rows plus one CRYSTAL-AIO row.
 --
 -- The hub's pages are Crystal's own OPTION screen class (KIM-themed and
 -- tappable like it), opened from:
---   START -> GEN2-AIO, OPTION -> GEN2-AIO, and the MOD MANAGER screen
+--   START -> CRYSTAL-AIO, OPTION -> CRYSTAL-AIO, and the MOD MANAGER screen
 --   (which QOL had replaced with a QOL-only list).
 -- 0.9.66: the pages are laid out by setting key (SECTIONS below); a row a
 -- component adds later and no page names lands at the end of ADVANCED.
@@ -96,7 +96,7 @@ return function(host)
     } },
     { id = "advanced", label = "ADVANCED", rows = {
       "setupWizard", "perfMode", "voxelPrecache", "voxelDiskCache",
-      { id = "gen2-aio:voxel_cache" }, { id = "gen2-aio:asset_manager" }, "diagnostics", { modList = true }, { rest = true },
+      { id = "crystal-aio:voxel_cache" }, { id = "crystal-aio:asset_manager" }, "diagnostics", { modList = true }, { rest = true },
     } },
   }
   -- component rows that answer for a key under another id
@@ -107,7 +107,7 @@ return function(host)
   -- never shown: doors to screens whose rows are on the pages now, rows
   -- merged into others (0.9.66), and the GB-card / manager duplicates
   local DROP = {
-    ["gen1wild_options"] = true, ["gen2-aio:settings_open"] = true,
+    ["gen1wild_options"] = true, ["crystal-aio:settings_open"] = true,
     ["wilds_of_kanto_gen3:followers_ex_open"] = true, ["wilds_of_kanto_gen3:wilds_open"] = true,
   }
   local HIDDEN_KEYS = {
@@ -239,7 +239,7 @@ return function(host)
       local okW = pcall(wilds.setOption, key:sub(5), value, g)
       if okW then return true end
     end
-    -- the same write path as every OPTION row (lib/gen2_aio/ingame_options.lua)
+    -- the same write path as every OPTION row (lib/crystal_aio/ingame_options.lua)
     local opts = g and ((g.save and g.save.options) or g.options)
     if opts then
       opts.modOptions = opts.modOptions or {}
@@ -550,11 +550,11 @@ return function(host)
           activate = function(g) Hub.openSection(g or game, sec.id) end }
       end
     end
-    return pushPage(game, root, "GEN2-AIO")
+    return pushPage(game, root, "CRYSTAL-AIO")
   end
   mod._kimArenaHub = Hub
 
-  -- OPTION: Crystal's rows + GEN2-AIO; everything else goes to the hub
+  -- OPTION: Crystal's rows + CRYSTAL-AIO; everything else goes to the hub
   mod.hooks:wrap("ui.options.rows", function(nextFn, game, rows)
     local base = {}
     for _, r in ipairs(type(rows) == "table" and rows or {}) do base[r] = true end
@@ -566,12 +566,26 @@ return function(host)
       if base[r] then kept[#kept + 1] = r else extras[#extras + 1] = r end
     end
     captured = extras
-    kept[#kept + 1] = { id = "kimArena.hub", label = "GEN2-AIO", group = true,
+    kept[#kept + 1] = { id = "kimArena.hub", label = "CRYSTAL-AIO", group = true,
       activate = function(g) Hub.open(g) end }
     return kept
   end, 1e9)
 
-  -- START -> GEN2-AIO (8 characters keeps Crystal's START menu width)
+  -- START -> CRYSTAL-AIO. Crystal's own START box fits 8 characters, so
+  -- while that box is what the player sees (Modern UI's START menu off, or
+  -- drawn over the native one) the row is CRYS-AIO. Hub.START_LABELS lists
+  -- both for code that looks the row up by label.
+  local function startLabel()
+    local function o(k, d)
+      local ok, v = pcall(mod.options.get, mod.options, k)
+      if ok and v ~= nil then return v end
+      return d
+    end
+    local modern = o("gen2IntegratedModernUi", true) ~= false and o("menuUi", true) ~= false
+      and o("hideOriginalUi", true) ~= false
+    return modern and "CRYSTAL-AIO" or "CRYS-AIO"
+  end
+  Hub.START_LABELS = { ["CRYSTAL-AIO"] = true, ["CRYS-AIO"] = true }
   mod.hooks:wrap("ui.start_menu.items", function(nextFn, game, items)
     local result = nextFn(game, items)
     if type(result) ~= "table" then result = items end
@@ -592,7 +606,7 @@ return function(host)
       for i, it in ipairs(result) do if it and it.label == "OPTION" then at = i; break end end
       table.insert(result, at, pcEntry)
     end
-    local entry = { label = "GEN2-AIO", onSelect = function() Hub.open(game) end }
+    local entry = { label = startLabel(), onSelect = function() Hub.open(game) end }
     local inserted = false
     if mod.ui and mod.ui.insertBefore then
       inserted = pcall(mod.ui.insertBefore, result, "OPTION", entry)
@@ -630,6 +644,6 @@ return function(host)
     end
   end)
 
-  if log then log("info", "Gen2-AIO: GEN2-AIO hub installed") end
+  if log then log("info", "Crystal-AiO: CRYSTAL-AIO hub installed") end
   return Hub
 end

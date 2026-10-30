@@ -1163,7 +1163,7 @@ return function(host)
     if opt("quickMenu", true) ~= false and opt("quickInStart", true) ~= false then
       local at = #result + 1
       for i, it in ipairs(result) do
-        if it and (it.label == "PC" or it.label == "GEN2-AIO" or it.label == "OPTION") then at = i; break end
+        if it and (it.label == "PC" or it.label == "CRYSTAL-AIO" or it.label == "CRYS-AIO" or it.label == "OPTION") then at = i; break end
       end
       table.insert(result, at, { label = "QUICK", onSelect = function() M.openQuick(game) end })
     end

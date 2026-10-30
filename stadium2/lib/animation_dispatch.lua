@@ -1,5 +1,5 @@
-local Rom = require("mods.gen2-aio.stadium2.lib.rom")
-local Layout = require("mods.gen2-aio.stadium2.lib.layout")
+local Rom = require("mods.crystal-aio.stadium2.lib.rom")
+local Layout = require("mods.crystal-aio.stadium2.lib.layout")
 
 -- Stadium 2's per-species battle-motion table.  The battle overlay copies one
 -- 0x1530-byte record into each battler, indexes it in 0x14-byte strides, and
@@ -33,7 +33,7 @@ function Dispatch.contextScale(contextId,contextBytes,dispatchBytes)
   if offset==nil then offset=dispatchOffsets[contextId];bytes=dispatchBytes end
   if offset==nil then return 0 end
   if type(bytes)~='string' or #bytes<=offset then return nil end
-  local f=require('mods.gen2-aio.stadium2.lib.stadium2_battle_fx_float')
+  local f=require('mods.crystal-aio.stadium2.lib.stadium2_battle_fx_float')
   return f(bytes:byte(offset+1)*f(.01))
 end
 
@@ -85,7 +85,7 @@ function Dispatch.battleProfile(bytes)
   end
   local center,ground=float(0x14),float(8)
   if not center or not ground then return nil end
-  local f32=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_float")
+  local f32=require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_float")
   return {centerY=center,groundY=ground,targetHeight=f32(center-ground),
     bodyHeight=float(4)} -- 84112704: profile+04 -> actor+64C
 end

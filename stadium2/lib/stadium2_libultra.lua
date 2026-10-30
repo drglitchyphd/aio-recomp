@@ -8,7 +8,7 @@
 -- Float matrices (MtxF) are Lua tables indexed [i * 4 + j] (0..15). Fixed-
 -- point matrices (Mtx) live in a stadium2_native_memory at an address:
 -- 16 s16.16 integer halves then 16 fraction halves, as the RSP reads them.
-local f32 = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_float")
+local f32 = require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_float")
 local bit = require("bit")
 
 local U = {}
@@ -22,7 +22,7 @@ U.GU_TRANSLATE, U.GU_MTX_F2L = 0x80082A00, 0x80084780
 U.SQRTF, U.GU_ROTATE_F, U.GU_NORMALIZE = 0x8007AEC0, 0x8007DB50, 0x8007DF20
 
 -- Plain-Lua bit conversions (the mod sandbox refuses ffi at run time).
-local Memory = require("mods.gen2-aio.stadium2.lib.stadium2_native_memory")
+local Memory = require("mods.crystal-aio.stadium2.lib.stadium2_native_memory")
 local double = Memory.wordsToDouble
 local floatBits = Memory.floatWord
 local function int32(v)

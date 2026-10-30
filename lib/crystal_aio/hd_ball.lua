@@ -138,6 +138,6 @@ return function(host)
   local api = { icon = icon, live = live }
   View._kimArenaHdBall = api
   rawset(mod, "_kimArenaBallIcon", icon)
-  if log then log("info", "Gen2-AIO: HD Poke Balls installed") end
+  if log then log("info", "Crystal-AiO: HD Poke Balls installed") end
   return api
 end

@@ -1,6 +1,6 @@
 -- US fragment79: 8415BBA0 / 8415BD48 / 8415C2E0.
 -- Persistent authored ribbon geometry, independent of rendering and battle RNG.
-local f=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_float")
+local f=require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_float")
 local Ribbon={families={[23]=true,[26]=true,[27]=true,[29]=true}}
 local colors={
   [23]={{100,200,255,200},{0,100,200,0}},

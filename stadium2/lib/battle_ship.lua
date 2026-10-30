@@ -1,7 +1,7 @@
 -- Ship: the deck of a tall ship at sea. Planked deck, rails, two masts with
 -- furled rigging, cannons, crates, barrels and a lifeboat; open painted sea
 -- all around with wake along the hull. Kenney Pirate Kit meshes (CC0).
-local Kit=require('mods.gen2-aio.stadium2.lib.scene_kit')
+local Kit=require('mods.crystal-aio.stadium2.lib.scene_kit')
 
 local HW,HL=76,150   -- deck half width (x) and half length (z): wider than the camera orbit
 local SEA=-26        -- waterline below the deck

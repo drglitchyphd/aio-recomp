@@ -561,7 +561,7 @@ return function(host)
       G.pop()
       if not ok then
         Broken[top]=true
-        if mod.log and mod.log.warn then pcall(mod.log.warn,mod.log,"Gen2-AIO: modern %s: %s",k,tostring(err)) end
+        if mod.log and mod.log.warn then pcall(mod.log.warn,mod.log,"Crystal-AiO: modern %s: %s",k,tostring(err)) end
       end
     end
     return result

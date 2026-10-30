@@ -1,13 +1,13 @@
-# Asset notices — Gen2-AIO
+# Asset notices — Crystal-AiO
 
-This file covers the artwork, audio, fonts and 3D assets that Gen2-AIO ships
+This file covers the artwork, audio, fonts and 3D assets that Crystal-AiO ships
 or downloads. For the full credits list, including the bundled mods and their
-licenses, see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Gen2-AIO does
+licenses, see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Crystal-AiO does
 not claim ownership of any Pokémon-derived artwork or audio.
 
 ## Downloaded, not in the mod ZIP
 
-The ASSET MANAGER (GEN2-AIO → ADVANCED) downloads Kanto in Motion's HD asset
+The ASSET MANAGER (CRYSTAL-AIO → ADVANCED) downloads Kanto in Motion's HD asset
 pack once from https://github.com/HaseoSora/Kanto-in-Motion-Assets and keeps it
 in the mod cache across updates.
 
@@ -60,6 +60,6 @@ bundled" in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 Pokémon and related characters, names, and artwork are trademarks and
 copyrights of Nintendo, Creatures Inc. and GAME FREAK inc. (The Pokémon
-Company). Gen2-AIO is an unofficial fan-made mod. It is not affiliated with or
+Company). Crystal-AiO is an unofficial fan-made mod. It is not affiliated with or
 endorsed by Nintendo, Game Freak, Creatures Inc. or The Pokémon Company, and it
 contains no ROM.

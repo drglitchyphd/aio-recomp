@@ -1,16 +1,17 @@
 # Credits and third-party notices
 
-Gen2-AIO (`gen2-aio`) is a bundle. Almost everything in it is someone else's
-work: mods, art, fonts, 3D kits and research. The bundle adapts that work to
-Crystal. This file credits each source as its own files in this repository
-credit it. Crediting a source does not mean it endorses this bundle, and it
-does not transfer ownership of anyone's work.
+Crystal-AiO (`crystal-aio`, called Gen2-AIO / `gen2-aio` before 1.0.0) is a
+bundle. Almost everything in it is someone else's work: mods, art, fonts, 3D
+kits and research. The bundle adapts that work to Crystal. This file credits
+each source as its own files in this repository credit it. Crediting a source
+does not mean it endorses this bundle, and it does not transfer ownership of
+anyone's work.
 
 For what the bundle does, see [FEATURES.md](FEATURES.md).
 
 Pokémon and all related names, characters and artwork are trademarks and
 copyrights of Nintendo, Creatures Inc. and GAME FREAK inc. (The Pokémon
-Company). Gen2-AIO is an unofficial, fan-made mod. It is not
+Company). Crystal-AiO is an unofficial, fan-made mod. It is not
 affiliated with or endorsed by any of them, and it contains no ROM.
 
 ---
@@ -20,9 +21,9 @@ affiliated with or endorsed by any of them, and it contains no ROM.
 **Gen1Recomp** — bryanthaboi
 https://github.com/bryanthaboi/gen1recomp
 
-Gen2-AIO is a mod for this engine and runs on its mod API. Several bundled
+Crystal-AiO is a mod for this engine and runs on its mod API. Several bundled
 parts also credit **pret** (https://github.com/pret) for the disassemblies the
-engine and the mods build on. Gen2-AIO's ALL 251 CATCHABLE placement was
+engine and the mods build on. Crystal-AiO's ALL 251 CATCHABLE placement was
 computed from, and checked against, pret/pokecrystal's wild tables.
 
 ## Bundled mods
@@ -167,9 +168,9 @@ bundled files.
 and the battle touch buttons. The author and repository are **not recorded** in
 the bundled files. It was written as a companion to Kanto in Motion / KIM Arena.
 
-### Gen2-AIO itself
+### Crystal-AiO itself
 
-The host (`main.lua`) and `lib/gen2_aio/` are Gen2-AIO's own code: the hub,
+The host (`main.lua`) and `lib/crystal_aio/` are Crystal-AiO's own code: the hub,
 setup wizard, overworld HUD, quick menu, Modern UI extensions, weather, time
 of day, voxel cache tools, ALL 251 CATCHABLE, trainer levels and more.
 Repository: https://github.com/drglitchyphd/aio-recomp
@@ -299,7 +300,7 @@ mods. None of these are bundled, and most are also listed as conflicts in
 
 Battle Art was the bundle's second voxel engine until 0.9.1. Only Kanto in
 Motion's compatibility code for it and its in-game options adapter
-(`lib/gen2_aio/ingame_options.lua`) remain.
+(`lib/crystal_aio/ingame_options.lua`) remain.
 
 ## Source not recorded in the bundle
 

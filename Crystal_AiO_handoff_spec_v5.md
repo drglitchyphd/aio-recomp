@@ -1,10 +1,11 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.91)
+# Crystal-AiO — Handoff Spec v5 (build 0.9.91)
 
-Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
+Mod ID `crystal-aio` from 1.0.0 (`gen2-aio` 0.9.50-0.9.91, `KIM_ARENA` before).
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
-`Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+`Gen2_AiO_handoff_spec_v2.md` (0.9.7). Sections before 1.0.0 use the old
+names (`gen2-aio`, `lib/gen2_aio/`, GEN2-AIO).
 
 ## 0.9.91 (2026-10-30)
 

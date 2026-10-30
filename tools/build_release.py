@@ -9,8 +9,8 @@ import zipfile
 
 RUNTIME_DIRS = ('assets', 'data', 'gmarc', 'lib', 'nuzlocke', 'qol', 'qoltoggles', 'stadium2', 'touch', 'wilds')
 ROOT_FILES = ('manifest.json', 'main.lua', 'kim_main.lua', 'mod.card', 'README.md',
-              'README_GEN2_AIO.md', 'OLDER_UPDATE_NOTES.md', 'ASSET_NOTICES.md',
-              'THIRD_PARTY_NOTICES.md', 'FEATURES.md', 'Gen2_AiO_handoff_spec_v5.md', 'tools/import_hd_pokemon.py')
+              'README_CRYSTAL_AIO.md', 'OLDER_UPDATE_NOTES.md', 'ASSET_NOTICES.md',
+              'THIRD_PARTY_NOTICES.md', 'FEATURES.md', 'Crystal_AiO_handoff_spec_v5.md', 'tools/import_hd_pokemon.py')
 
 
 def build(root, output, tag=None, previous=None):
@@ -39,7 +39,7 @@ def build(root, output, tag=None, previous=None):
     if previous:
         with zipfile.ZipFile(previous) as old:
             old_manifest = json.loads(old.read('manifest.json'))
-            identity_transition = old_manifest['id'] == 'KIM_ARENA' and manifest['id'] == 'gen2-aio'
+            identity_transition = (old_manifest['id'], manifest['id']) in (('KIM_ARENA', 'gen2-aio'), ('gen2-aio', 'crystal-aio'))
             if old_manifest['id'] != manifest['id'] and not identity_transition:
                 raise ValueError('previous ZIP belongs to a different mod')
             old_version = old_manifest['version']
@@ -57,7 +57,7 @@ def build(root, output, tag=None, previous=None):
         if identity_transition:
             print('Identity migration: full install required; overlay patch would retain the old mod identity.')
         else:
-            archives.append((f'gen2-aio_patch_{old_version}_to_{version}.zip', patch))
+            archives.append((f"{manifest['id']}_patch_{old_version}_to_{version}.zip", patch))
     output.mkdir(parents=True, exist_ok=True)
     sums = []
     for name, contents in archives:

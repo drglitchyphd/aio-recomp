@@ -9,7 +9,7 @@
 --     / DON'T ASK AGAIN); LATER asks again the next time the game starts,
 --     and once a full build has finished it is not asked again until a
 --     voxel update makes the cache stale;
---   * GEN2-AIO > ADVANCED > BUILD 3D CACHE, any time.
+--   * CRYSTAL-AIO > ADVANCED > BUILD 3D CACHE, any time.
 --
 -- The build runs on its own page with the progress and STOP; leaving the
 -- page stops it, and the next run skips every area already on storage.
@@ -129,7 +129,7 @@ return function(host)
     return page
   end
 
-  -- BUILD 3D CACHE in GEN2-AIO > ADVANCED. 0.9.82: always listed while the
+  -- BUILD 3D CACHE in CRYSTAL-AIO > ADVANCED. 0.9.82: always listed while the
   -- 3D engine is loaded; when a build cannot run, the row says OFF and why
   -- (it used to vanish, which read as "missing")
   local function whyNot(game)
@@ -145,7 +145,7 @@ return function(host)
   Hub.extras.voxelCache = function(game)
     if not voxelModule("CacheBuilder") then return {} end
     local why = whyNot(game)
-    local row = { id = "gen2-aio:voxel_cache", label = "BUILD 3D CACHE" }
+    local row = { id = "crystal-aio:voxel_cache", label = "BUILD 3D CACHE" }
     if why then
       row.help = "Not available: " .. why .. "."
         .. (why:find("VOXEL DISK CACHE", 1, true) and " Turn it ON above to use this." or "")
@@ -184,7 +184,7 @@ return function(host)
         activate = function(g) closePage(g or game, rawget(mod, "_kimArenaVcAsk")) end },
       { id = "kimArena.vc.never", group = true, label = "DON'T ASK AGAIN",
         help = "Areas build the first time you visit them, as before. "
-          .. "BUILD 3D CACHE is always in GEN2-AIO > ADVANCED.",
+          .. "BUILD 3D CACHE is always in CRYSTAL-AIO > ADVANCED.",
         activate = function(g)
           g = g or game
           Hub.write(g, "voxelCacheAsk", false)

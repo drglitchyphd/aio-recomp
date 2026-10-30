@@ -178,7 +178,7 @@ return function(host)
   end
 
   -- 0.9.74: the party rows are little Poke Balls, drawn like the overworld
-  -- HUD's (lib/gen2_aio/overworld_hud.lua): the top half in the HP colour
+  -- HUD's (lib/crystal_aio/overworld_hud.lua): the top half in the HP colour
   -- (yellow for a status, grey when fainted), a white bottom, black band and
   -- button; an empty slot is a faint outline of a ball
   local function partyBalls(party, x, y, r, step, theme)
@@ -426,7 +426,7 @@ return function(host)
           -- Never leave a battle without a HUD: give it back to the native one.
           M.failed = true
           if mod.log and mod.log.warn then
-            pcall(mod.log.warn, mod.log, "Gen2-AIO modern HUD disabled: %s", tostring(err))
+            pcall(mod.log.warn, mod.log, "Crystal-AiO modern HUD disabled: %s", tostring(err))
           end
         end
       end

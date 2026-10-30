@@ -533,7 +533,7 @@ return function(mod)
       local rw=narrow and w-44*scale or w-listW-40*scale
       drawText("SELL",big,rx,ry,rw,"center",c.accent)
       drawText("Choose an item to sell.",body,rx,ry+60*scale,rw,"left",c.muted)
-      -- gen2-aio 0.9.77: SELL VALUABLES (lib/gen2_aio/quick_sell.lua)
+      -- gen2-aio 0.9.77: SELL VALUABLES (lib/crystal_aio/quick_sell.lua)
       local QS=mod._kimArenaQuickSell
       if QS and not (mart.message or mart.confirm) then
         local okV,list,sum=pcall(QS.valuables,mart)

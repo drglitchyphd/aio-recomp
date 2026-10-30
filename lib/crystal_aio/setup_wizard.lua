@@ -11,7 +11,7 @@
 --   * NEW GAME on the title screen (setting SETUP WIZARD ON NEW GAME, on by
 --     default). FINISH then starts the game; Nuzlocke choices go to the run
 --     NEW GAME is about to create.
---   * GEN2-AIO -> SETUP WIZARD at any time, to switch presets mid-game.
+--   * CRYSTAL-AIO -> SETUP WIZARD at any time, to switch presets mid-game.
 --     Nuzlocke choices then apply to the current run (unless LOCK RULES).
 --
 -- Every page is the hub's Modern UI OPTION page (Hub.page), so it is themed
@@ -134,7 +134,7 @@ return function(host)
     } },
     { id = "battles", title = "BATTLES", choices = {
       { id = "hd", label = "HD + PAINTED", recommended = true,
-        help = "Animated HD Pokemon on painted backgrounds for each place. (HD art downloads from GEN2-AIO > ADVANCED > ASSET MANAGER.)",
+        help = "Animated HD Pokemon on painted backgrounds for each place. (HD art downloads from CRYSTAL-AIO > ADVANCED > ASSET MANAGER.)",
         set = { battleSprites = true, gen2MenuSpriteSource = "kim", spriteAnim = "on",
           arenaBackground = "kim_hd" } },
       { id = "hd3d", label = "HD + 3D SCENES",
@@ -222,7 +222,7 @@ return function(host)
   -- ready-made answers to every step (nil = leave that step as it is)
   local PROFILES = {
     { id = "recommended", label = "RECOMMENDED",
-      help = "The way Gen2-AIO is meant to be played: fair trainers, no Nuzlocke, HD battles, the 3D world, visible wild Pokemon and the standard conveniences.",
+      help = "The way Crystal-AiO is meant to be played: fair trainers, no Nuzlocke, HD battles, the 3D world, visible wild Pokemon and the standard conveniences.",
       pick = { difficulty = "normal", nuzlocke = "off", battles = "hd", world = "diorama",
         wild = "follow", qol = "standard" } },
     { id = "casual", label = "CASUAL",
@@ -388,8 +388,8 @@ return function(host)
       end
       out[#out + 1] = { id = "kimArena.wiz.finish", group = true,
         label = ctx.preGame and "START GAME" or "APPLY",
-        help = ctx.preGame and "Use these settings and start the new game. Every one of them can be changed later from GEN2-AIO."
-          or "Use these settings now. Each can also be changed one by one on the GEN2-AIO pages.",
+        help = ctx.preGame and "Use these settings and start the new game. Every one of them can be changed later from CRYSTAL-AIO."
+          or "Use these settings now. Each can also be changed one by one on the CRYSTAL-AIO pages.",
         activate = function(g)
           g = g or game
           applyAll(g, ctx)
@@ -437,7 +437,7 @@ return function(host)
       activate = function(g) ctx.picks = {}; runSteps(g or game, ctx) end }
     if ctx.preGame then
       rows[#rows + 1] = { id = "kimArena.wiz.skip", group = true, label = "SKIP",
-        help = "Start the new game with the settings as they are now. The wizard is always in GEN2-AIO.",
+        help = "Start the new game with the settings as they are now. The wizard is always in CRYSTAL-AIO.",
         activate = function(g)
           g = g or game
           closeWizard(g)
@@ -449,7 +449,7 @@ return function(host)
   Wizard.steps, Wizard.profiles, Wizard.currentChoice = STEPS, PROFILES, currentChoice
   Wizard.applyAll = applyAll
 
-  -- GEN2-AIO's root page: SETUP WIZARD above the pages
+  -- CRYSTAL-AIO's root page: SETUP WIZARD above the pages
   local prevTop = Hub.rootTop
   Hub.rootTop = function(game)
     local rows = {}

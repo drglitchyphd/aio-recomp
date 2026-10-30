@@ -4,7 +4,7 @@
 -- RGBA bytes only.  Color updates, secondary-shape selection, and drawing are
 -- intentionally external resolver decisions rather than guessed formulas.
 local Material = {}
-local NativeObjects=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_native_objects")
+local NativeObjects=require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_native_objects")
 
 local function copy(value, seen)
   if type(value) ~= "table" then return value end

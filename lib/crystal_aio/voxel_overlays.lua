@@ -150,7 +150,7 @@ return function(host)
     end
     if not signDrawn and self.mapImage and self.player then
       local ok, err = pcall(overlays, self)
-      if not ok and host.log then host.log("warn", "Gen2-AIO voxel overlays: %s", tostring(err)) end
+      if not ok and host.log then host.log("warn", "Crystal-AiO voxel overlays: %s", tostring(err)) end
     end
     return unpack(r)
   end

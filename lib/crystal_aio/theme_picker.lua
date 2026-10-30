@@ -43,7 +43,7 @@ return function(host)
     local ok, v = pcall(mod.options.get, mod.options, key)
     return ok and v ~= nil and tostring(v) or default
   end
-  -- same write path as the OPTION rows (lib/gen2_aio/ingame_options.lua)
+  -- same write path as the OPTION rows (lib/crystal_aio/ingame_options.lua)
   local function set(game, key, value)
     local opts = game and ((game.save and game.save.options) or game.options)
     if not opts then return false end

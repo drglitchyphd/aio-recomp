@@ -1,4 +1,4 @@
-# Gen2-AIO settings audit (build 0.9.58, Crystal, Android/Fold)
+# Crystal-AiO settings audit (as Gen2-AIO build 0.9.58, Crystal, Android/Fold)
 
 Read-only audit. No repository file was changed. Implemented in 0.9.66 (see "Decisions" at the end).
 
@@ -6,9 +6,9 @@ Read-only audit. No repository file was changed. Implemented in 0.9.66 (see "Dec
 
 - **Booted on stubs.** I loaded the bundle's real `main.lua` on a stub engine (`luajit`, scratchpad `audit/h.lua` + `audit/dump.lua`), with generation=2 and OS=Android. Two things were then dumped:
   - the merged schema: 203 rows, every `options:define` call;
-  - the real `ui.options.rows` chain, filed by `lib/gen2_aio/hub.lua`'s own `sectionOf`.
+  - the real `ui.options.rows` chain, filed by `lib/crystal_aio/hub.lua`'s own `sectionOf`.
 - **Hub pages below are what the hub actually builds.** They are not a hand-applied version of RULES. Raw dump: `audit/out.txt`.
-- **Readers were traced by grep** in Gen-2-active files only. These are `kim_main.lua` (Gen-2 branches), `lib/gen2_modern_*.lua`, `lib/gen2_hud_color.lua`, `lib/battler_shadows.lua`, `lib/menu_icons.lua`, `lib/gen2_aio/*`, and the component folders.
+- **Readers were traced by grep** in Gen-2-active files only. These are `kim_main.lua` (Gen-2 branches), `lib/gen2_modern_*.lua`, `lib/gen2_hud_color.lua`, `lib/battler_shadows.lua`, `lib/menu_icons.lua`, `lib/crystal_aio/*`, and the component folders.
   - `lib/modern_ui_integrated*.lua` was Gen 1 only and never loaded on Crystal, so reads there did not count. 1.0.0 removed it with the rest of the Gen 1 / Gen 3 code.
 - **Status legend:**
   - **OK**: works on Crystal.
@@ -25,7 +25,7 @@ Read-only audit. No repository file was changed. Implemented in 0.9.66 (see "Dec
 1. **Every QOL TOGGLES hub row is BROKEN, because the hub writes the wrong key.** This is the real cause of the QUICK NURSE device bug.
    - `namespaced().define` rewrites `row.key` in place to `qt_<key>` (main.lua L468).
    - main.lua L966-969 then copies the rows and adds `qt_` again, so the hub rows are `qt_qt_<key>`.
-   - The ingame adapter reads and writes `modOptions["gen2-aio"]["qt_qt_quick_nurse"]`.
+   - The ingame adapter reads and writes `modOptions["crystal-aio"]["qt_qt_quick_nurse"]`.
    - QoL Toggles reads `qt_quick_nurse` or bare `quick_nurse` (qoltoggles/main.lua `storedIn` L676-694).
    - I reproduced this in the harness: toggling INSTANT TEXT on the hub writes `qt_qt_instant_text`. The row then shows ON while the component still reads OFF.
    - The 0.9.58 `sessionGet` change cannot fix this.
@@ -45,7 +45,7 @@ Read-only audit. No repository file was changed. Implemented in 0.9.66 (see "Dec
    - UI THEME: the hub picker and KIM > UI SETTINGS.
    - SHOW WILD MONS and CLASSIC ENC: the hub page and Wilds' own WILDS OF KANTO screen.
    - MENU MANAGER: the hub row and GEN1WILD QOL > MENU LAYOUT.
-   - The whole schema again on MOD LIST > gen2-aio.
+   - The whole schema again on MOD LIST > crystal-aio.
    - Battle UI rows are split between the BATTLE page and KIM > UI SETTINGS.
 5. **Settings that silently do nothing at their default partner value.**
    - AA under PERFORMANCE=BALANCED (the default): locked to 0 (main.lua:223).
@@ -64,11 +64,11 @@ Read-only audit. No repository file was changed. Implemented in 0.9.66 (see "Dec
 
 There are three surfaces:
 
-- **(H) GEN2-AIO hub** (START / OPTION -> GEN2-AIO), including the sub-screens its rows open.
+- **(H) CRYSTAL-AIO hub** (START / OPTION -> CRYSTAL-AIO), including the sub-screens its rows open.
 - **(K) KANTO IN MOTION screens**, opened from the hub.
-- **(L) MOD LIST > gen2-aio**: the engine ManagerState. It lists all 203 merged-schema rows again and honours `visible_if`. Each row below exists there too, unless marked hidden.
+- **(L) MOD LIST > crystal-aio**: the engine ManagerState. It lists all 203 merged-schema rows again and honours `visible_if`. Each row below exists there too, unless marked hidden.
 
-The hub adapter (`lib/gen2_aio/ingame_options.lua`) ignores `visible_if`. It only honours `_kimArenaRowHidden` (main.lua:168-195).
+The hub adapter (`lib/crystal_aio/ingame_options.lua`) ignores `visible_if`. It only honours `_kimArenaRowHidden` (main.lua:168-195).
 
 ### 1a. Hub page DISPLAY & UI (`ui`)
 

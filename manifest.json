@@ -1,6 +1,6 @@
 {
-  "id": "gen2-aio",
-  "name": "Gen2-AIO",
+  "id": "crystal-aio",
+  "name": "Crystal-AiO",
   "version": "0.9.91",
   "github": "drglitchyphd/aio-recomp",
   "api": 2,
@@ -15,6 +15,7 @@
   "dependencies": [],
   "optional_dependencies": [],
   "conflicts": [
+    "gen2-aio",
     "qol_toggles",
     "animated_menu_pokemon",
     "STADIUM2_IMPORTER",
@@ -58,5 +59,5 @@
     "compute"
   ],
   "affects_link": false,
-  "description": "Everything for Crystal in one mod: Kanto in Motion HD Pokemon and Modern UI, gmarc's 3D voxel overworld with a disk cache, BATTLE BACKGROUND choices (KIM HD, Kenney, voxel world, white), modern battle UI, Wilds of Kanto Revival wild Pokemon and followers, Nuzlocke, QoL toggles, and touch controls. See FEATURES.md."
+  "description": "Everything for Pokemon Crystal in one mod (formerly Gen2-AIO): Kanto in Motion HD Pokemon and Modern UI, gmarc's 3D voxel overworld with a disk cache, BATTLE BACKGROUND choices (KIM HD, Kenney, voxel world, white), modern battle UI, Wilds of Kanto Revival wild Pokemon and followers, Nuzlocke, QoL toggles, and touch controls. See FEATURES.md."
 }

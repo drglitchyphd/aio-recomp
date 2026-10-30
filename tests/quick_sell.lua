@@ -1,4 +1,4 @@
--- 0.9.77 QUICK SELL (lib/gen2_aio/quick_sell.lua) on the engine's real
+-- 0.9.77 QUICK SELL (lib/crystal_aio/quick_sell.lua) on the engine's real
 -- MartMenu and Bag: SELL VALUABLES pays what selling each stack would, and
 -- ALL fills the quantity picker. Run from the repo root with
 -- AIO_ENGINE=<engine>/src (skips without it): luajit tests/quick_sell.lua
@@ -11,7 +11,7 @@ local MartMenu = require("src.ui.gen2.MartMenu")
 local n = 0
 local function check(c, m) if not c then error("FAIL: " .. m, 2) end n = n + 1 end
 local mod = {}
-local QS = assert(loadfile("lib/gen2_aio/quick_sell.lua"))()({ mod = mod })
+local QS = assert(loadfile("lib/crystal_aio/quick_sell.lua"))()({ mod = mod })
 check(QS and mod._kimArenaQuickSell == QS, "quick sell installed")
 
 local items = {

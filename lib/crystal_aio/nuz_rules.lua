@@ -1,6 +1,6 @@
 -- gen2-aio 0.9.35: Nuzlocke's run rules on a Modern UI page.
 --
--- GEN2-AIO -> RULES -> RUN RULES opens the rules of the
+-- CRYSTAL-AIO -> RULES -> RUN RULES opens the rules of the
 -- current run as rows of Crystal's own OPTION screen, so they take the KIM
 -- theme and touch like every other setting, instead of Nuzlocke's Game Boy
 -- config screen. Values are read and written through Nuzlocke's own

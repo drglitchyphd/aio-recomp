@@ -1,4 +1,4 @@
-local Manifest = require("mods.gen2-aio.stadium2.lib.effects.dynamic_object_manifest")
+local Manifest = require("mods.crystal-aio.stadium2.lib.effects.dynamic_object_manifest")
 
 local DynamicObject = { manifest = Manifest }
 

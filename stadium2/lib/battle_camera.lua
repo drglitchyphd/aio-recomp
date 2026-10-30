@@ -1,5 +1,5 @@
-local Renderer = require("mods.gen2-aio.stadium2.lib.renderer")
-local StadiumBattleLayout = require("mods.gen2-aio.stadium2.lib.stadium_battle_layout")
+local Renderer = require("mods.crystal-aio.stadium2.lib.renderer")
+local StadiumBattleLayout = require("mods.crystal-aio.stadium2.lib.stadium_battle_layout")
 local Camera = {}
 
 -- The 3D battle is a widescreen composition, not a 160-pixel Game Boy
