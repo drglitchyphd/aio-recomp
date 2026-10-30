@@ -44,4 +44,33 @@ local M2 = assert(loadfile("lib/gen2_aio/npc_mons.lua"))()({ mod = mod })
 local world2 = { constants = {}, game = { data = { pokemon = { SLOWPOKE = {}, GYARADOS = {} } } }, scripts = {} }
 check(M2.speciesFor(world2, npc("SPRITE_SLOWPOKE", nil)) == "SLOWPOKE", "species known from game.data.pokemon")
 check(M2.speciesCount == 2, "and counted: " .. tostring(M2.speciesCount))
+-- 0.9.90: the True Size style is read through WILDS' mod handle (its own
+-- options), as the followers do -- not this mod's, which never has it
+do
+  local seen = {}
+  local wmod = { id = "wilds_of_kanto_gen3" }
+  local Config = { spriteStyle = function(m) return m == wmod and "pokemmo" or "followers" end }
+  local Geo = { resolveDisplayGeometry = function(dex, style, fw, fh, ax, ay)
+    seen.dex, seen.style = dex, style
+    return fw * 0.5, fh * 0.5, ax, ay
+  end }
+  local Assets = { idForRuntime = function(k, d) return d or k end, idFor = function() return 83 end }
+  local mods = { species_geometry = Geo, species_assets = Assets, config = Config,
+    game_compat = { speciesId = function() return 83 end } }
+  local ex = {
+    resolveFollowerSprite = function() return { image = "x.png", frames = 2, frameWidth = 64, frameHeight = 64, anchorX = 32, anchorY = 60 } end,
+    require = function(name) return mods[name] end,
+    lib = { mod = wmod },
+  }
+  local World3 = require("src.world.gen2.World"); World3._kimArenaNpcMons = nil
+  local SR = require("src.render.SpriteRenderer")
+  local realNew = SR.new
+  SR.new = function(def) return { def = def } end
+  local M3 = assert(loadfile("lib/gen2_aio/npc_mons.lua"))()({ mod = mod, wilds = function() return ex end })
+  local bird = npc("SPRITE_MOLTRES", "KilnFarfetchd")
+  pcall(M3.apply, world, bird)
+  SR.new = realNew
+  check(seen.style == "pokemmo", "style read from Wilds' own options: " .. tostring(seen.style))
+  check(bird.sprite and bird.sprite.def and bird.sprite.def.displayWidth == 32, "display size applied to the NPC")
+end
 print(("npc mon species: %d checks PASS"):format(n))

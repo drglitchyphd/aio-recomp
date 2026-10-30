@@ -286,8 +286,22 @@ return function(host)
     local Config = wreq("config")
     if Geo and Geo.resolveDisplayGeometry and Assets and Assets.idForRuntime then
       pcall(function()
-        local dex = Assets.idForRuntime(wkey or species, resolved.dex) or wkey or species
-        local style = Config and Config.spriteStyle and Config.spriteStyle(mod) or nil
+        -- 0.9.90: read exactly as Wilds' followers do (follower/control_engine
+        -- buildDef): the runtime dex through game_compat, and the sprite style
+        -- through WILDS' own mod handle. Asked with this mod's handle, the style
+        -- lookup (keyed by mod id) never saw HGSS / PokeMMO, so NPC Pokemon
+        -- missed the True Size scale and drew at full frame size.
+        local ex = wilds()
+        local wmod = ex and type(ex.lib) == "table" and ex.lib.mod or mod
+        local GameCompat = wreq("game_compat")
+        local runtimeDex = resolved.dex
+        if GameCompat and GameCompat.speciesId then
+          local okR, d = pcall(GameCompat.speciesId, wkey or species, nil, wmod)
+          if okR and d then runtimeDex = d end
+        end
+        local dex = Assets.idForRuntime(wkey or species, runtimeDex) or wkey or species
+        local style = Config and Config.spriteStyle and Config.spriteStyle(wmod) or nil
+        M.lastStyle = style
         def.displayWidth, def.displayHeight, def.displayAnchorX, def.displayAnchorY =
           Geo.resolveDisplayGeometry(dex, style, def.frameWidth, def.frameHeight,
             def.anchorX, def.anchorY)
@@ -352,6 +366,7 @@ return function(host)
     elseif not enabled() then text = "off"
     else
       text = ("%d swapped%s"):format(#s, #s > 0 and (" (" .. table.concat(s, " ") .. ")") or "")
+      if M.lastStyle then text = text .. "; style " .. tostring(M.lastStyle) end
       text = text .. ("; species %s"):format(speciesSet and (tostring(M.speciesCount) .. " from " .. tostring(speciesFrom))
         or "list missing")
       if #n > 0 then text = text .. "; native: " .. table.concat(n, " ") end
