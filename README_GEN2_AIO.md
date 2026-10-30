@@ -57,6 +57,14 @@ GitHub and overlay patches are not the updater's install package. The custom
 index is independent of the community index; a community listing would require
 a separate submission.
 
+## 0.9.90 changes
+
+- Pokemon standing in the world (the Kiln's Farfetch'd, Azalea's Slowpoke
+  and others) are now sized like your follower with GFX STYLE = HGSS /
+  PokeMMO. They read the sprite style from the wrong settings and always
+  got the GSC answer, so they skipped the True Size scale and drew at full
+  sprite size. DIAGNOSTICS `npc mons` now shows the style it used.
+
 ## 0.9.89 changes
 
 - Battle: the down arrow in the move list's info box is gone. It was a
