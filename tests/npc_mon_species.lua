@@ -28,4 +28,13 @@ check(M.speciesFor(world, npc("SPRITE_MOLTRES", "KilnFarfetchd")) == "FARFETCH_D
 check(M.speciesFor(world, npc("SPRITE_SLOWPOKE", "AzaleaSlowpoke")) == "SLOWPOKE", "Slowpoke stays Slowpoke")
 check(M.speciesFor(world, npc("SPRITE_GYARADOS", "Silent")) == "GYARADOS", "no species in the script: the sheet's")
 check(M.speciesFor(world, npc("SPRITE_GYARADOS", nil)) == "GYARADOS", "no script: the sheet's")
+-- 0.9.87: the Kiln's bird with no script key is still a Farfetch'd
+check(M.speciesFor(world, npc("SPRITE_MOLTRES", nil)) == "FARFETCH_D", "MOLTRES sheet without a script: Farfetch'd")
+-- the species list from the game's own data when world.constants has none
+local World2 = require("src.world.gen2.World")
+World2._kimArenaNpcMons = nil
+local M2 = assert(loadfile("lib/gen2_aio/npc_mons.lua"))()({ mod = mod })
+local world2 = { constants = {}, game = { data = { pokemon = { SLOWPOKE = {}, GYARADOS = {} } } }, scripts = {} }
+check(M2.speciesFor(world2, npc("SPRITE_SLOWPOKE", nil)) == "SLOWPOKE", "species known from game.data.pokemon")
+check(M2.speciesCount == 2, "and counted: " .. tostring(M2.speciesCount))
 print(("npc mon species: %d checks PASS"):format(n))

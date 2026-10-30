@@ -57,6 +57,20 @@ GitHub and overlay patches are not the updater's install package. The custom
 index is independent of the community index; a community listing would require
 a separate submission.
 
+## 0.9.87 changes
+
+- WILDS NPC POKEMON: Pokemon standing in the world (Azalea's Slowpoke, the
+  Charcoal Kiln's Farfetch'd) were still drawn with Crystal's own pixel
+  sprites on some devices ("npc mons: 0 swapped"). The game's species list
+  was not found there, so no sheet was recognised as a Pokemon. The swap
+  now also uses the game's own Pokemon table.
+- The Kiln's Farfetch'd is a Farfetch'd even when its script cannot be
+  read. Crystal draws it on the Moltres sheet, and Moltres never appears in
+  the overworld.
+- DIAGNOSTICS `npc mons` shows where the species list came from and how
+  many species it has (or "list missing"), and lists more of the
+  non-Pokemon sheets.
+
 ## 0.9.86 changes
 
 - Battles with touch: the controls are part of the battle panel now.

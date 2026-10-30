@@ -41,6 +41,11 @@ return function(host)
   -- 0.9.44: the 32x32 BIG_SNORLAX / BIG_LAPRAS / BIG_ONIX sheets are swapped
   -- too (Vermilion's sleeping Snorlax and friends) -- except as the bedroom
   -- dolls, which SKIP_MAPS still covers.
+  -- 0.9.87: sheets Crystal borrows for another Pokemon. Moltres never
+  -- stands in GSC's overworld; its sheet is the bird the Charcoal Kiln's
+  -- Farfetch'd is drawn with. The talk script still decides when it names a
+  -- species; this is the answer when it does not (or has no script key).
+  local BORROWED = { SPRITE_MOLTRES = "FARFETCH_D" }
   local SKIP_IDS = { SPRITE_SUDOWOODO = true }
   local SKIP_MAPS = { PLAYERS_HOUSE_2F = true }
   -- Lake of Rage's Red Gyarados
@@ -102,14 +107,26 @@ return function(host)
   -- `spriteType` on the SPRITE_POKEMON rows has neither field, so the name is
   -- the answer that always works. Validated against Crystal's species list,
   -- then Wilds' own table (FARFETCHD / MR_MIME spellings too).
-  local speciesSet
+  -- 0.9.87: also the game's own species table (game.data.pokemon, what the
+  -- battle reads): on the device no sheet was ever recognised -- "0
+  -- swapped", Azalea's Slowpoke and the Kiln's Farfetch'd drawn native --
+  -- so the list no longer rests on world.constants alone.
+  local speciesSet, speciesFrom
   local function isSpecies(world, name)
     if not speciesSet then
       local order = world and world.constants and world.constants.speciesOrder
+      local set, n = {}, 0
       if type(order) == "table" then
-        speciesSet = {}
-        for _, n in pairs(order) do if type(n) == "string" then speciesSet[n] = true end end
+        for _, s in pairs(order) do if type(s) == "string" then set[s] = true; n = n + 1 end end
+        if n > 0 then speciesFrom = "constants" end
       end
+      local data = world and world.game and world.game.data
+      local mons = type(data) == "table" and data.pokemon
+      if n == 0 and type(mons) == "table" then
+        for s in pairs(mons) do if type(s) == "string" then set[s] = true; n = n + 1 end end
+        if n > 0 then speciesFrom = "game data" end
+      end
+      if n > 0 then speciesSet, M.speciesCount = set, n end
     end
     if speciesSet and speciesSet[name] then return true end
     local Assets = wreq("species_assets")
@@ -156,6 +173,11 @@ return function(host)
     if def.species ~= nil then
       local s = speciesName(world, def.species)
       if s then return s end
+    end
+    if BORROWED[id] then
+      local key = npc.def and npc.def.scriptKey
+      local s = key and scanScript(world, key, 0, {})
+      return s or BORROWED[id]
     end
     local named = nameSpecies(world, id)
     if named then
@@ -328,13 +350,15 @@ return function(host)
     elseif not enabled() then text = "off"
     else
       text = ("%d swapped%s"):format(#s, #s > 0 and (" (" .. table.concat(s, " ") .. ")") or "")
+      text = text .. ("; species %s"):format(speciesSet and (tostring(M.speciesCount) .. " from " .. tostring(speciesFrom))
+        or "list missing")
       if #n > 0 then text = text .. "; native: " .. table.concat(n, " ") end
       local o = {}
       for k in pairs(stats.other) do o[#o + 1] = (tostring(k):gsub("^SPRITE_", "")) end
       table.sort(o)
       if #o > 0 then
-        local more = #o > 8 and (" +" .. (#o - 8)) or ""
-        while #o > 8 do table.remove(o) end
+        local more = #o > 24 and (" +" .. (#o - 24)) or ""
+        while #o > 24 do table.remove(o) end
         text = text .. "; other: " .. table.concat(o, " ") .. more
       end
     end
