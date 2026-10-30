@@ -220,7 +220,7 @@ return function(mod, Relearn)
       onCancel = done,
     })
     -- gen2-aio 0.9.75: what a Modern presenter needs to draw this list
-    -- itself (lib/gen2_aio/modern_moves.lua): the mon and the pool rows, in
+    -- itself (lib/crystal_aio/modern_moves.lua): the mon and the pool rows, in
     -- the same order as the Menu's items.  Nothing reads it to act.
     menu.relearn = { mon = mon, rows = rows }
     game.stack:push(menu)

@@ -40,15 +40,23 @@ return function(mod)
   local function loadOwn(rel)
     local ok, value = pcall(function() return chunk(rel)() end)
     if ok then return value end
-    log("error", "Gen2-AIO: %s failed: %s", rel, tostring(value))
+    log("error", "Crystal-AiO: %s failed: %s", rel, tostring(value))
     return nil
   end
 
+  -- 1.0.0: Crystal-only. The manifest lists only gen2; a player can still
+  -- force a mod onto another game, and the Gen 1 / Gen 3 paths are gone.
+  local generation = tonumber(mod.generation)
+  if generation and generation ~= 2 then
+    log("warn", "Crystal-AiO runs on Gold/Silver/Crystal only (this is Gen %d); not loading", generation)
+    return
+  end
+
   -- Import settings and downloaded assets before any component reads them.
-  local migration = loadOwn("lib/gen2_aio/identity_migration.lua")
+  local migration = loadOwn("lib/crystal_aio/identity_migration.lua")
   if migration then
     local okM, err = pcall(migration.install, mod)
-    if not okM then log("warn", "Gen2-AIO migration: %s", tostring(err)) end
+    if not okM then log("warn", "Crystal-AiO migration: %s", tostring(err)) end
   end
 
   -- -------------------------------------------------------------- options
@@ -70,7 +78,7 @@ return function(mod)
     return schema
   end
   realOptions.define = mergeDefine
-  -- the merged schema, for the hub's pages (lib/gen2_aio/hub.lua)
+  -- the merged schema, for the hub's pages (lib/crystal_aio/hub.lua)
   rawset(mod, "_kimArenaSchema", function() return merged, position end)
 
   -- 0.9.66: rows merged into one. The new row has no default, so a player
@@ -220,7 +228,7 @@ return function(mod)
 
   local function rowHidden(key)
     if key == "touchMouse" then return true end   -- desktop testing aid only
-    -- set through the hub's list pickers (lib/gen2_aio/theme_picker.lua)
+    -- set through the hub's list pickers (lib/crystal_aio/theme_picker.lua)
     if key == "kimArenaCustomFrame" or key == "kimArenaCustomBacking"
         or key == "kimArenaCustomBorder" then return true end
     if GM_ART[key] then return true end
@@ -356,8 +364,8 @@ return function(mod)
   end
   -- KENNEY HD + BATTLE CAMERA LOCKED: a camera solved per battle that frames
   -- the two Pokemon where KIM HD's paintings put them, at an angle chosen per
-  -- Kenney scene type (lib/gen2_aio/kenney_camera.lua)
-  local KenneyCam = loadOwn("lib/gen2_aio/kenney_camera.lua")
+  -- Kenney scene type (lib/crystal_aio/kenney_camera.lua)
+  local KenneyCam = loadOwn("lib/crystal_aio/kenney_camera.lua")
   local camCache = setmetatable({}, { __mode = "k" })
   voxel._kimArenaCameraPreset = function(arena, groundY)
     if not (KenneyCam and Backdrop and Backdrop.mode() == "kenney") then return nil end
@@ -472,7 +480,7 @@ return function(mod)
 
   local voxelOk, voxelErr = pcall(function() chunk(engine .. "/main.lua")(voxel) end)
   if not voxelOk then
-    log("error", "Gen2-AIO: %s voxel engine failed to start: %s", engine, tostring(voxelErr))
+    log("error", "Crystal-AiO: %s voxel engine failed to start: %s", engine, tostring(voxelErr))
     internal.BATTLE_ART_VOXEL_GEN2 = function() return nil end
     internal.gmarcs_gen2_voxel_mod = nil
   end
@@ -554,7 +562,7 @@ return function(mod)
       local entry = chunk(rel)(sub)
       if type(entry) == "function" then entry(sub) end
     end)
-    if not ok then log("error", "Gen2-AIO: %s failed to start: %s", label, tostring(err)) end
+    if not ok then log("error", "Crystal-AiO: %s failed to start: %s", label, tostring(err)) end
     return ok
   end
 
@@ -640,42 +648,42 @@ return function(mod)
     local ok, module = pcall(require, "mods." .. ID .. ".stadium2.lib." .. name)
     if ok and type(module) == "table" and type(module.bind) == "function" then
       local bound, err = pcall(module.bind, stadium)
-      if not bound then log("warn", "Gen2-AIO: stadium2 %s bind: %s", name, tostring(err)) end
+      if not bound then log("warn", "Crystal-AiO: stadium2 %s bind: %s", name, tostring(err)) end
     elseif not ok then
-      log("warn", "Gen2-AIO: stadium2 %s: %s", name, tostring(module))
+      log("warn", "Crystal-AiO: stadium2 %s: %s", name, tostring(module))
     end
   end
 
   -- ------------------------------------------------- all 251 catchable
-  local c251Factory = loadOwn("lib/gen2_aio/crystal251.lua")
+  local c251Factory = loadOwn("lib/crystal_aio/crystal251.lua")
   if type(c251Factory) == "function" then
     local ok251, made = pcall(c251Factory, { mod = mod, log = log })
     if ok251 then mod.exports.crystal251 = made
-    else log("warn", "Gen2-AIO: 251 catchable: %s", tostring(made)) end
+    else log("warn", "Crystal-AiO: 251 catchable: %s", tostring(made)) end
   end
 
   -- ------------------------------------------------- trainer levels
-  local tlFactory = loadOwn("lib/gen2_aio/trainer_levels.lua")
+  local tlFactory = loadOwn("lib/crystal_aio/trainer_levels.lua")
   if type(tlFactory) == "function" then
     local okTL, made = pcall(tlFactory, { mod = mod, log = log })
     if okTL then mod.exports.trainerLevels = made
-    else log("warn", "Gen2-AIO: trainer levels: %s", tostring(made)) end
+    else log("warn", "Crystal-AiO: trainer levels: %s", tostring(made)) end
   end
 
   -- ------------------------------------------------- backgrounds
-  local factory = loadOwn("lib/gen2_aio/backdrop.lua")
+  local factory = loadOwn("lib/crystal_aio/backdrop.lua")
   if type(factory) == "function" then
     local ok, made = pcall(factory, { mod = mod, load = loadOwn,
       game = function() return rawget(mod, "_kantoInMotionActiveGame") end })
     if ok then Backdrop = made
-    else log("error", "Gen2-AIO: background provider failed: %s", tostring(made)) end
+    else log("error", "Crystal-AiO: background provider failed: %s", tostring(made)) end
   end
   local ModernHud = nil
-  local hudFactory = loadOwn("lib/gen2_aio/modern_hud.lua")
+  local hudFactory = loadOwn("lib/crystal_aio/modern_hud.lua")
   if type(hudFactory) == "function" then
     local ok, made = pcall(hudFactory, { mod = mod })
     if ok then ModernHud = made
-    else log("error", "Gen2-AIO: modern HUD failed: %s", tostring(made)) end
+    else log("error", "Crystal-AiO: modern HUD failed: %s", tostring(made)) end
   end
   -- KIM's Gen 2 Modern UI style (theme, fonts, panels) for companion mods.
   mod.exports.kimStyle = function() return rawget(mod, "_kantoInMotionGen2Ui") end
@@ -840,7 +848,7 @@ return function(mod)
         .. "3D SPRITE DETAIL is left to you (4X is sharpest and costs the most). Cooler and longer battery. QUALITY: your own settings." },
     { key = "setupWizard", label = "SETUP WIZARD ON NEW GAME", type = "toggle", default = true,
       help = "Starting a NEW GAME opens the setup wizard (difficulty, Nuzlocke, look, battles, "
-        .. "world, wild Pokemon, conveniences). It is always on the GEN2-AIO page too." },
+        .. "world, wild Pokemon, conveniences). It is always on the CRYSTAL-AIO page too." },
     { key = "diagnostics", label = "DIAGNOSTICS", type = "toggle", default = false,
       help = "Show short status lines on screen (battle background errors, voxel edge, "
         .. "disk cache, Wilds). For reporting problems; leave off otherwise." },
@@ -925,11 +933,11 @@ return function(mod)
   mergeDefine(realOptions, schema)
 
   -- In-game OPTIONS rows for the same settings (Battle Art 1.55's adapter,
-  -- kept in lib/gen2_aio; it reads _kimArenaRowHidden on every menu build).
-  local InGameOptions = loadOwn("lib/gen2_aio/ingame_options.lua")
+  -- kept in lib/crystal_aio; it reads _kimArenaRowHidden on every menu build).
+  local InGameOptions = loadOwn("lib/crystal_aio/ingame_options.lua")
   if type(InGameOptions) == "table" and InGameOptions.install then
-    local installed, err = pcall(InGameOptions.install, mod, schema, "GEN2-AIO")
-    if not installed then log("warn", "Gen2-AIO: in-game rows: %s", tostring(err)) end
+    local installed, err = pcall(InGameOptions.install, mod, schema, "CRYSTAL-AIO")
+    if not installed then log("warn", "Crystal-AiO: in-game rows: %s", tostring(err)) end
   end
 
   -- Gen1Wild QOL (qol/): sprint, autosave, auto continue, sound, EXP share,
@@ -1025,7 +1033,7 @@ return function(mod)
       if type(entry) == "function" then entry(qt) end
     end)
     if not qtOk then
-      log("error", "Gen2-AIO: QoL Toggles failed to start: %s", tostring(qtErr))
+      log("error", "Crystal-AiO: QoL Toggles failed to start: %s", tostring(qtErr))
       diagSet("qol toggles", "failed: " .. tostring(qtErr):sub(1, 120))
     end
     mod.exports.qolToggles = qt.exports
@@ -1065,7 +1073,7 @@ return function(mod)
         end
       end
       local okD, errD = pcall(qt.options.define, qt.options, schema)
-      if not okD then log("warn", "Gen2-AIO: QoL Toggles rows: %s", tostring(errD)) end
+      if not okD then log("warn", "Crystal-AiO: QoL Toggles rows: %s", tostring(errD)) end
       -- 0.9.33: defining options does not put them in Crystal's OPTION
       -- screen; the native rows adapter does (as for the bundle's own
       -- schema). Same rows, keys as stored ("qt_..."), on the main mod, so
@@ -1080,10 +1088,10 @@ return function(mod)
         copy.key = row.key:sub(1, 3) == "qt_" and row.key or ("qt_" .. row.key)
         rowsSchema[i] = copy
       end
-      local IGO = loadOwn("lib/gen2_aio/ingame_options.lua")
+      local IGO = loadOwn("lib/crystal_aio/ingame_options.lua")
       if type(IGO) == "table" and IGO.install then
         local okI, errI = pcall(IGO.install, mod, rowsSchema, "QOL TOGGLES")
-        if not okI then log("warn", "Gen2-AIO: QoL Toggles in-game rows: %s", tostring(errI)) end
+        if not okI then log("warn", "Crystal-AiO: QoL Toggles in-game rows: %s", tostring(errI)) end
       end
       diagSet("qol toggles", ("%d switches"):format(#schema))
     end
@@ -1106,165 +1114,165 @@ return function(mod)
   end
 
   -- MENU TRANSITIONS: Crystal's white menu fades -> short dark fades.
-  local menuFadeFactory = loadOwn("lib/gen2_aio/menu_fade.lua")
+  local menuFadeFactory = loadOwn("lib/crystal_aio/menu_fade.lua")
   if type(menuFadeFactory) == "function" then pcall(menuFadeFactory, { mod = mod }) end
 
   -- ALL-IN-ONE hub: every component's settings, out of Crystal's OPTION.
-  local hubFactory = loadOwn("lib/gen2_aio/hub.lua")
+  local hubFactory = loadOwn("lib/crystal_aio/hub.lua")
   if type(hubFactory) == "function" then
     local okH, err = pcall(hubFactory, { mod = mod, log = log })
-    if not okH then log("warn", "Gen2-AIO: hub: %s", tostring(err)) end
+    if not okH then log("warn", "Crystal-AiO: hub: %s", tostring(err)) end
   end
 
   -- Name sign + pokepic in 3D (gmarc's World:draw skipped them).
-  local ovFactory = loadOwn("lib/gen2_aio/voxel_overlays.lua")
+  local ovFactory = loadOwn("lib/crystal_aio/voxel_overlays.lua")
   if type(ovFactory) == "function" then
     local okV, err = pcall(ovFactory, { mod = mod, log = log })
-    if not okV then log("warn", "Gen2-AIO: voxel overlays: %s", tostring(err)) end
+    if not okV then log("warn", "Crystal-AiO: voxel overlays: %s", tostring(err)) end
   end
 
   -- FOLLOWER = PARTY LEAD (Wilds' follower tracks party slot 1 live).
-  local leadFactory = loadOwn("lib/gen2_aio/follower_lead.lua")
+  local leadFactory = loadOwn("lib/crystal_aio/follower_lead.lua")
   if type(leadFactory) == "function" then
     local okL, err = pcall(leadFactory, { mod = mod, diag = diagSet,
       wilds = function() return wildsOk and mod.exports.wilds or nil end })
-    if not okL then log("warn", "Gen2-AIO: follower lead: %s", tostring(err)) end
+    if not okL then log("warn", "Crystal-AiO: follower lead: %s", tostring(err)) end
   end
 
   -- CUSTOM UI THEME pickers (hub DISPLAY & UI page).
-  local pickFactory = loadOwn("lib/gen2_aio/theme_picker.lua")
+  local pickFactory = loadOwn("lib/crystal_aio/theme_picker.lua")
   if type(pickFactory) == "function" then
     local okP, err = pcall(pickFactory, { mod = mod })
-    if not okP then log("warn", "Gen2-AIO: theme pickers: %s", tostring(err)) end
+    if not okP then log("warn", "Crystal-AiO: theme pickers: %s", tostring(err)) end
   end
 
   -- Nuzlocke RULES on a Modern UI page (START -> RULES, hub RULES page).
-  local nzRulesFactory = loadOwn("lib/gen2_aio/nuz_rules.lua")
+  local nzRulesFactory = loadOwn("lib/crystal_aio/nuz_rules.lua")
   if type(nzRulesFactory) == "function" and type(mod.exports.nuzlocke) == "table" then
     local okR, err = pcall(nzRulesFactory, { mod = mod, nz = mod.exports.nuzlocke })
-    if not okR then log("warn", "Gen2-AIO: nuzlocke rules page: %s", tostring(err)) end
+    if not okR then log("warn", "Crystal-AiO: nuzlocke rules page: %s", tostring(err)) end
   end
 
-  -- 0.9.67 SETUP WIZARD (NEW GAME and GEN2-AIO -> SETUP WIZARD)
-  local wizardFactory = loadOwn("lib/gen2_aio/setup_wizard.lua")
+  -- 0.9.67 SETUP WIZARD (NEW GAME and CRYSTAL-AIO -> SETUP WIZARD)
+  local wizardFactory = loadOwn("lib/crystal_aio/setup_wizard.lua")
   if type(wizardFactory) == "function" then
     local okW, err = pcall(wizardFactory, { mod = mod, diag = diagSet })
-    if not okW then log("warn", "Gen2-AIO: setup wizard: %s", tostring(err)) end
+    if not okW then log("warn", "Crystal-AiO: setup wizard: %s", tostring(err)) end
   end
 
   -- 0.9.46 QUICK MENU (hold START / START -> QUICK), AREA DEX, DAY-CARE,
   -- TODAY, KEY ITEM WHEEL (hold SELECT) and the long-press info cards.
-  local quickFactory = loadOwn("lib/gen2_aio/quick_menu.lua")
+  local quickFactory = loadOwn("lib/crystal_aio/quick_menu.lua")
   if type(quickFactory) == "function" then
     local okQ, err = pcall(quickFactory, { mod = mod, diag = diagSet })
-    if not okQ then log("warn", "Gen2-AIO: quick menu: %s", tostring(err)) end
+    if not okQ then log("warn", "Crystal-AiO: quick menu: %s", tostring(err)) end
   end
 
   -- Window-resolution overworld shortcuts and status.
-  local overworldHudFactory = loadOwn("lib/gen2_aio/overworld_hud.lua")
+  local overworldHudFactory = loadOwn("lib/crystal_aio/overworld_hud.lua")
   if type(overworldHudFactory) == "function" then
     local okH, err = pcall(overworldHudFactory, { mod = mod, diag = diagSet })
-    if not okH then log("warn", "Gen2-AIO: overworld HUD: %s", tostring(err)) end
+    if not okH then log("warn", "Crystal-AiO: overworld HUD: %s", tostring(err)) end
   end
 
   -- TIME OF DAY: one clock for palettes, sky, encounters and Wilds.
-  local todFactory = loadOwn("lib/gen2_aio/time_of_day.lua")
+  local todFactory = loadOwn("lib/crystal_aio/time_of_day.lua")
   if type(todFactory) == "function" then
     local okT, made = pcall(todFactory, { mod = mod })
-    if not okT then log("warn", "Gen2-AIO: time of day: %s", tostring(made))
+    if not okT then log("warn", "Crystal-AiO: time of day: %s", tostring(made))
     elseif type(made) == "table" and voxel then
       voxel._kimArenaHour = function() return made.hour() end
     end
   end
 
   -- HD Poke Balls in Crystal's ball animations.
-  local ballFactory = loadOwn("lib/gen2_aio/hd_ball.lua")
+  local ballFactory = loadOwn("lib/crystal_aio/hd_ball.lua")
   if type(ballFactory) == "function" then
     local okBall, err = pcall(ballFactory, { mod = mod, log = log })
-    if not okBall then log("warn", "Gen2-AIO: HD ball: %s", tostring(err)) end
+    if not okBall then log("warn", "Crystal-AiO: HD ball: %s", tostring(err)) end
   end
 
   -- HIT FLICKER = STEADY for every battle renderer (engine seam).
-  local steadyFactory = loadOwn("lib/gen2_aio/steady_hits.lua")
+  local steadyFactory = loadOwn("lib/crystal_aio/steady_hits.lua")
   if type(steadyFactory) == "function" then
     local okS, err = pcall(steadyFactory, { mod = mod, diag = diagSet })
-    if not okS then log("warn", "Gen2-AIO: steady hits: %s", tostring(err)) end
+    if not okS then log("warn", "Crystal-AiO: steady hits: %s", tostring(err)) end
   end
 
   -- Multi-hit moves animate every hit, as on the cart (engine seam).
-  local multiHitFactory = loadOwn("lib/gen2_aio/multi_hit_anims.lua")
+  local multiHitFactory = loadOwn("lib/crystal_aio/multi_hit_anims.lua")
   if type(multiHitFactory) == "function" then
     local okH, err = pcall(multiHitFactory, { mod = mod, diag = diagSet })
-    if not okH then log("warn", "Gen2-AIO: multi-hit anims: %s", tostring(err)) end
+    if not okH then log("warn", "Crystal-AiO: multi-hit anims: %s", tostring(err)) end
   end
 
   -- Pixel Operator for KIM's Modern UI.
-  local fontFactory = loadOwn("lib/gen2_aio/font.lua")
+  local fontFactory = loadOwn("lib/crystal_aio/font.lua")
   if type(fontFactory) == "function" then
     local okF, err = pcall(fontFactory, { mod = mod })
-    if not okF then log("warn", "Gen2-AIO: font: %s", tostring(err)) end
+    if not okF then log("warn", "Crystal-AiO: font: %s", tostring(err)) end
   end
 
   -- Per-screen overworld ZOOM (outer / inner screen of a Fold).
-  local pagesFactory = loadOwn("lib/gen2_aio/modern_pages.lua")
+  local pagesFactory = loadOwn("lib/crystal_aio/modern_pages.lua")
   if type(pagesFactory) == "function" then pagesFactory({ mod = mod }) end
-  local tradeFactory = loadOwn("lib/gen2_aio/modern_trade.lua")
+  local tradeFactory = loadOwn("lib/crystal_aio/modern_trade.lua")
   if type(tradeFactory) == "function" then tradeFactory({ mod = mod }) end
-  local callerFactory = loadOwn("lib/gen2_aio/modern_caller.lua")
+  local callerFactory = loadOwn("lib/crystal_aio/modern_caller.lua")
   if type(callerFactory) == "function" then callerFactory({ mod = mod }) end
   -- 0.9.75: Modern UI for the screens that only had Crystal's own look --
   -- move learning / RELEARN, Day-Care, Mom's bank, the item PC and mail, the
   -- Game Corner counters, contest, Battle Tower, decorations, elevators,
   -- Buena and the photo studio, and the story screens
-  for _, rel in ipairs({ "lib/gen2_aio/modern_moves.lua", "lib/gen2_aio/modern_services.lua",
-      "lib/gen2_aio/modern_extras.lua", "lib/gen2_aio/modern_story.lua",
+  for _, rel in ipairs({ "lib/crystal_aio/modern_moves.lua", "lib/crystal_aio/modern_services.lua",
+      "lib/crystal_aio/modern_extras.lua", "lib/crystal_aio/modern_story.lua",
       -- 0.9.76: STOP EVOLUTION / a B press that is remembered
-      "lib/gen2_aio/evolution_stop.lua",
+      "lib/crystal_aio/evolution_stop.lua",
       -- 0.9.77: QUICK SELL (SELL VALUABLES / ALL) at the Poke Mart
-      "lib/gen2_aio/quick_sell.lua",
+      "lib/crystal_aio/quick_sell.lua",
       -- 0.9.77: BUILD 3D CACHE (the one-time question and ADVANCED row)
-      "lib/gen2_aio/voxel_cache.lua",
+      "lib/crystal_aio/voxel_cache.lua",
       -- 0.9.77: a traded mon's first "won't obey!" says why (OT ID + badge cap)
-      "lib/gen2_aio/obedience_hint.lua" }) do
+      "lib/crystal_aio/obedience_hint.lua" }) do
     local f = loadOwn(rel)
     if type(f) == "function" then
       local okM, err = pcall(f, { mod = mod })
-      if not okM then log("warn", "Gen2-AIO: %s: %s", rel, tostring(err)) end
+      if not okM then log("warn", "Crystal-AiO: %s: %s", rel, tostring(err)) end
     end
   end
-  local zoomFactory = loadOwn("lib/gen2_aio/screen_zoom.lua")
+  local zoomFactory = loadOwn("lib/crystal_aio/screen_zoom.lua")
   if type(zoomFactory) == "function" then
     local okZ, err = pcall(zoomFactory, { mod = mod })
-    if not okZ then log("warn", "Gen2-AIO: screen zoom: %s", tostring(err)) end
+    if not okZ then log("warn", "Crystal-AiO: screen zoom: %s", tostring(err)) end
   end
 
   -- Quick Poke Ball on SELECT (wild battles, command menu only).
-  local quickFactory = loadOwn("lib/gen2_aio/quick_ball.lua")
+  local quickFactory = loadOwn("lib/crystal_aio/quick_ball.lua")
   if type(quickFactory) == "function" then
     local okQ, err = pcall(quickFactory, { mod = mod })
-    if not okQ then log("warn", "Gen2-AIO: quick ball: %s", tostring(err)) end
+    if not okQ then log("warn", "Crystal-AiO: quick ball: %s", tostring(err)) end
   end
 
   -- Lore-friendly weather (battle moves, places, random rain).
-  local weatherFactory = loadOwn("lib/gen2_aio/weather.lua")
+  local weatherFactory = loadOwn("lib/crystal_aio/weather.lua")
   if type(weatherFactory) == "function" then
     local okW, err = pcall(weatherFactory, { mod = mod })
-    if not okW then log("warn", "Gen2-AIO: weather: %s", tostring(err)) end
+    if not okW then log("warn", "Crystal-AiO: weather: %s", tostring(err)) end
   end
 
   -- WILDS NPC POKEMON: Crystal's Pokemon object events in Wilds' sprite set.
-  local npcMonFactory = loadOwn("lib/gen2_aio/npc_mons.lua")
+  local npcMonFactory = loadOwn("lib/crystal_aio/npc_mons.lua")
   if type(npcMonFactory) == "function" then
     local okM, err = pcall(npcMonFactory, { mod = mod, diag = diagSet,
       wilds = function() return wildsOk and mod.exports.wilds or nil end })
-    if not okM then log("warn", "Gen2-AIO: npc mons: %s", tostring(err)) end
+    if not okM then log("warn", "Crystal-AiO: npc mons: %s", tostring(err)) end
   end
 
   -- Overworld menu dim (any menu open outside battle).
-  local dimFactory = loadOwn("lib/gen2_aio/menu_dim.lua")
+  local dimFactory = loadOwn("lib/crystal_aio/menu_dim.lua")
   if type(dimFactory) == "function" then
     local okD, err = pcall(dimFactory, { mod = mod })
-    if not okD then log("warn", "Gen2-AIO: menu dim: %s", tostring(err)) end
+    if not okD then log("warn", "Crystal-AiO: menu dim: %s", tostring(err)) end
   end
 
   -- DIAGNOSTICS overlay
@@ -1330,7 +1338,7 @@ return function(mod)
     return nextFn(game, viewport)
   end, 3)
 
-  log("info", "Gen2-AIO ready (voxel=%s:%s, wilds=%s, nuzlocke=%s, touch=%s, qol=%s, qoltoggles=%s, background=%s)",
+  log("info", "Crystal-AiO ready (voxel=%s:%s, wilds=%s, nuzlocke=%s, touch=%s, qol=%s, qoltoggles=%s, background=%s)",
     engine, tostring(voxelOk), tostring(wildsOk), tostring(nuzlockeOk), tostring(touchOk),
     tostring(qolOk), tostring(qtOk), tostring(mode()))
 end

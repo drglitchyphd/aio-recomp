@@ -6,7 +6,7 @@
 -- records) and reports opaque controller pointers as diagnostics.  It never
 -- calls the host RNG and never mutates its input tables.
 local Motion = {}
-local single = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_float")
+local single = require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_float")
 local SCALE_UNIT = single(0.001)
 local SPEED_UNIT = single(0.01)
 

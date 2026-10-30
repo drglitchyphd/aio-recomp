@@ -3,7 +3,7 @@
 -- floating B / START / SELECT / Poke Ball buttons stay off the battle:
 --
 --   * the command menu: a Poke Ball button in the panel (wild battles, when
---     a throw is possible) throws the quick ball (lib/gen2_aio/quick_ball.lua)
+--     a throw is possible) throws the quick ball (lib/crystal_aio/quick_ball.lua)
 --   * the move list / forget list: a back button in the panel is B
 --   * a move dragged onto another swaps the two through the engine's own
 --     SELECT path; a still hold is the move's info; a tap picks the move
@@ -104,13 +104,13 @@ function love.load()
     local chunk=assert(loadstring(assert(readFile(rel)),"@"..rel))
     return chunk()(...)
   end
-  run("lib/gen2_aio/font.lua",{mod=mod})
+  run("lib/crystal_aio/font.lua",{mod=mod})
   run("lib/gen2_modern_style.lua",mod)
   run("lib/gen2_modern_battle_ui.lua",mod)
-  run("lib/gen2_aio/modern_hud.lua",{mod=mod})
-  run("lib/gen2_aio/quick_ball.lua",{mod=mod})
+  run("lib/crystal_aio/modern_hud.lua",{mod=mod})
+  run("lib/crystal_aio/quick_ball.lua",{mod=mod})
   mod.exports.menuCloseRect=function()return rawget(mod,"_kimMenuClose")end
-  -- the HD ball icons (lib/gen2_aio/hd_ball.lua needs the engine's anim view)
+  -- the HD ball icons (lib/crystal_aio/hd_ball.lua needs the engine's anim view)
   local icons={}
   mod._kimArenaBallIcon=function(id)
     local name=({ULTRA_BALL="ultra",GREAT_BALL="great"})[id] or "poke"

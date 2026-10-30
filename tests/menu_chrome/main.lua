@@ -64,15 +64,15 @@ function love.load()
     local chunk=assert(loadstring(assert(readFile(rel)),"@"..rel))
     return chunk()(...)
   end
-  run("lib/gen2_aio/font.lua",{mod=mod})
+  run("lib/crystal_aio/font.lua",{mod=mod})
   local S=run("lib/gen2_modern_style.lua",mod)
   run("lib/gen2_modern_dialog_ui.lua",mod)
   assert(run("lib/gen2_modern_core_menus.lua",mod))
   assert(run("lib/gen2_modern_party_ui.lua",mod))
   assert(run("lib/gen2_modern_summary_ui.lua",mod))
   local dexOk=run("lib/gen2_modern_pokedex_ui.lua",mod)
-  run("lib/gen2_aio/modern_pages.lua",{mod=mod})
-  local Quick=run("lib/gen2_aio/quick_menu.lua",{mod=mod})
+  run("lib/crystal_aio/modern_pages.lua",{mod=mod})
+  local Quick=run("lib/crystal_aio/quick_menu.lua",{mod=mod})
   mod.exports.menuCloseRect=function()return rawget(mod,"_kimMenuClose")end
 
   -- record every text the screens draw (footer checks)
@@ -165,7 +165,7 @@ function love.load()
       {label="BACK",cancel=true}}},Opt)end},
     -- 0.9.67: the setup wizard's first page
     {"wizard",function()return setmetatable({title="SETUP WIZARD",kimSubtitle="NEW GAME",index=1,scroll=0,rows={
-      {label="RECOMMENDED",group=true,value=value("SUGGESTED"),help="The way Gen2-AIO is meant to be played: fair trainers, no Nuzlocke, HD battles, the 3D world, visible wild Pokemon and the standard conveniences."},
+      {label="RECOMMENDED",group=true,value=value("SUGGESTED"),help="The way Crystal-AiO is meant to be played: fair trainers, no Nuzlocke, HD battles, the 3D world, visible wild Pokemon and the standard conveniences."},
       {label="CASUAL",group=true,help="Relaxed: easier trainers, more EXP and every convenience."},
       {label="NUZLOCKE",group=true,help="A classic Nuzlocke run."},
       {label="HARDCORE NUZLOCKE",group=true,help="HARD trainers and HARDCORE rules."},

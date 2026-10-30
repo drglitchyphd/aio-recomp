@@ -1,13 +1,13 @@
-local Build = require("mods.gen2-aio.stadium2.lib.build")
-local Pack = require("mods.gen2-aio.stadium2.lib.pack")
-local Handlers = require("mods.gen2-aio.stadium2.lib.model_handlers")
-local DynamicObject = require("mods.gen2-aio.stadium2.lib.effects.dynamic_object")
-local RapidashCut = require("mods.gen2-aio.stadium2.lib.effects.rapidash_cut")
-local EffectRenderer = require("mods.gen2-aio.stadium2.lib.effect_renderer")
-local Sampler = require("mods.gen2-aio.stadium2.lib.sampler")
-local RenderContract = require("mods.gen2-aio.stadium2.lib.render_contract")
-local DualTexture = require("mods.gen2-aio.stadium2.lib.render_callbacks.dual_texture_material")
-local BattleFxRenderMode = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_render_mode")
+local Build = require("mods.crystal-aio.stadium2.lib.build")
+local Pack = require("mods.crystal-aio.stadium2.lib.pack")
+local Handlers = require("mods.crystal-aio.stadium2.lib.model_handlers")
+local DynamicObject = require("mods.crystal-aio.stadium2.lib.effects.dynamic_object")
+local RapidashCut = require("mods.crystal-aio.stadium2.lib.effects.rapidash_cut")
+local EffectRenderer = require("mods.crystal-aio.stadium2.lib.effect_renderer")
+local Sampler = require("mods.crystal-aio.stadium2.lib.sampler")
+local RenderContract = require("mods.crystal-aio.stadium2.lib.render_contract")
+local DualTexture = require("mods.crystal-aio.stadium2.lib.render_callbacks.dual_texture_material")
+local BattleFxRenderMode = require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_render_mode")
 
 local Renderer = {}
 Renderer.__index = Renderer
@@ -631,7 +631,7 @@ void effect() {
 #endif
 ]]
 
-local TorchLightingShader=require("mods.gen2-aio.stadium2.lib.torch_lighting_shader")
+local TorchLightingShader=require("mods.crystal-aio.stadium2.lib.torch_lighting_shader")
 SHADER=TorchLightingShader.apply(SHADER)
 MOBILE_SHADER=TorchLightingShader.apply(MOBILE_SHADER)
 
@@ -1840,7 +1840,7 @@ function Renderer:setContext(name, loop)
   if not index then return false end
   local ok=self:setAnimation(index, loop)
   if ok then
-    self.fxDispatchRow=require("mods.gen2-aio.stadium2.lib.animation_dispatch").CONTEXT_ENTRY[name]
+    self.fxDispatchRow=require("mods.crystal-aio.stadium2.lib.animation_dispatch").CONTEXT_ENTRY[name]
   end
   return ok
 end
@@ -2039,7 +2039,7 @@ function Renderer:updatePose(force)
     end
   end
   if self.visitorLocomotion then
-    require("mods.gen2-aio.stadium2.lib.visitor_locomotion").apply(self)
+    require("mods.crystal-aio.stadium2.lib.visitor_locomotion").apply(self)
   end
   return true
 end
@@ -2189,7 +2189,7 @@ function Renderer:battleFxMaterialState(prim)
   self.battleFxMaterialCache=self.battleFxMaterialCache or {}
   local cached=self.battleFxMaterialCache[prim]
   if cached and cached.frame==frame then return cached end
-  local evaluator=require("mods.gen2-aio.stadium2.lib.render_callbacks.phase5_geometry")
+  local evaluator=require("mods.crystal-aio.stadium2.lib.render_callbacks.phase5_geometry")
   local material,pointers,scroll=evaluator.evaluateController(prim.battleFxController,prim.material,frame)
   local byPointer=self.battleFxTexturePointers
   if not byPointer then

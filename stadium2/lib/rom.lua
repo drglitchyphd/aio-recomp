@@ -1,4 +1,4 @@
-local Layout = require("mods.gen2-aio.stadium2.lib.layout")
+local Layout = require("mods.crystal-aio.stadium2.lib.layout")
 
 local Rom = {}
 

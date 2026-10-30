@@ -21,10 +21,10 @@
 -- evolution, with Stadium's send-out effect.
 --
 -- Nothing here writes battle state, party data, the host stack or RNG.
-local Actor = require("mods.gen2-aio.stadium2.lib.battle_actor")
-local Renderer = require("mods.gen2-aio.stadium2.lib.renderer")
-local Camera = require("mods.gen2-aio.stadium2.lib.battle_camera")
-local Sequence = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_sequence")
+local Actor = require("mods.crystal-aio.stadium2.lib.battle_actor")
+local Renderer = require("mods.crystal-aio.stadium2.lib.renderer")
+local Camera = require("mods.crystal-aio.stadium2.lib.battle_camera")
+local Sequence = require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_sequence")
 
 local Evolution = {}
 Evolution.__index = Evolution

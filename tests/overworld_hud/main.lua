@@ -8,8 +8,8 @@ function love.load()
  local mod = {exports={}, hooks={wrap=function(_,n,f,p) hooks[n]=hooks[n] or {}; hooks[n][p]=f end}}
  mod._kimArenaOpt = function(k,d) if opts[k]~=nil then return opts[k] end; return d end
  mod._kimArenaHub = {page=function() top={}; return top end}
- local q = assert(loadfile(root..'lib/gen2_aio/quick_menu.lua'))()({mod=mod})
- local hud = assert(loadfile(root..'lib/gen2_aio/overworld_hud.lua'))()({mod=mod,diag=function(k,e) error(k..': '..e) end})
+ local q = assert(loadfile(root..'lib/crystal_aio/quick_menu.lua'))()({mod=mod})
+ local hud = assert(loadfile(root..'lib/crystal_aio/overworld_hud.lua'))()({mod=mod,diag=function(k,e) error(k..': '..e) end})
  local game = {phase='play', data={items={BICYCLE={pocket='KEY_ITEM',index=1},OLD_ROD={pocket='KEY_ITEM',index=2}}},
  save={inventory={BICYCLE=1,OLD_ROD=1},party={{hp=50,maxHp=50},{hp=15,maxHp=50},{hp=0,maxHp=50}}},
  world={player={},busy=function(self) return self.scriptBusy end,

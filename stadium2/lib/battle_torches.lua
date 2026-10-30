@@ -1,8 +1,8 @@
 -- Wooden torch fire uses the Charmander-family's actual shared Stadium flame
 -- geometry, eight cached IA8 images, and frame-dependent material colours.
-local Flame=require("mods.gen2-aio.stadium2.lib.render_callbacks.flame")
-local Pack=require("mods.gen2-aio.stadium2.lib.pack")
-local Importer=require("mods.gen2-aio.stadium2.lib.importer")
+local Flame=require("mods.crystal-aio.stadium2.lib.render_callbacks.flame")
+local Pack=require("mods.crystal-aio.stadium2.lib.pack")
+local Importer=require("mods.crystal-aio.stadium2.lib.importer")
 local Torches={positions={{-48,7,-35},{44,6,53}}}
 local textures,mesh,shader,failed
 function Torches.time() return love and love.timer and love.timer.getTime() or 0 end

@@ -12,7 +12,7 @@ World._kimArenaNpcMons = nil
 local n = 0
 local function check(c, m) if not c then error("FAIL: " .. m, 2) end n = n + 1 end
 local mod = { options = { get = function() return true end } }
-local M = assert(loadfile("lib/gen2_aio/npc_mons.lua"))()({ mod = mod })
+local M = assert(loadfile("lib/crystal_aio/npc_mons.lua"))()({ mod = mod })
 check(M and M.speciesFor, "installed")
 local world = {
   constants = { speciesOrder = { "FARFETCH_D", "MOLTRES", "SLOWPOKE", "GYARADOS" } },
@@ -40,7 +40,7 @@ check(M.speciesFor(world, slow) == "SLOWPOKE", "other tagged sheets keep their s
 -- the species list from the game's own data when world.constants has none
 local World2 = require("src.world.gen2.World")
 World2._kimArenaNpcMons = nil
-local M2 = assert(loadfile("lib/gen2_aio/npc_mons.lua"))()({ mod = mod })
+local M2 = assert(loadfile("lib/crystal_aio/npc_mons.lua"))()({ mod = mod })
 local world2 = { constants = {}, game = { data = { pokemon = { SLOWPOKE = {}, GYARADOS = {} } } }, scripts = {} }
 check(M2.speciesFor(world2, npc("SPRITE_SLOWPOKE", nil)) == "SLOWPOKE", "species known from game.data.pokemon")
 check(M2.speciesCount == 2, "and counted: " .. tostring(M2.speciesCount))
@@ -66,7 +66,7 @@ do
   local SR = require("src.render.SpriteRenderer")
   local realNew = SR.new
   SR.new = function(def) return { def = def } end
-  local M3 = assert(loadfile("lib/gen2_aio/npc_mons.lua"))()({ mod = mod, wilds = function() return ex end })
+  local M3 = assert(loadfile("lib/crystal_aio/npc_mons.lua"))()({ mod = mod, wilds = function() return ex end })
   local bird = npc("SPRITE_MOLTRES", "KilnFarfetchd")
   pcall(M3.apply, world, bird)
   SR.new = realNew

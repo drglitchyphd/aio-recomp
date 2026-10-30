@@ -1,5 +1,5 @@
 -- US fragment79 family 17: 84158588 / 84165670 / 84165C2C / 84165CC0.
-local f=require('mods.gen2-aio.stadium2.lib.stadium2_battle_fx_float')
+local f=require('mods.crystal-aio.stadium2.lib.stadium2_battle_fx_float')
 local Needle={}
 local function copy(v)if type(v)~='table' then return v end local t={} for k,x in pairs(v) do t[k]=copy(x) end return t end
 local function vec(v)return {f(v[1]),f(v[2]),f(v[3])}end

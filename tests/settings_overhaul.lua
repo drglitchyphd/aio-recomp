@@ -4,8 +4,8 @@
 local H = dofile("tests/settings_overhaul/harness.lua")
 local mod, OPTS = H.mod, H.OPTS
 local Hub = mod._kimArenaHub
-local game = { stack = { states = {} }, save = { options = { modOptions = { ["gen2-aio"] = OPTS } } },
-  options = {}, mods = { modOptions = { ["gen2-aio"] = OPTS } } }
+local game = { stack = { states = {} }, save = { options = { modOptions = { ["crystal-aio"] = OPTS } } },
+  options = {}, mods = { modOptions = { ["crystal-aio"] = OPTS } } }
 game.stack.push = function(_, page) game.stack.states[#game.stack.states + 1] = page end
 local function page(id)
   game.stack.states = {}
