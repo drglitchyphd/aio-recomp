@@ -1,10 +1,24 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.86)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.87)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.87 (2026-10-30)
+
+- npc_mons `isSpecies`:
+  - the species set comes from `world.constants.speciesOrder`, falling
+    back to `world.game.data.pokemon` keys; it is only cached once
+    non-empty;
+  - `M.speciesCount` and the source are shown on the `npc mons` line.
+- Device report: the line read "0 swapped" in Azalea, where Slowpoke were
+  native; SLOWPOKE was most likely among the truncated "other" names.
+- New `BORROWED = { SPRITE_MOLTRES = "FARFETCH_D" }`, checked before
+  `nameSpecies`: the script's species wins, otherwise the fallback.
+- The `other` list shows up to 24 names.
+- Test: `tests/npc_mon_species.lua` (8 checks).
 
 ## 0.9.86 (2026-10-30)
 
