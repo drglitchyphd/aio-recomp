@@ -57,6 +57,12 @@ GitHub and overlay patches are not the updater's install package. The custom
 index is independent of the community index; a community listing would require
 a separate submission.
 
+## 0.9.89 changes
+
+- Battle: the down arrow in the move list's info box is gone. It was a
+  leftover "more text" marker with nothing to show, so tapping it did
+  nothing.
+
 ## 0.9.88 changes
 
 - The Charcoal Kiln's Farfetch'd is now really drawn as Farfetch'd. 0.9.87

@@ -894,10 +894,10 @@ return function(mod)
   local function drawMoveInfo(state, move, x, y, w, h, bodyFont, captionFont, scale)
     local pad = math.max(3, 3.5 * scale)
     local def = moveDefinition(state, move)
+    -- gen2-aio 0.9.89: no "more" arrow drawn here -- the info column has
+    -- nothing to page to, and the marker read as a button that did nothing.
+    -- Its size still sets the bottom margin, so the layout is unchanged.
     local arrowSize=math.max(8, captionFont:getHeight()*.68)
-    drawDownArrow(x + w - pad - arrowSize*.45,
-      y + h - pad - arrowSize,
-      arrowSize, COLORS.accent)
 
     -- Do not hard-truncate the selected move at larger BATTLE TEXT SIZE values.
     -- Fit the complete name to the info column first, then fit each detail row
