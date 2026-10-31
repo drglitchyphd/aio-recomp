@@ -54,10 +54,10 @@ def build(root, releases):
              'affects_link', 'permissions', 'dependencies', 'conflicts')}
     entry.update(folder='drglitchyphd@' + manifest['id'], title=manifest['name'], author='drglitchyphd',
                  version=latest['version'], github=repo, repo='https://github.com/' + repo,
-                 summary='Crystal all-in-one: HD Pokemon, modern UI, voxel overworld, Kenney scenes, touch controls, followers and optional Nuzlocke rules.',
+                 summary='Crystal all-in-one (formerly Gen2-AIO): HD Pokemon, modern UI, voxel overworld, Kenney scenes, touch controls, followers and optional Nuzlocke rules.',
                  categories=['UI', 'ART', 'QOL', 'GAMEPLAY'], tags=['crystal', 'gen2', 'voxel', 'hd', 'touch'],
                  automatic_version_check=True, downloadURL=latest['zip']['url'],
-                 description_url=f'https://raw.githubusercontent.com/{repo}/main/README_GEN2_AIO.md',
+                 description_url=f'https://raw.githubusercontent.com/{repo}/main/README_CRYSTAL_AIO.md',
                  latest=latest, update_check='ok')
     doc = {'schema_version': 1, 'generated_at': datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
            'count': 1, 'categories': entry['categories'], 'mods': [entry]}

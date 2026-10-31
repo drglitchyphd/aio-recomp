@@ -129,6 +129,22 @@ local function unit()
   check(lines["disk cache"] and lines["disk cache"]:find("OFF %(no mod.cache"), "it says why: " .. tostring(lines["disk cache"]))
   local S4 = loadStore({ id = "MESHSTORE_TEST4", _kimArenaMeshStore = function() return false end })
   check(S4.whyOff() == "VOXEL DISK CACHE is OFF", "whyOff names the setting")
+  -- 1.0.0 (gmarc 1.0.17): a companion's additive voxel profile is not in the
+  -- build id, so the cache steps aside while one is registered
+  do
+    local ids = {}
+    local mod5 = { id = "MESHSTORE_TEST" }
+    mod5.cache = modCache("MESHSTORE_TEST")
+    local src = assert(io.open("gmarc/lib/MeshStore.lua")):read("*a")
+    local S5 = assert(load(src, "@MeshStore.lua"))({ mod = mod5,
+      profileExtensions = { list = function() return ids end } })
+    check(S5.enabled(), "no companion profile: the cache is on")
+    ids[1] = "hoenn"
+    check(not S5.enabled() and S5.whyOff() == "a companion voxel profile is registered",
+      "a registered companion profile turns the cache off: " .. tostring(S5.whyOff()))
+    ids[1] = nil
+    check(S5.enabled(), "and back on when it is removed")
+  end
   wipe("MESHSTORE_TEST")
 end
 

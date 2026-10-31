@@ -1,10 +1,10 @@
 -- Reader for Stadium 2's battle-effect resource archive (main archive group 5).
 -- Resource IDs in fragment 79 select archive members; exports inside those
 -- members bind the shape IDs referenced by native particle descriptors.
-local Rom = require("mods.gen2-aio.stadium2.lib.rom")
+local Rom = require("mods.crystal-aio.stadium2.lib.rom")
 local Phase5Geometry = require(
-  "mods.gen2-aio.stadium2.lib.render_callbacks.phase5_geometry")
-local Fragment = require("mods.gen2-aio.stadium2.lib.fragment")
+  "mods.crystal-aio.stadium2.lib.render_callbacks.phase5_geometry")
+local Fragment = require("mods.crystal-aio.stadium2.lib.fragment")
 
 local Resources = {}
 
@@ -265,7 +265,7 @@ function Resources.modelFromShape(shape,name)
   -- Direct FRAGMENT models bypass DSM packing. Preserve the same callback
   -- program/texture bindings that packed models receive in their S2HX data.
   if shape.compiledLayout then
-    local Handlers=require('mods.gen2-aio.stadium2.lib.model_handlers')
+    local Handlers=require('mods.crystal-aio.stadium2.lib.model_handlers')
     model.handlers=Handlers.prepare({
       records=Handlers.compile(model.fx,module,Resources.VRAM_BASE),
       fragment=module,sourceBase=Resources.VRAM_BASE,

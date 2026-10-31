@@ -1,4 +1,4 @@
--- HUD BUTTONS editor, QUICK HEAL and FLY / DIG / ROPE (lib/gen2_aio/quick_menu.lua).
+-- HUD BUTTONS editor, QUICK HEAL and FLY / DIG / ROPE (lib/crystal_aio/quick_menu.lua).
 -- Run from the repo root: luajit tests/hud_buttons.lua
 local count = 0
 local function check(v, msg) assert(v, msg); count = count + 1 end
@@ -55,13 +55,13 @@ local game = {
   consumeItem = function(self, id) self.save.inventory[id] = self.save.inventory[id] - 1 end,
   pushStartMenuItem = function(_, id) pushed = id end,
 }
-local mod = { id = "gen2-aio", exports = {}, hooks = { wrap = function() end } }
+local mod = { id = "crystal-aio", exports = {}, hooks = { wrap = function() end } }
 mod._kimArenaOpt = function(k, d)
-  local b = game.mods.modOptions["gen2-aio"]
+  local b = game.mods.modOptions["crystal-aio"]
   if b and b[k] ~= nil then return b[k] end
   return d
 end
-local q = assert(loadfile("lib/gen2_aio/quick_menu.lua"))()({ mod = mod })
+local q = assert(loadfile("lib/crystal_aio/quick_menu.lua"))()({ mod = mod })
 
 local function ids()
   local out = {}
@@ -75,7 +75,7 @@ local function off(id) for _, a in ipairs(q.hudActions(game)) do if a.id == id t
 check(off("bike") and off("items") and not off("gear"), "unusable buttons are dimmed, not hidden")
 q.setHudPlace(game, "heal", 1)
 check(table.concat(q.hudOrder(game), ",") == "heal,gear,dex,bike,items", "editor inserts at a place")
-check(game.options.modOptions["gen2-aio"].hudButtons == "heal,gear,dex,bike,items", "editor persists to options")
+check(game.options.modOptions["crystal-aio"].hudButtons == "heal,gear,dex,bike,items", "editor persists to options")
 check(off("heal"), "QUICK HEAL dimmed while the party is healthy")
 q.setHudPlace(game, "gear", nil)
 check(table.concat(q.hudOrder(game), ",") == "heal,dex,bike,items", "editor removes a button")

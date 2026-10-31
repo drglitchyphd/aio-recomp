@@ -1,12 +1,16 @@
-# Gen2-AIO for Gen1Recomp
+# Crystal-AiO for Gen1Recomp
 
-This repository distributes **Gen2-AIO** (`gen2-aio`), the Crystal bundle.
-See [the bundle README](README_GEN2_AIO.md) for current features, release notes,
-installation and updates. The Kanto in Motion documentation below describes
-the bundled upstream component.
+This repository distributes **Crystal-AiO** (`crystal-aio`), the Pokemon
+Crystal bundle. Before 1.0.0 it was called **Gen2-AIO** (`gen2-aio`).
+See [the bundle README](README_CRYSTAL_AIO.md) for current features, release
+notes, installation and updates (including the one-time upgrade from
+Gen2-AIO). The Kanto in Motion documentation below describes the bundled
+upstream component as it shipped; Crystal-AiO keeps only its Gold / Silver /
+Crystal parts (the Red / Blue / Yellow and FireRed / LeafGreen / Ruby /
+Sapphire / Emerald paths were removed in 1.0.0).
 
-- **Features:** [FEATURES.md](FEATURES.md) is a tour of everything Gen2-AIO
-  does and where to find it in the GEN2-AIO menus.
+- **Features:** [FEATURES.md](FEATURES.md) is a tour of everything Crystal-AiO
+  does and where to find it in the CRYSTAL-AIO menus.
 - **Credits:** [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) credits every
   bundled mod (Kanto in Motion, gmarcs Gen 2 Voxel Mod, Stadium 2 Importer,
   Wilds of Kanto Revival, Nuzlocke, Gen1Wild QOL, QoL Toggles, KIM Touch) and

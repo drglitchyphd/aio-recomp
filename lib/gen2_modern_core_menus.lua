@@ -443,7 +443,7 @@ return function(mod)
     -- Treat that source object as the controller and replace only its pixels;
     -- no changes to the other mod or its callbacks/items are required.
     -- gen2-aio 0.9.75: not RELEARN's list (it carries `relearn`); that one
-    -- has its own window in lib/gen2_aio/modern_moves.lua
+    -- has its own window in lib/crystal_aio/modern_moves.lua
     if okGenericMenu and GenericMenu and isClass(s,GenericMenu)
         and s.game and s.game.data and s.game.data.gen2MenuGfx and rawget(s,"relearn")==nil then
       return "genericmenu"
@@ -460,7 +460,7 @@ return function(mod)
     if isManagerState
         and s.screen=="options"
         and s.currentMod
-        and (tostring(s.currentMod.id or "")=="gen2-aio"
+        and (tostring(s.currentMod.id or "")=="crystal-aio"
           or tostring(s.currentMod.name or ""):lower()=="kanto in motion") then
       return "modoptions"
     end
@@ -3697,7 +3697,7 @@ return function(mod)
     local body=font(23*scale); local small=font(17*scale)
     -- gen2-aio 0.9.76: STOP EVOLUTION, a button inside the window (the touch B
     -- sits under it, and at 2x speed the cart's own B window is a few frames);
-    -- lib/gen2_aio/evolution_stop.lua turns the request into Crystal's own stop
+    -- lib/crystal_aio/evolution_stop.lua turns the request into Crystal's own stop
     if not s.force and not s.canceled and (s.phase=="evolving" or s.phase=="cry" or s.phase=="flash") then
       local asked=rawget(s,"_aioStop")==true
       local bw,bh=math.min(w*.6,360*scale),math.max(44*scale,small:getHeight()*2.2)

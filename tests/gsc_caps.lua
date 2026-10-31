@@ -1,4 +1,4 @@
-local caps=assert(loadfile("lib/gen2_aio/gsc_caps.lua"))()
+local caps=assert(loadfile("lib/crystal_aio/gsc_caps.lua"))()
 local source=assert(io.open("nuzlocke/main.lua")):read("*a")
 local stages=assert(loadstring("return "..assert(source:match("gscStages = (%b{})"))))()
 local count=0

@@ -3,7 +3,7 @@
 local N={maps={}}
 local floor,min,max=math.floor,math.min,math.max
 function N.build(id,rows)
- require("mods.gen2-aio.stadium2.lib.weather_surface").build(id,rows)
+ require("mods.crystal-aio.stadium2.lib.weather_surface").build(id,rows)
  local cells={}
  for i=1,#rows,3 do
   local a,b,c=rows[i],rows[i+1],rows[i+2]
@@ -25,7 +25,7 @@ function N.build(id,rows)
  N.maps[id]={cells=cells}
  return N.maps[id]
 end
-function N.clear(id) N.maps[id]=nil;require("mods.gen2-aio.stadium2.lib.weather_surface").maps[id]=nil end
+function N.clear(id) N.maps[id]=nil;require("mods.crystal-aio.stadium2.lib.weather_surface").maps[id]=nil end
 function N.free(map,x,y,z,radius,height)
  if not map then return false end
  -- Stay inside supported land/cavern space; lake visitors are airborne.

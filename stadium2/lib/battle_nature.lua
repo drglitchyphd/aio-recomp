@@ -1,10 +1,10 @@
-local Instances=require('mods.gen2-aio.stadium2.lib.scenery_instances')
-local Chunks=require('mods.gen2-aio.stadium2.lib.scenery_chunks')
+local Instances=require('mods.crystal-aio.stadium2.lib.scenery_instances')
+local Chunks=require('mods.crystal-aio.stadium2.lib.scenery_chunks')
 -- Textured Kenney Nature Kit woodland clearing.
-local Torches=require("mods.gen2-aio.stadium2.lib.battle_torches")
-local TorchShadows=require("mods.gen2-aio.stadium2.lib.battle_torch_shadows")
+local Torches=require("mods.crystal-aio.stadium2.lib.battle_torches")
+local TorchShadows=require("mods.crystal-aio.stadium2.lib.battle_torch_shadows")
 local Nature={}
-local Perch=require('mods.gen2-aio.stadium2.lib.woodland_perch')
+local Perch=require('mods.crystal-aio.stadium2.lib.woodland_perch')
 local shadowVertices
 local mesh,shader,grassTexture,shadowShader,skyTexture,watercolorTexture,skyShader
 local skyMesh
@@ -15,7 +15,7 @@ function Nature.bind(mod)
 end
 local function imageAsset(g,name)
   local path="assets/kenney_nature/"..name
-  local source="mods/gen2-aio/stadium2/"..path
+  local source="mods/crystal-aio/stadium2/"..path
   if modRef then
     local bytes=assert(modRef:read(path),"Missing Nature asset: "..path)
     source=love.filesystem.newFileData(bytes,name)
@@ -49,7 +49,7 @@ vec3 materialPaint(vec3 p,vec3 n,vec2 quadrant,vec2 scale){
  if(weights.z>.001)result+=paint(p.xy*scale,quadrant)*weights.z;
  return result;
 }
-]]..require("mods.gen2-aio.stadium2.lib.torch_projection").source..[[
+]]..require("mods.crystal-aio.stadium2.lib.torch_projection").source..[[
 float visibility(Image map,vec3 light,vec3 p,vec3 n){
  if(torchShadows<.5)return 1.;
  return torchVisibility(map,light,p,n);
@@ -138,7 +138,7 @@ function Nature.matches(ctx,environment)
 end
 
 function Nature.vertices()
-  local models=require("mods.gen2-aio.stadium2.assets.kenney_nature.models")
+  local models=require("mods.crystal-aio.stadium2.assets.kenney_nature.models")
   local vertices,trees={},{}
   local function vertex(x,y,z,nx,ny,nz,c,material)
     vertices[#vertices+1]={x,y,z,nx,ny,nz,c[1],c[2],c[3],material or 0}
@@ -328,7 +328,7 @@ function Nature.vertices()
     end
   end
   shadowVertices=vertices
- require("mods.gen2-aio.stadium2.lib.visitor_navigation").build("grass",vertices)
+ require("mods.crystal-aio.stadium2.lib.visitor_navigation").build("grass",vertices)
   Nature.triangles=#vertices/3
   return vertices
 end
@@ -375,7 +375,7 @@ end
 -- Preserve the normal camera's orbit, zoom and UI sizing, but lower the
 -- woodland shot so the canopy and sky are part of the battle composition.
 function Nature.frame(frame)
-  local Mat=require("mods.gen2-aio.stadium2.lib.renderer")
+  local Mat=require("mods.crystal-aio.stadium2.lib.renderer")
   local out={}
   for k,v in pairs(frame) do out[k]=v end
   out.eye={frame.eye[1],frame.eye[2]*.65,frame.eye[3]}
@@ -406,7 +406,7 @@ end
 -- A translation-free camera VP: the sky is infinitely distant. Camera
 -- rotation/pitch/zoom still change the view naturally, but position cannot.
 function Nature.skyVP(frame)
-  local Mat=require("mods.gen2-aio.stadium2.lib.renderer")
+  local Mat=require("mods.crystal-aio.stadium2.lib.renderer")
   local view={}
   for i,v in ipairs(frame.view) do view[i]=v end
   view[4],view[8],view[12]=0,0,0
@@ -482,7 +482,7 @@ function Nature.endBattle()
 end
 
 function Nature.release()
- require("mods.gen2-aio.stadium2.lib.visitor_navigation").clear("grass")
+ require("mods.crystal-aio.stadium2.lib.visitor_navigation").clear("grass")
   TorchShadows.release();shadowVertices=nil
   Torches.release()
   if skyMesh then skyMesh:release();skyMesh=nil end
