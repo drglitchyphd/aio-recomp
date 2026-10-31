@@ -33,6 +33,7 @@ computed from, and checked against, pret/pokecrystal's wild tables.
 Root folder (`kim_main.lua`, `lib/`, `data/`, `assets/`). Version 1.7.6 is the
 base of this bundle (see `mod.card`).
 
+- Repository: https://github.com/HaseoSora/Kanto-in-Motion
 - HD asset pack (downloaded by the in-game ASSET MANAGER, not shipped in the
   ZIP): https://github.com/HaseoSora/Kanto-in-Motion-Assets
 - Provides HD animated Pokémon, the Modern UI, the modern battle panel, HD
@@ -153,6 +154,16 @@ included in this bundle; they were removed in 0.9.8.
 - **Antigravity, gamecorner33** and the PokéPC / Followers EX lineage
   (ShockSlayer, the Pokémon Crystal Clear team): Gen1Follower.
 - **Wowabox (Darklinkduck)**: *All Pokémon Catchable 151*.
+
+### Quality of Life — unxpected-uxp
+
+https://github.com/unxpected-uxp/pokemon-gen1-recomp-mod-qol ("Quality of
+Life", id `quality_of_life`). Later-generation quality-of-life features: the
+caught-Pokémon indicator in battle, area name banners, using HMs and fishing
+rods straight from the overworld, and the battle EXP bar. Its caught marker,
+area banner, easy HM use and NPC walk reach this bundle through Gen1Wild QOL's
+QualityOfLife module (see the table above). No license file is included in
+its repository.
 
 ### QoL Toggles
 
@@ -312,8 +323,7 @@ recorded for them in the bundle. The maintainer should fill these in.
 - **gmarcs Gen 2 Voxel Mod** (`gmarc/`): repository link and license.
 - **Nuzlocke** (`nuzlocke/`): repository link and license.
 - **Stadium 2 Importer** (`stadium2/`): repository link and license.
-- **Kanto in Motion** (root): its own repository link and license (only the
-  asset repository is recorded).
+- **Kanto in Motion** (root): license (the repository is now linked above).
 - **Player trainer battle sprites** (`assets/battle/player-trainers-*/`): Ash,
   Brock, Bulma, Gary, Misty, Red and Gen 1–5 player sprites.
 - **Pixel frames** (`assets/pixel_frame1-3.png`, `assets/gen2_aio/frames/pixel_frame_gen3.png`).
