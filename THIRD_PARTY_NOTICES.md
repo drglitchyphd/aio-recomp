@@ -165,13 +165,14 @@ area banner, easy HM use and NPC walk reach this bundle through Gen1Wild QOL's
 QualityOfLife module (see the table above). No license file is included in
 its repository.
 
-### QoL Toggles
+### QoL Toggles — ShaneMcGovernIE
 
+https://github.com/ShaneMcGovernIE/qol_toggles (releases:
+https://github.com/ShaneMcGovernIE/qol_toggles/releases). Bundled in
 `qoltoggles/` (version 1.31.1). It provides quick nurse, repels, field moves,
 EXP and money multipliers, instant text, hold to scroll and more. Its changelog
 thanks [@ProprietaryWeakness](https://github.com/ProprietaryWeakness) for
-suggesting MODERN TYPES. The author and repository are **not recorded** in the
-bundled files.
+suggesting MODERN TYPES.
 
 ### KIM Touch ("Kanto in Motion: Touch", `KIM_TOUCH`)
 
@@ -318,7 +319,6 @@ Motion's compatibility code for it and its in-game options adapter
 The following are shipped in this repository, but no author, link or license is
 recorded for them in the bundle. The maintainer should fill these in.
 
-- **QoL Toggles** (`qoltoggles/`): author and repository.
 - **KIM Touch** (`touch/`): author and repository.
 - **gmarcs Gen 2 Voxel Mod** (`gmarc/`): repository link and license.
 - **Nuzlocke** (`nuzlocke/`): repository link and license.
