@@ -92,6 +92,51 @@ Renamed to Crystal-AiO, Crystal-only, full-install release.
   failure stops the job and is retried next start. DIAGNOSTICS shows an
   `import` line.
 
+- gmarc 1.0.7 -> 1.0.17 merged (upstream github.com/gmarcmods/gmarcs_gen2_voxel_mod,
+  merge base 037555a, upstream HEAD e51b53a; 12 commits). Three-way merged
+  (base = upstream 037555a); every `gen2-aio` change kept.
+  - New upstream files taken as-is: BattleSprites, ImportedBattleSprites (B/W
+    sprite provider via `mod.packs`), CanvasOrientation (iOS/LOVE 12 Y flip
+    owned by the mod: GoldBattle shot, main.lua present override, Gen2 drawFx
+    via withRawFx), CoastalPlatforms (walkable Cherrygrove rock islands ->
+    flat `coastal_platform`), CoastalTerraces + TerraceMesh +
+    data/cherrygrove_terraces.lua (unwrapped terrace stamps), FenceRails
+    (ROUTE_39 tile-74 fence boxes), RockMaterial (Johto cliff/plateau: cap
+    tile 60, side bands rim 76 + body 54), ProfileExtensions (additive
+    companion profiles, `exports.profileExtensions`; V.data('voxel_heights')
+    now answers `profileExtensions:current()`, which lazily loads the shipped
+    file and shares its branches). BorderTreeLOD (`lodTree`), TileShape
+    (builtinHeights, CoastalPlatforms + RockMaterial hooks) taken from
+    upstream (ours == base).
+  - Conflicts: GoldBattle sideTexture (kept our plate-shadow capture and
+    `_kimArenaCardScale` supersampling, wrapped in upstream's
+    BattleSprites.withFrame); Structures.forMap (kept our Budget.mark labels
+    and single `px`, added CoastalTerraces after Buildings.build).
+    ChunkMesher, Gen2, gmarc/main.lua merged cleanly.
+  - Ours on top: BattleSprites' key renamed `battleSprites` ->
+    `voxelBattleSprites` (the host's BATTLE SPRITES row owns `battleSprites`
+    in the one merged schema; upstream's row would have replaced ours); main.lua
+    GM_ART hides it and `locks.voxelBattleSprites = "native"` (the bundle's
+    manifest declares no `gen5_bw/battle_sprites` asset pack, and KIM HD draws
+    the battle mons). RockMaterial hoisted to a ChunkMesher upvalue.
+    TerraceMesh.build takes an optional tick; CoastalTerraces passes
+    BuildBudget.tick (pcall'd so upstream's unit test still loads it).
+    MeshStore.enabled()/whyOff() are off while `V.profileExtensions:list()` is
+    non-empty (companion geometry is not in the build id). Host reports gmarc
+    as 1.0.17.
+  - data/voxel_heights.lua: upstream changed only add() payloads (182 lines:
+    pagoda roof materials, small-tree polish); the Kanto roof pass is
+    unchanged. Upstream's file re-transformed with scratchpad
+    vh/transform.py (328 blocks); vh/compare.lua: identical, 441 templates,
+    2,408,453 edits. Load 0.11 s / 32 MB. tests/voxel_heights_lazy total
+    2408364 -> 2408453 (+12 johto/modern small tree, forest_sapling,
+    kanto_sapling; +41 forest_cut_tree).
+  - Sandbox: no ffi/thread/io/os in the new code; love.system.getOS and
+    love.filesystem.newFileData(bytes, name) resolve through the engine's
+    LegacyCompat shims. New per-map caches are weak-keyed (CoastalPlatforms by
+    map, CoastalTerraces by atlas ImageData, RockMaterial by shape).
+  - gmarc/lib changed, so the voxel build id (and every cached map) changes.
+
 ## 0.9.91 (2026-10-30)
 
 - Docs:
@@ -1405,7 +1450,7 @@ DECLINED: PC QoL, next-goal hint, photo mode, accessibility.
 | Part | Folder |
 |---|---|
 | Kanto in Motion 1.7.6 | root (`kim_main.lua`, `lib/gen2_modern_*.lua`) |
-| gmarc voxel engine 1.0.7 (only voxel engine) | `gmarc/` |
+| gmarc voxel engine 1.0.17 (only voxel engine) | `gmarc/` |
 | Stadium 2 Importer (KENNEY HD scenes only) | `stadium2/` |
 | Wilds of Kanto 2.8.1 (namespaced `wok_`) | `wilds/` |
 | Nuzlocke 1.0.2 (namespaced `nz_`) | `nuzlocke/` |

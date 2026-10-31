@@ -44,10 +44,13 @@ base of this bundle (see `mod.card`).
 
 ### gmarcs Gen 2 Voxel Mod — gmarcs
 
-`gmarc/` (version 1.0.7, modified for this bundle). It provides the 3D voxel
-overworld and the 3D battle stage. According to its README, it was "inspired by
-Dramatic Shape (Gen 1 voxel mod)". The bundle's 0.9.0 notes credit "gmarcs, from
-Dramatic Shape". No link is recorded in the bundle.
+`gmarc/` (version 1.0.17, modified for this bundle). Repository:
+[gmarcmods/gmarcs_gen2_voxel_mod](https://github.com/gmarcmods/gmarcs_gen2_voxel_mod).
+It provides the 3D voxel overworld and the 3D battle stage. Its `mod.card`
+names the author "gmarcs" and credits "Dramatic Shape" as the "Gen 1 voxel mod
+this grew out of"; its README says it was "inspired by Dramatic Shape (Gen 1
+voxel mod)". The bundle's 0.9.0 notes credit "gmarcs, from Dramatic Shape". The
+repository does not state a license.
 
 ### Pokémon Stadium 2 Importer — Deftones565
 
@@ -320,7 +323,7 @@ The following are shipped in this repository, but no author, link or license is
 recorded for them in the bundle. The maintainer should fill these in.
 
 - **KIM Touch** (`touch/`): author and repository.
-- **gmarcs Gen 2 Voxel Mod** (`gmarc/`): repository link and license.
+- **gmarcs Gen 2 Voxel Mod** (`gmarc/`): license (the repository states none).
 - **Nuzlocke** (`nuzlocke/`): repository link and license.
 - **Stadium 2 Importer** (`stadium2/`): repository link and license.
 - **Kanto in Motion** (root): license (the repository is now linked above).
