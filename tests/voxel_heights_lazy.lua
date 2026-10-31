@@ -51,8 +51,10 @@ end
 collectgarbage(); collectgarbage()
 local afterMB = (collectgarbage("count") - base) / 1024
 check(afterMB < heapMB + 20, ("decoding every template keeps nothing (%.0f MB after, %.0f before)"):format(afterMB, heapMB))
--- the count the fully expanded file produced (0.9.83), roof pass applied
-check(total == 2408364, "every edit decodes, same as the eager load: " .. total)
+-- the count the fully expanded file produced (0.9.83), roof pass applied;
+-- 1.0.0 gmarc 1.0.17 merge: +89 from upstream's small-tree polish (the
+-- Johto/modern/forest saplings +12 each, kanto_sapling +12, forest_cut_tree +41)
+check(total == 2408453, "every edit decodes, same as the eager load: " .. total)
 check(roofs > 0, "pitched Kanto roofs get their spriteRoof on decode: " .. roofs)
 local sample = data.buildings.TILESET_CAVE and data.buildings.TILESET_CAVE[1]
 if sample and sample.voxelEdits then

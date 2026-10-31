@@ -13,7 +13,7 @@ one-time upgrade.
 | Part | Folder | Notes |
 |---|---|---|
 | Kanto in Motion 1.7.6 | root | HD Pokemon, Modern UI, battle panel |
-| gmarcs Gen 2 Voxel Mod 1.0.7 | `gmarc/` | Voxel overworld and 3D battle (the only voxel engine) |
+| gmarcs Gen 2 Voxel Mod 1.0.17 | `gmarc/` | Voxel overworld and 3D battle (the only voxel engine) |
 | Stadium 2 Importer (Kenney scenes only) | `stadium2/` | Live KENNEY HD battle backgrounds |
 | Wilds of Kanto Revival 2.8.1 | `wilds/` | Visible wild Pokemon, followers (MIT, see `wilds/LICENSE`) |
 | Nuzlocke 1.0.2 | `nuzlocke/` | Ruleset; Crystal routed through its Gold (GSC) paths |
@@ -127,6 +127,18 @@ Gen2-AIO is now **Crystal-AiO**, and this is a full-install release.
   could silently stop every prize. The row now shows the value really in
   effect. 0X also moved to the end of the list (OFF → 1.5X → 2X → 3X → 4X →
   0X), so a single stray tap from OFF can no longer turn prizes or EXP off.
+
+- **3D world: gmarc's Gen 2 Voxel Mod updated to 1.0.17** (from 1.0.7; upstream
+  commit e51b53a), keeping all of Crystal-AiO's own changes (disk cache, build
+  budget, fast profile load). New in the 3D world: Johto mountain edges show a
+  stone rim and rock face instead of stretched tiles; Cherrygrove's rock
+  islands become low walkable landings and its shore rocks real stepped
+  terraces; Route 39's Moomoo Farm fence is built from posts and rails; tree,
+  roof (Sprout/Burned/Tin Tower) and sapling polish. iOS keeps the 3D picture
+  the right way up on newer LOVE builds. Companion mods can now add their own
+  region's voxel profile (the disk cache steps aside while one is active).
+  gmarc's new imported Black/White battle sprite option is not used here (KIM
+  HD draws the battle Pokemon). The 3D disk cache rebuilds once per map.
 
 ## 0.9.91 changes
 

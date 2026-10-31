@@ -68,12 +68,15 @@ function V.require(name)
 end
 
 local dataFiles = {}
-function V.data(name)
+local profileExtensions
+local function rawData(name)
   local hit = dataFiles[name]
-  if hit ~= nil then return hit end
-  local value = chunkFor("data/" .. name .. ".lua")(V)
-  dataFiles[name] = value
-  return value
+  if hit == nil then hit=chunkFor("data/" .. name .. ".lua")(V);dataFiles[name]=hit end
+  return hit
+end
+function V.data(name)
+  if name=='voxel_heights'and profileExtensions then return profileExtensions:current()end
+  return rawData(name)
 end
 
 -- ------- pipelines
@@ -375,6 +378,8 @@ local SETTINGS = {
 SETTINGS[#SETTINGS+1]={V.require('GoldBattle').setting,
  'Stage battles on the MAP or on PLATFORMS. Installed model packs enable STADIUM A/B. OFF uses the classic battle screen.',
  full=true}
+SETTINGS[#SETTINGS+1]={V.require('BattleSprites').setting,
+ 'Optional imported battle artwork. Install the Gen 5 sprite provider and import your own ROM through IMPORTERS. Missing artwork uses native sprites.',full=true}
 local StadiumImport=V.require('StadiumImport')
 StadiumImport.restore()
 function V.refreshSettings()
@@ -871,7 +876,7 @@ do
         end
         if override then
           love.graphics.setColor(1, 1, 1, 1)
-          love.graphics.draw(override, 0, 0, 0, ctx.presentScale, ctx.presentScale)
+          V.require("CanvasOrientation").draw(override, 0, 0, ctx.presentScale, ctx.presentScale)
           return
         end
       end
@@ -1046,3 +1051,15 @@ mod.exports.supportsVariableSpriteGeometry = true
 -- exposed so a companion mod can pin its own tiles' shapes or read the
 -- camera without reaching into this mod's file layout
 mod.exports.lib = V
+mod.exports.registerBattleSpriteProvider = V.require("BattleSprites").register
+-- Additive companions register their own region's profile without patching us.
+local TileShape=V.require('TileShape')
+profileExtensions=V.require('ProfileExtensions').new(function()return rawData('voxel_heights')end,TileShape.builtinHeights(),function(profile)
+  ChunkMesher.invalidate()
+  TileShape.inject(profile)
+  V.require('Buildings').inject(profile)
+end)
+mod.exports.profileExtensions=profileExtensions
+-- gen2-aio: MeshStore skips the disk cache while a companion profile is
+-- registered (the cache's build id fingerprints only gmarc's own files)
+V.profileExtensions=profileExtensions

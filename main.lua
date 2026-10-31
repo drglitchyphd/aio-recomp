@@ -217,7 +217,11 @@ return function(mod)
 
   -- gmarc rows the fork owns: its 3D-BTL mode and its own Stadium model
   -- import (the fork's backgrounds replace both).
-  local GM_ART = { battles = true, stadiumImport = true, daytime = true }
+  -- 1.0.0 (gmarc 1.0.17): its imported Black/White battle sprites
+-- (voxelBattleSprites) need an asset pack this bundle does not declare, and
+-- KIM HD already draws the battle Pokemon, so it is pinned NATIVE and hidden.
+local GM_ART = { battles = true, stadiumImport = true, daytime = true,
+                 voxelBattleSprites = true }
   -- BATTLE SPRITES = STADIUM 2: set up after the Stadium 2 modules bind
   local StadiumModels = nil
   local function stadiumModelsReady()
@@ -251,6 +255,7 @@ return function(mod)
   local locks = {
     -- the voxel sky reads Crystal's clock, which TIME OF DAY drives
     daytime = "sync",
+    voxelBattleSprites = "native",
     battles = function()
       if not (Backdrop and Backdrop.stageEnabled()) then return false end
       -- BATTLE SPRITES = STADIUM 2 with the model cache built: gmarc's
@@ -459,7 +464,7 @@ return function(mod)
 
   local internal = {}
   internal.gmarcs_gen2_voxel_mod = function()
-    return { id = "gmarcs_gen2_voxel_mod", version = "1.0.7", exports = voxel.exports }
+    return { id = "gmarcs_gen2_voxel_mod", version = "1.0.17", exports = voxel.exports }
   end
   -- KIM's Battle Art bridges stay off: gmarc's battle captures KIM's
   -- direct-HD drawPic itself.

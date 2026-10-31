@@ -92,7 +92,7 @@ local function sideTexture(s,e,side)
  -- baked into this upright card; its metrics come back and the scene paints
  -- it on the plate under the card's feet (BattleScene / Voxel3D.backdrop).
  local plateShadow=host('_kimArenaShadowCapture',true,side)==true
- local ok,canvas=pcall(capture,e,side,function()
+ local function drawSide()
   local draw=function()s:drawPic(s:activeMon(side),back)end
   if s.anim and s.animView then
    s.animView:present(s.anim,draw,s.battle)
@@ -101,7 +101,14 @@ local function sideTexture(s,e,side)
   elseif s.slideFrame and s.slideFrame<72 then
    local G=love.graphics;G.push();G.translate((back and -1 or 1)*(72-s.slideFrame)*2,0);draw();G.pop()
   else draw()end
- end,nil,nil,host('_kimArenaCardScale') or 1)
+ end
+ -- upstream 1.0.17: an optional imported-sprite provider swaps the picture
+ -- (BattleSprites; the host pins it to NATIVE, so this is a plain capture)
+ local ok,canvas=pcall(function()
+  return V.require('BattleSprites').withFrame(s,side,function()
+   return capture(e,side,drawSide,nil,nil,host('_kimArenaCardScale') or 1)
+  end)
+ end)
  local shadow=nil
  if plateShadow then shadow=host('_kimArenaShadowCapture',false,side) end
  if type(shadow)~='table' then shadow=nil end
@@ -187,7 +194,8 @@ function B.render(s,winW,winH)
  if not shot then return false end
  e.shot=shot
  G.push('all');G.setShader();G.setColor(1,1,1,1)
- G.setBlendMode('alpha','premultiplied');G.draw(shot.canvas,0,0,0,winW/shot.pw,winH/shot.ph)
+ G.setBlendMode('alpha','premultiplied')
+ V.require('CanvasOrientation').draw(shot.canvas,0,0,winW/shot.pw,winH/shot.ph)
  G.setBlendMode('alpha')
  local good,err=pcall(function()
   e.hud=V.require('GoldBattleHud').draw(s,e,shot,winW,winH,capture)
