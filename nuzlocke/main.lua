@@ -3495,6 +3495,67 @@ return function(mod)
       return worldMessage(game, tier1, tier2, tier3)
   end
 
+  -- The battle screen resolving `battle` when it is the Crystal BattleState
+  -- (src/ui/gen2/BattleState.lua): the one with pushCaught and the event
+  -- queue it drains once the ball animation is over.
+  local function catchBattleScreen(game, battle)
+      local states = game and game.stack and game.stack.states
+      if type(states) ~= "table" or battle == nil then return nil end
+      for i = #states, 1, -1 do
+          local state = states[i]
+          if type(state) == "table" and state.battle == battle
+              and type(state.queue) == "table"
+              and type(state.pushCaught) == "function" then
+              return state
+          end
+      end
+      return nil
+  end
+
+  -- Catch feedback from a pokemon.caught listener.
+  --
+  -- The engine emits pokemon.caught from BattleState:pushCaught, which runs
+  -- synchronously inside useItem the moment the ball is THROWN: the catch
+  -- roll is decided up front, and the ball animation, the wobbles and
+  -- "Gotcha! X was caught!" are only queued (src/ui/gen2/BattleState.lua
+  -- useItem -> pushCaught -> Runtime.emit). A TextBox pushed from the
+  -- listener therefore went up over the throw, before the result was shown.
+  -- Put the line into the battle's own queue instead: at emit time it holds
+  -- "Gotcha!" (and the new #DEX entry), and the nickname prompt is pushed
+  -- right after the emit, so an appended message is read after "Gotcha!"
+  -- and before "Give a nickname...?". `order` keeps the lines in a fixed
+  -- order whichever listener ran first. A ball the Pokemon breaks out of
+  -- never emits pokemon.caught, so it never reaches here.
+  local function worldMechanicAfterCatch(ev, order, key, tier1, tier2, tier3)
+      local game = ev and ev.game
+      local screen = catchBattleScreen(game, ev and ev.battle)
+      if not screen then
+          return worldMechanic(game, key, tier1, tier2, tier3)
+      end
+      local tier = worldTier(game)
+      if tier <= 0 then return false end
+      if key then
+          local flags = worldFlags()
+          local seenTier = tonumber(flags[key]) or (flags[key] and 3 or 0)
+          if seenTier >= tier then return false end
+          flags[key] = tier
+          mod.save:set("nuzlocke_world_flags", flags)
+      end
+      local message = tier == 1 and tier1
+          or (tier == 2 and (tier2 or tier1) or (tier3 or tier2 or tier1))
+      if not message then return false end
+      local queue = screen.queue
+      local at = #queue + 1
+      while at > 1 and type(queue[at - 1]) == "table"
+          and tonumber(queue[at - 1].nuzlockeCatchOrder)
+          and queue[at - 1].nuzlockeCatchOrder > order do
+          at = at - 1
+      end
+      table.insert(queue, at, { kind = "message", text = message,
+          nuzlockeCatchOrder = order })
+      return true
+  end
+
   mod.events:on("intro.oak_speech.finished", function()
       local ver = getGameVersion and getGameVersion() or "RED"
       if (ver == "RED" or ver == "BLUE" or ver == "YELLOW") and worldTier(currentGame) >= 3 then
@@ -6492,7 +6553,7 @@ return function(mod)
       if mon.nickname == nil or mon.nickname == "" or mon.nickname == mon.species then
           mon.nuzlockeNeedsNickname = true
           mon.nuzlockeNicknameRequired = true
-          worldMechanic(ev.game, "nickname",
+          worldMechanicAfterCatch(ev, 2, "nickname",
               "Every teammate gets a nickname.\nNo exceptions.",
               "Give it a name.\nYou're going to regret it if you don't.",
               "A name makes it a teammate, not just a party slot.")
@@ -7920,12 +7981,12 @@ return function(mod)
       end
 
       if isShiny and mod.save:get("shiny_clause", false) == true then
-          worldMechanic(ev.game, "shiny:" .. tostring(ev.mon and (ev.mon.nickname or ev.mon.species) or ev.species),
+          worldMechanicAfterCatch(ev, 1, "shiny:" .. tostring(ev.mon and (ev.mon.nickname or ev.mon.species) or ev.species),
               "SHINY!\nThe Shiny Clause says this one gets a pass.",
               "Whoa. SHINY!\nThe rules can wait for this one.",
               "Even the Nuzlocke gods make exceptions for sparkle.")
       else
-          worldMechanic(ev.game, "catch:" .. tostring(key) .. ":" .. tostring(ev.species),
+          worldMechanicAfterCatch(ev, 1, "catch:" .. tostring(key) .. ":" .. tostring(ev.species),
               "FIRST ENCOUNTER!\n" .. tostring(ev.mon and (ev.mon.nickname or ev.species) or ev.species) .. " joins the run.",
               "New teammate acquired.\nDon't get attached. You know the rules.",
               tostring(routeName(key)) .. " is officially part of the story now.")

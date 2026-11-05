@@ -320,6 +320,17 @@ return function(mod)
         elseif down + r * 1.15 <= oy + sh and not hits(down) then by = down
         elseif up - above >= oy then by = up end
       end
+      -- gen2-aio 0.9.93: nor on the battle panel. It now keeps one height
+      -- for the whole battle (the move list's), so on a tall screen START /
+      -- SELECT under it would sit on its bottom edge in the message and
+      -- YES / NO phases: the cluster moves down clear of it when the screen
+      -- has the room (the same spot in every phase, the panel never moves).
+      local P = cards.panel
+      if not landscape and type(P) == "table" and tonumber(P.y) and tonumber(P.h)
+          and cr > P.x and cl < P.x + P.w and by + r * 1.15 > P.y and by - above < P.y + P.h then
+        local down = P.y + P.h + margin * 0.5 + above
+        if down + r * 1.15 <= oy + sh and not hits(down) then by = math.max(by, down) end
+      end
     end
     local sy = by - r - margin - pr
     return {

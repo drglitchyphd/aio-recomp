@@ -396,6 +396,9 @@ return function(host)
       enemy = { x = px + margin, y = topY, w = cardW, h = cardHeight("enemy", fit) },
       player = { x = playerX, y = playerY, w = cardW, h = playerH },
       panelTop = panel and panel.y or nil,
+      -- 0.9.93: the whole panel (one rect for the battle), for KIM Touch's
+      -- floating buttons to stay off it
+      panel = panel and { x = panel.x, y = panel.y, w = panel.w, h = panel.h } or nil,
     }
     if state.showPlayerHud then card(state, "player", playerX, playerY, cardW, fit, theme) end
     if state.ballRows and state.ballRows.player then

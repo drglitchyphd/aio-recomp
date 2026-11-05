@@ -627,8 +627,12 @@ return function(host)
     local o=open(s,"list")
     local S,f,pad=o.S,o.body,o.pad
     local lines=pageLines(s,rec)
-    local w=math.min(o.W*.92,math.max(f:getWidth(("0"):rep(18))+pad*2,900*o.k))
-    local tw=w-pad*2
+    -- gen2-aio 0.9.93: a question's YES / NO sit inside the box at its right
+    -- end, like the Modern dialogue's (no window above it); the box is wider
+    -- for the whole question, so it does not change when they appear
+    local bw=s.confirm and math.max(118*o.k,f:getWidth("YES")*2.4)*2+pad*.5 or 0
+    local w=math.min(o.W*.92,math.max(f:getWidth(("0"):rep(18))+pad*2,900*o.k)+bw)
+    local tw=w-pad*2-bw
     local th=0
     for _,l in ipairs(lines) do local _,wr=f:getWrap(l,tw); th=th+math.max(1,#wr)*f:getHeight() end
     local dh=math.max(f:getHeight()*2,th)+pad*2
@@ -644,8 +648,20 @@ return function(host)
       S.color(o.c.accent); tri(dx+w-pad,dy+dh-pad*.8,f:getHeight()*.5,"down")
     end
     if yes then
-      o.x,o.w=dx,w
-      yesNo(o,s.confirm.choice or 1,dy,function(st,i) if st.confirm then st.confirm.choice=i end end,dx+w)
+      local gap=pad*.5
+      local bh=dh-pad
+      local cw=(bw-gap)/2
+      local bx=dx+w-pad*.5-bw
+      for i,label in ipairs({"YES","NO"}) do
+        local cx=bx+(i-1)*(cw+gap)
+        local on=i==(s.confirm.choice or 1)
+        S.color(on and o.c.selected or (o.c.raised or o.c.surface)); G.rectangle("fill",cx,dy+pad*.5,cw,bh,6,6)
+        if not on then
+          S.color(o.c.divider or o.c.muted); G.setLineWidth(math.max(1,1.5*o.k)); G.rectangle("line",cx,dy+pad*.5,cw,bh,6,6)
+        end
+        S.text(str(label),f,cx,dy+pad*.5+(bh-f:getHeight())/2,cw,"center",on and o.c.text or o.c.muted)
+        cell(o,cx,dy+pad*.5,cw,bh,function(st) if st.confirm then st.confirm.choice=i end end)
+      end
     end
     mod._kimScreenTapTargets=o.taps
   end
