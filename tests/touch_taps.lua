@@ -53,3 +53,28 @@ exports.screenTapTargets = function() return { state = party, kind = "party", ti
             { kind = "partySub", index = 1, x = 600, y = 900, w = 300, h = 80 } } } end
 print("party submenu open space:", tapAt(300, 1500))
 print("party submenu row:", tapAt(700, 940))
+-- gen2-aio 0.9.92: the Modern PACK's buttons (kind packAction): select, then
+-- the cell's button unless select answered false; SORT presses nothing
+local pack = { index = 1, rows = { { id = "POTION" } } }
+top = pack
+local picked, sorted = nil, 0
+exports.screenTapTargets = function() return { state = pack, kind = "pack", time = T,
+  cells = { { kind = "pack", index = 1, x = 100, y = 300, w = 800, h = 60 },
+            { kind = "packAction", action = "toss", x = 100, y = 1800, w = 200, h = 80,
+              select = function(s) picked = "toss"; return true end, button = "a" },
+            { kind = "packAction", action = "give", x = 320, y = 1800, w = 200, h = 80,
+              select = function(s) return false end, button = "a" },
+            { kind = "packAction", action = "sort", x = 700, y = 200, w = 200, h = 60,
+              select = function(s) sorted = sorted + 1 end, button = false } } } end
+local r = tapAt(200, 1840)
+print("pack TOSS button:", r)
+assert(picked == "toss" and r:find("tap:a"), "TOSS: select then A")
+r = tapAt(400, 1840)
+print("pack refused button:", r)
+assert(not r:find("tap:a"), "a refused action presses nothing")
+r = tapAt(800, 230)
+print("pack SORT button:", r)
+assert(sorted == 1 and not r:find("tap:"), "SORT: select only")
+r = tapAt(500, 330)
+assert(pack.index == 1 and r:find("tap:a"), "pack row still taps A")
+print("touch taps: pack buttons OK")

@@ -370,7 +370,7 @@ return function(mod)
   -- What has focus on a Party / Pack screen: "list" (rows, pocket tabs),
   -- "sub" (SWITCH/STATS, USE/TOSS, YES/NO, quantity), or nil (a message or
   -- result the plain A of a tap should answer).
-  local LIST_KINDS = { party = true, pack = true, pocket = true, start = true }
+  local LIST_KINDS = { party = true, pack = true, pocket = true, start = true, packAction = true }
   local SUB_KINDS = { partySub = true, modal = true }
   local function screenMode(t, state)
     -- gen2-aio 0.9.8: generic screens publish their own focus ("list" by
@@ -1005,7 +1005,7 @@ return function(mod)
     -- height travelled (finger up = further down the list, like a phone),
     -- left/right steps for sideways swipes -- and never ends in an A press.
     if g and (g.kind == "cell" or g.kind == "screencell") and not g.long and g.sx
-        and g.cell.kind ~= "ball" then
+        and g.cell.kind ~= "ball" and g.cell.kind ~= "packAction" then
       local c = g.cell
       local dx, dy = ev.x - g.sx, ev.y - g.sy
       -- a free-scroll list's swipe starts after most of a row, even on a
@@ -1205,6 +1205,14 @@ return function(mod)
           state.confirmChoice = c.index
         end
         tap(game, "a"); buzz()
+      elseif c.kind == "packAction" then
+        -- gen2-aio 0.9.92: the Modern PACK's SORT / USE / GIVE / TOSS /
+        -- REGISTER buttons: `select` opens the PACK's own submenu on that
+        -- row (false = not offered), then A picks it as the D-pad would
+        local okS, go = true, true
+        if type(c.select) == "function" then okS, go = pcall(c.select, state) end
+        if okS and go ~= false and c.button then tap(game, c.button) end
+        buzz()
       elseif c.kind == "pocket" then
         local delta = c.index - (tonumber(state.pocketIndex) or c.index)
         if delta ~= 0 and type(state.switchPocket) == "function" then
