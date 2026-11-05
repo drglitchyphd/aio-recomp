@@ -106,11 +106,11 @@ The hub adapter (`lib/crystal_aio/ingame_options.lua`) ignores `visible_if`. It 
 | water | WATER | gmarc | gmarc/lib/Water.lua | OK |
 | atmos | FOREST FX | gmarc | ForestAtmos.lua:73 (phone ladder LOW/OFF only); main.lua:224 | OK. PERFORMANCE's "FULL to LOW" clause never applies on Android |
 | aa | AA | gmarc | AntiAlias.lua; **locked to 0 while PERFORMANCE=BALANCED** (main.lua:223) | CONFLICT / NO EFFECT at default |
-| voxelPrecache | VOXEL PRECACHE | main | main.lua:233 -> gmarc Prefetch | OK (advanced) |
+| voxelPrecache | VOXEL PRECACHE | main | gmarc Prefetch | REMOVED in 1.0.0 (back to gmarc upstream) |
 | voxelDiskCache | VOXEL DISK CACHE | main | main.lua:236 -> MeshStore | OK (advanced) |
 | perfMode | PERFORMANCE | main | main.lua:221; caps FPS at 60 (main.lua:1160-1172) | OK. CONFLICT with AA and with Crystal's own MAX FPS (overrides it while BALANCED) |
-| voidFloor | WORLD EDGE FILL | main | main.lua:295 | OK |
-| voidRelief | VOXEL EDGE | main | main.lua:294 | OK |
+| voidFloor | WORLD EDGE FILL | main | gmarc VoidFloor | REMOVED in 1.0.0 (back to gmarc upstream) |
+| voidRelief | VOXEL EDGE | main | gmarc VoidFloor | REMOVED in 1.0.0 (back to gmarc upstream) |
 
 Hidden from this page (pinned by the host, still settable in L only if defined):
 - gmarc `daytime` (locked to sync).

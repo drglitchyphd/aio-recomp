@@ -89,14 +89,7 @@ screen off brings back Crystal's original one.
   - **WATER:** FULL / SKY / OFF.
   - **FOREST FX:** light shafts and drifting motes.
   - **AA:** anti-aliasing. Only shown with PERFORMANCE = QUALITY.
-- **Edges of the map:**
-  - **WORLD EDGE FILL** repeats the map's own border (trees, water, walls) out
-    to the horizon instead of showing a black void.
-  - **VOXEL EDGE** continues forest canopy and walls as low 3D blocks before the
-    flat fill takes over.
 - **Building areas ahead of time:**
-  - **VOXEL PRECACHE** pre-builds the areas behind nearby doors in the
-    background.
   - **VOXEL DISK CACHE** saves each built area to storage, so later visits and
     restarts load it instead of rebuilding it. This works on phones and
     tablets too. Visiting everything can use roughly 0.5–2 GB.
@@ -143,9 +136,19 @@ Crystal-AiO additions. Settings: BATTLE page.)*
 
 - **HD Pokémon:** Kanto in Motion's animated HD battle sprites for all 251
   Pokémon, front and back, normal and shiny. This includes every Unown letter.
-  - BATTLE SPRITES turns them on.
+  - BATTLE SPRITES = **KIM HD** turns them on (OFF shows Crystal's own
+    sprites).
   - The large HD pack is downloaded once from **ADVANCED → ASSET MANAGER** and
     kept between updates.
+- **Black/White sprites:** BATTLE SPRITES = **BLACK/WHITE (IMPORTED)** shows
+  the animated Pokémon Black/White battle sprites in 3D battles (gmarc's
+  imported sprite support).
+  - They are not included. To get them, import your own Pokémon Black or White
+    cartridge dump in the game's **IMPORT** screen (IMPORTERS → Pokemon Black /
+    White), then restart the game.
+  - They show with any BATTLE BACKGROUND except DEFAULT. Without an import, or
+    in a DEFAULT battle, KIM HD is used: the row reads **B/W > KIM HD**, its
+    help says why, and DIAGNOSTICS shows a `battle sprites` line.
 - **ANIMATED SPRITES** can be ON, BATTLE ONLY or OFF.
 - **BATTLE BACKGROUND** sets what the battlers stand on:
   - **KIM HD:** painted HD scenes picked to match your location, with
@@ -485,8 +488,8 @@ and loads when you fold, unfold or rotate.)*
   - **QUALITY** restores your own settings.
 - **ASSET MANAGER:** download, repair or remove Kanto in Motion's HD Pokémon
   and background pack.
-- **VOXEL PRECACHE**, **VOXEL DISK CACHE** and **BUILD 3D CACHE** (see the 3D
-  voxel world section).
+- **VOXEL DISK CACHE** and **BUILD 3D CACHE** (see the 3D voxel world
+  section).
 - **DIAGNOSTICS** (off by default) shows short status lines on screen for bug
   reports. They cover the battle background, voxel build timing and disk
   cache, Wilds, followers, NPC Pokémon, quick nurse, performance and the GPU.

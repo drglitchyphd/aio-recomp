@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | **Live release** | **0.9.91** on `main` (origin/main `9e7ee41`). Players are on this. |
-| **Work branch** | `ccr-e074fdc7-7otw01` (head `feb1fbe`), pushed. It carries the unreleased 1.0.0. |
+| **Work branch** | `ccr-e074fdc7-7otw01`, pushed (the merge decisions in item 1 below were made on a worker branch). It carries the unreleased 1.0.0. |
 | **1.0.0 PR** | **#45, DRAFT, do not merge yet.** Merging to `main` auto-publishes the release (`.github/workflows/auto-release.yml`). It is held until the credits are complete. |
 | **Repo** | `drglitchyphd/aio-recomp` |
 
@@ -32,12 +32,10 @@
 
 ## In flight / not done
 
-1. **A worker agent was applying the user's gmarc merge decisions** (it may not have finished; check for its worktree branch `worktree-agent-*` or redo it):
-   - **Black/White (Gen 5) imported battle sprites:** offer them as a BATTLE SPRITES choice ("BLACK/WHITE (IMPORTED)").
-     - Declare the engine's shared pack `gen5_bw` / `battle_sprites` in `manifest.json`. The engine's Import screen builds it from the player's BW dump (`src/import/Importers.lua`, `src/import/gen5/BwImport.lua`); gmarc reads it via `mod.packs` (`gmarc/lib/ImportedBattleSprites.lua`).
-     - Drive the hidden `voxelBattleSprites` lock from that choice, and fall back to KIM HD when the pack is missing.
-   - **Revert to upstream:** remove our **door precache** (`gmarc/lib/Prefetch.lua`, setting `voxelPrecache`) and **world edge fill** (`gmarc/lib/VoidFloor.lua`, setting `voidFloor`) everywhere, including main.lua, hub, docs and tests.
-   - **Keep the rest of ours:** door-walk fix, ledge hops, locked/Kenney battle camera, TIME OF DAY sky, tall-screen battle sprite fit, battle backgrounds, and all performance and cache code.
+1. **Done: the user's gmarc merge decisions are applied** (on the 1.0.0 branch, all suites pass; details in the handoff spec's 1.0.0 section):
+   - **BATTLE SPRITES = BLACK/WHITE (IMPORTED):** `manifest.json` declares `optional_assets` `gen5_bw` / `battle_sprites` (`>=1.0.0`). BATTLE SPRITES is now a choice (KIM HD / BLACK/WHITE (IMPORTED) / OFF, `lib/crystal_aio/bw_sprites.lua`). It drives the hidden `voxelBattleSprites` lock: the imported sprites in gmarc's 3D battle when the pack is valid, else KIM HD with the reason on the row and on DIAGNOSTICS (`battle sprites`). Not yet seen on a device with a real Black/White import.
+   - **Reverted to upstream:** door precache (`gmarc/lib/Prefetch.lua`, `voxelPrecache`) and world edge fill / voxel edge (`gmarc/lib/VoidFloor.lua`, `voidFloor`, `voidRelief`) are removed everywhere.
+   - **Kept:** door-walk fix, ledge hops, locked/Kenney battle camera, TIME OF DAY sky, tall-screen battle sprite fit, battle backgrounds, and all performance and cache code.
 2. **PACK screen redesign, requested, not started.** The user wants it shipped as **0.9.92** (a normal release, before 1.0.0). The user chose:
    - **Denser list + pocket polish:**
      - shorter rows, about twice as many visible, with a scroll bar;

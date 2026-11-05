@@ -137,8 +137,28 @@ Gen2-AIO is now **Crystal-AiO**, and this is a full-install release.
   roof (Sprout/Burned/Tin Tower) and sapling polish. iOS keeps the 3D picture
   the right way up on newer LOVE builds. Companion mods can now add their own
   region's voxel profile (the disk cache steps aside while one is active).
-  gmarc's new imported Black/White battle sprite option is not used here (KIM
-  HD draws the battle Pokemon). The 3D disk cache rebuilds once per map.
+  The 3D disk cache rebuilds once per map.
+
+- **BATTLE SPRITES = BLACK/WHITE (IMPORTED)** (BATTLE page): 3D battles can
+  show the animated Pokemon Black/White sprites from gmarc 1.0.17. The sprites
+  are not bundled: import your own Black or White cartridge dump in the game's
+  IMPORT screen (IMPORTERS > Pokemon Black / White), then restart the game.
+  They are used in 3D battles (any BATTLE BACKGROUND except DEFAULT). With no
+  imported sprites, or in a DEFAULT battle, KIM HD is used instead; the row
+  then reads "B/W > KIM HD", its help says why, and DIAGNOSTICS shows a
+  `battle sprites` line. BATTLE SPRITES is now a choice: KIM HD / BLACK/WHITE
+  (IMPORTED) / OFF (ON and OFF from earlier versions read as KIM HD and OFF).
+  The mod declares the engine's shared `gen5_bw` / `battle_sprites` pack as an
+  optional asset so it may read it.
+- **Back to gmarc's own behaviour (removed):**
+  - **VOXEL PRECACHE** (ADVANCED): the areas behind the current area's doors
+    are no longer pre-built in the background (`gmarc/lib/Prefetch.lua`).
+  - **WORLD EDGE FILL** and **VOXEL EDGE** (OVERWORLD & 3D): past the ring of
+    border trees the 3D world ends as in gmarc again; the repeated border
+    floor and the low voxel border blocks are gone (`gmarc/lib/VoidFloor.lua`),
+    and so is DIAGNOSTICS' `voxel edge` line.
+  - Saved values of these settings are ignored. The 3D disk cache rebuilds
+    once, because the world's geometry changed.
 
 ## 0.9.91 changes
 

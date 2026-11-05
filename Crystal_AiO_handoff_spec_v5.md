@@ -136,6 +136,46 @@ Renamed to Crystal-AiO, Crystal-only, full-install release.
     LegacyCompat shims. New per-map caches are weak-keyed (CoastalPlatforms by
     map, CoastalTerraces by atlas ImageData, RockMaterial by shape).
   - gmarc/lib changed, so the voxel build id (and every cached map) changes.
+- BATTLE SPRITES = BLACK/WHITE (IMPORTED) (user decision after the merge):
+  - manifest.json `optional_assets: [{importer: "gen5_bw", pack:
+    "battle_sprites", version: ">=1.0.0"}]` -- the engine's
+    `src/mods/Manifest.lua` parseAssetPacks schema, same as upstream's
+    manifest; `src/mods/AssetPacks.lua` (mod.packs) refuses undeclared packs.
+    Optional: the launcher does not gate on it (Loader only checks
+    `required_assets`).
+  - lib/crystal_aio/bw_sprites.lua: main.lua mergeDefine swaps KIM's
+    `battleSprites` toggle for a choice {KIM HD = true, BLACK/WHITE (IMPORTED)
+    = "bw", OFF = false}. "bw" is not false, so every KIM reader (`== false` /
+    `~= false`) keeps KIM HD: that is the fallback. arenaBackground's
+    visible_if is now `not_equals = false`.
+  - `locks.voxelBattleSprites` = "gen5_bw" only when BLACK/WHITE is chosen,
+    the 3D stage runs (Backdrop.stageEnabled() and gmarc VoxelState.active())
+    and gmarc's BattleSprites.unavailableReason() is nil (provider status
+    ready = pack info + valid entries); else "native". The provider reads the
+    pack index once, at load: importing needs a restart. Status:
+    `mod._kimArenaBattleSpritesStatus()`; DIAGNOSTICS `battle sprites` line;
+    hub row value "B/W > KIM HD" plus "NOW USING KIM HD: <why>" in its help.
+  - The choice stays listed (the row is the master BATTLE SPRITES switch) but
+    applies only in gmarc's 3D battle; DEFAULT (WHITE) has no 3D stage and
+    falls back to KIM HD.
+  - gmarc BattleSprites.withFrame: KIM replaces BattleState.drawPic with its
+    HD painter (ignores state.pic), so the provider's frame is drawn through
+    `state._kantoInMotionGen2HdDrawPic` (KIM's saved native drawPic), both
+    sides; `B.provided[side]` makes GoldBattle skip the KIM-back flag (the
+    BW frame is a front, mirrored like gmarc's native pics). No KIM plate
+    shadow for a BW card (KIM publishes no metrics for it).
+  - tests/bw_sprites.lua (pack absent / present, stub mod.packs via
+    HARNESS_PACKS in tests/settings_overhaul/harness.lua). Upstream's
+    test_battle_sprite_config / _provider / test_bundled_battle_sprites pass
+    against our gmarc/.
+- Reverted to upstream (user decision): VOXEL PRECACHE (`voxelPrecache`,
+  gmarc/lib/Prefetch.lua, VoxelScene live-set additions + Prefetch.request,
+  `voxel._kimArenaPrecache`) and WORLD EDGE FILL / VOXEL EDGE (`voidFloor`,
+  `voidRelief`, gmarc/lib/VoidFloor.lua, VoxelScene drawScene call,
+  `voxel._kimArenaVoidFloor` / `_kimArenaVoidRelief`, DIAGNOSTICS `voxel
+  edge`). VoxelScene now differs from upstream only by the door-walk clamp.
+  CacheBuilder / MeshStore / ChunkMesher.setLive never used Prefetch. Stored
+  values are left in players' options and read by nothing.
 
 ## 0.9.91 (2026-10-30)
 
