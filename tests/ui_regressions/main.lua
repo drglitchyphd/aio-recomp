@@ -69,6 +69,30 @@ function love.load()
     local desc=text("Escape from a cave.\nUseful on a long journey.")
     local _,wrap=title.font:getWrap(title.text,title.w)
     assert(desc.y>=title.y+#wrap*title.font:getHeight(),"title/description overlap")
+    -- gen2-aio 0.9.93: the buy question's YES / NO sit inside the message
+    -- box at its right end (no window above it), clear of the wrapped text
+    mart.confirm={pages={{"ESCAPE ROPE, and you want 1?","That will be ¥550. OK?"}},page=1,choice=1}
+    mart.yesNoVisible=function()return true end
+    frame(mart,"mart-confirm")
+    local cells=mod._kimScreenTapTargets.cells
+    assert(#cells==2,"mart YES / NO tappable")
+    local first=text("ESCAPE ROPE, and you want 1?")
+    for _,cell in ipairs(cells)do
+      assert(cell.y>=first.y-first.font:getHeight()*1.5,"mart YES / NO inside the box, not above it")
+      for _,d in ipairs(draws)do
+        if d.text==first.text or d.text=="That will be ¥550. OK?" then
+          local _,wr=d.font:getWrap(d.text,d.w)
+          local fh=d.font:getHeight()
+          for i,l in ipairs(wr)do
+            local ly=d.y+(i-1)*fh
+            local apart=d.x+d.font:getWidth(l)<=cell.x or ly+fh<=cell.y
+            assert(apart,"mart text clear of YES / NO")
+          end
+        end
+      end
+    end
+    cells[2].select(mart);assert(mart.confirm.choice==2)
+    mart.confirm=nil;mart.yesNoVisible=nil
     mart.phase="top";mart.topLines={"Hello! How may I","help you today?"}
     frame(mart,"mart-top")
     local a,b=text(mart.topLines[1]),text(mart.topLines[2])
