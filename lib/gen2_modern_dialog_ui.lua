@@ -550,6 +550,9 @@ return function(mod)
     else
       local entries=mart.entries or {}
       local idx=tonumber(mart.index) or 1
+      -- gen2-aio 0.9.93: while choosing how many to SELL, the buy list's
+      -- cursor means nothing -- don't highlight a row of it
+      if phase=="sellQuantity" then idx=-1 end
       local scroll=tonumber(mart.scroll) or 0
       local listW=narrow and w or w*.55
       local visible=6
@@ -584,13 +587,28 @@ return function(mod)
       end
 
       local selected=type(mart.selected)=="function" and mart:selected() or nil
+      -- gen2-aio 0.9.93: in SELL the item is mart.qtyItem (the one from the
+      -- pack); mart:selected() is the BUY list under its stale cursor, which
+      -- titled every sale with that row (often ICE HEAL)
+      local selling=phase=="sellQuantity" and type(mart.qtyItem)=="table"
+      if selling then selected=mart.qtyItem end
       local rx=narrow and x+22*scale or x+listW+18*scale
       local rw=narrow and w-44*scale or w-listW-42*scale
       local title=selected and selected.name or "POKé MART"
       local titleY=(narrow and contentY+listH+12*scale or contentY)+8*scale
       drawText(title,big,rx,titleY,rw,"left",c.text)
       local descY=titleY+wrappedHeight(title,big,rw)+16*scale
-      local desc=type(mart.description)=="function" and mart:description() or nil
+      local desc
+      if type(mart.description)=="function" then
+        if selling then
+          -- the engine's own description, asked about the item being sold
+          local view=setmetatable({selected=function() return mart.qtyItem end},{__index=mart})
+          local okD,d=pcall(mart.description,view)
+          desc=okD and d or nil
+        else
+          desc=mart:description()
+        end
+      end
       if type(desc)=="table" then desc=table.concat(desc," ") end
       if type(desc)=="string" then
         -- Crystal item descriptions retain the original game's <NEXT>

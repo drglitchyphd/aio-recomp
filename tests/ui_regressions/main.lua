@@ -74,7 +74,21 @@ function love.load()
     local a,b=text(mart.topLines[1]),text(mart.topLines[2])
     local _,wrapped=a.font:getWrap(a.text,a.w)
     assert(b.y>=a.y+#wrapped*a.font:getHeight(),"welcome line overlap")
-    mart.phase="buy"
+    -- 0.9.93: SELL quantity titles the item being sold (mart.qtyItem), not
+    -- the buy list's stale row (the device showed ICE HEAL for every sale)
+    mart.phase="sellQuantity";mart.qty=1;mart.qtyMax=3
+    mart.qtyItem={id="NUGGET",name="NUGGET",price=10000}
+    mart.description=function(s)local e=s:selected();return e and (e.name.." desc") end
+    frame(mart,"mart-sell-qty")
+    local sold=false
+    for _,draw in ipairs(draws)do
+      assert(draw.text~="Escape from a cave.\nUseful on a long journey.","buy item's description shown while selling")
+      if draw.text=="NUGGET" then sold=true end
+    end
+    assert(sold,"the item being sold is titled")
+    text("NUGGET desc")
+    mart.description=function()return "Escape from a cave.<NEXT>Useful on a long journey."end
+    mart.phase="buy";mart.qtyItem=nil
     local page={cursor=2}
     function page:_aioModernData()return {title="NUZLOCKE SETUP",selected=self.cursor,
       rows={{label="LEVEL CAP",value="GYMS",select=function(st)st.cursor=1 end},{label="RULES LOCKED",value="OFF"}},
