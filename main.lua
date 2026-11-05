@@ -279,8 +279,6 @@ local GM_ART = { battles = true, stadiumImport = true, daytime = true,
   voxel._kimArenaRowHidden = rowHidden
   -- BATTLE CAMERA: LOCKED holds the solved battle shot (no drift, steering
   -- or zoom) so the flat sprite cards never swing in 3D.
-  -- VOXEL PRECACHE: pre-build door destinations (gmarc/lib/Prefetch.lua)
-  voxel._kimArenaPrecache = function() return opt("voxelPrecache", true) ~= false end
   -- VOXEL DISK CACHE: finished map builds are kept on storage between plays
   -- (gmarc/lib/MeshStore.lua); the build id retires files from older builds
   voxel._kimArenaMeshStore = function() return opt("voxelDiskCache", true) ~= false end
@@ -344,9 +342,6 @@ local GM_ART = { battles = true, stadiumImport = true, daytime = true,
   end
   voxel._kimArenaDiag = diagSet
   voxel._kimArenaDiagOn = function() return opt("diagnostics", false) == true end
-  voxel._kimArenaVoidRelief = function() return opt("voidRelief", true) ~= false end
-  -- gmarc: fill past the map's border ring with the border block (VoidFloor)
-  voxel._kimArenaVoidFloor = function() return opt("voidFloor", true) ~= false end
   -- KIM's battler shadow, moved from the upright 3D card onto the plate:
   -- begin (true) asks KIM to publish the metrics instead of drawing them;
   -- end (false) returns KIM's shadow params for that side.
@@ -720,10 +715,6 @@ local GM_ART = { battles = true, stadiumImport = true, daytime = true,
   for v = 0, 400, 50 do offsetChoices[#offsetChoices + 1] = { tostring(v), v } end
 
   local schema = {
-    { key = "voxelPrecache", label = "VOXEL PRECACHE", type = "toggle", default = true,
-      help = "Pre-build the 3D areas behind the current area's doors in the background, "
-        .. "so going through a door or into a building swaps in a ready scene. Uses a "
-        .. "little more memory; turn OFF on low-memory devices." },
     { key = "trainerLevels", label = "TRAINER LEVELS", type = "choice", default = "match",
       choices = { { "ORIGINAL", "off" }, { "MATCH -5 TO 0", "matchm5" },
         { "MATCH -1/-2", "matchm12" }, { "MATCH", "match" }, { "MATCH +2", "match2" } },
@@ -855,18 +846,11 @@ local GM_ART = { battles = true, stadiumImport = true, daytime = true,
       help = "Starting a NEW GAME opens the setup wizard (difficulty, Nuzlocke, look, battles, "
         .. "world, wild Pokemon, conveniences). It is always on the CRYSTAL-AIO page too." },
     { key = "diagnostics", label = "DIAGNOSTICS", type = "toggle", default = false,
-      help = "Show short status lines on screen (battle background errors, voxel edge, "
+      help = "Show short status lines on screen (battle background errors, battle sprites, "
         .. "disk cache, Wilds). For reporting problems; leave off otherwise." },
     { key = "menuDim", label = "MENU DIM", type = "toggle", default = true,
       help = "Darken the world behind menus opened outside battle (START menu, PACK, "
         .. "party, Pokedex, PC, ...). Battle backgrounds are not affected." },
-    { key = "voidFloor", label = "WORLD EDGE FILL", type = "toggle", default = true,
-      help = "Past the edge of a map, keep repeating the map's own border (trees, water, "
-        .. "wall) out to the horizon, like the original game, instead of a black void." },
-    { key = "voidRelief", label = "VOXEL EDGE", type = "toggle", default = true,
-      help = "gmarc: past the trees at a map's edge, continue the border as low voxel "
-        .. "blocks (forest canopy, walls) for a band around the map before the flat "
-        .. "WORLD EDGE FILL takes over. Built once per map, one draw call." },
     { key = "arenaCardDetail", label = "3D SPRITE DETAIL", type = "choice", default = 4,
       choices = { { "1X", 1 }, { "2X", 2 }, { "3X", 3 }, { "4X", 4 } },
       help = "How sharply KIM's HD Pokemon are captured for gmarc's 3D battles. "

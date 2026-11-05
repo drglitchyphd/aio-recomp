@@ -52,7 +52,6 @@ return function(host)
     } },
     { id = "world", label = "OVERWORLD & 3D", rows = {
       "pipeline:voxel", "pipeline:tiltshift", "grid", "curve", "water", "atmos", "aa",
-      "voidFloor", "voidRelief",
       "timeOfDay", "timeFade", "weatherFx", "weatherPlaces", "weatherRain",
       "qt_lights_on", "areaSignStyle",
     } },
@@ -95,7 +94,7 @@ return function(host)
       "touchDeadzone", "touchBattleTap", "touchLongPress", "touchRunDrag",
     } },
     { id = "advanced", label = "ADVANCED", rows = {
-      "setupWizard", "perfMode", "voxelPrecache", "voxelDiskCache",
+      "setupWizard", "perfMode", "voxelDiskCache",
       { id = "crystal-aio:voxel_cache" }, { id = "crystal-aio:asset_manager" }, "diagnostics", { modList = true }, { rest = true },
     } },
   }
