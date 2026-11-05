@@ -65,10 +65,16 @@ return function(mod)
   local realDefine = realOptions.define
   local realGet = realOptions.get
   local merged, position = {}, {}
+  -- 1.0.0: BATTLE SPRITES gains BLACK/WHITE (IMPORTED) (lib/crystal_aio/bw_sprites.lua)
+  local BwSprites = loadOwn("lib/crystal_aio/bw_sprites.lua")
   local function mergeDefine(_, schema)
     for _, row in ipairs(type(schema) == "table" and schema or {}) do
       if type(row) == "table" and type(row.key) == "string" then
         if row.key == "pixelFont" then row.visible_if = { key = "arenaFont", equals = "kim" } end
+        -- KIM defines it as an ON/OFF toggle; the host's row is the choice
+        if row.key == "battleSprites" and type(BwSprites) == "table" then
+          row = BwSprites.schemaRow(row)
+        end
         local at = position[row.key]
         if at then merged[at] = row
         else merged[#merged + 1] = row; position[row.key] = #merged end
@@ -217,11 +223,11 @@ return function(mod)
 
   -- gmarc rows the fork owns: its 3D-BTL mode and its own Stadium model
   -- import (the fork's backgrounds replace both).
-  -- 1.0.0 (gmarc 1.0.17): its imported Black/White battle sprites
--- (voxelBattleSprites) need an asset pack this bundle does not declare, and
--- KIM HD already draws the battle Pokemon, so it is pinned NATIVE and hidden.
-local GM_ART = { battles = true, stadiumImport = true, daytime = true,
-                 voxelBattleSprites = true }
+  -- 1.0.0 (gmarc 1.0.17): its BTL SPRITES row (voxelBattleSprites) is hidden
+  -- and driven by the host's BATTLE SPRITES = BLACK/WHITE (IMPORTED)
+  -- (locks.voxelBattleSprites below).
+  local GM_ART = { battles = true, stadiumImport = true, daytime = true,
+                   voxelBattleSprites = true }
   -- BATTLE SPRITES = STADIUM 2: set up after the Stadium 2 modules bind
   local StadiumModels = nil
   local function stadiumModelsReady()
@@ -250,12 +256,41 @@ local GM_ART = { battles = true, stadiumImport = true, daytime = true,
   mod._kimArenaRowHidden = rowHidden
 
   local voxel = subMod(engine)
+  -- BATTLE SPRITES = BLACK/WHITE (IMPORTED): gmarc's 3D battle draws the
+  -- imported pack when it is installed and valid; otherwise (no pack, or a
+  -- DEFAULT battle with no 3D stage) KIM HD stays, and DIAGNOSTICS says why.
+  local bwLastDiag
+  local function bwStatus()
+    if type(BwSprites) ~= "table" then return { chosen = false, active = false } end
+    local gmarcLib = type(voxel.exports) == "table" and voxel.exports.lib or nil
+    local st = BwSprites.status({
+      opt = opt,
+      threeD = function()
+        if not (Backdrop and Backdrop.stageEnabled()) then return false end
+        if type(gmarcLib) ~= "table" or type(gmarcLib.require) ~= "function" then return false end
+        local okS, State = pcall(gmarcLib.require, "VoxelState")
+        return okS and type(State) == "table" and State.active() and true or false
+      end,
+      packReason = function() return BwSprites.packReason(gmarcLib, mod.packs) end,
+    })
+    local line
+    if st.chosen then
+      line = st.active and "BLACK/WHITE (imported pack)" or ("KIM HD: " .. tostring(st.why))
+    elseif bwLastDiag then   -- moved off BLACK/WHITE: the line follows
+      line = opt("battleSprites", true) == false and "OFF" or "KIM HD"
+    end
+    if line and line ~= bwLastDiag then bwLastDiag = line; diagSet("battle sprites", line) end
+    return st
+  end
+  rawset(mod, "_kimArenaBattleSpritesStatus", bwStatus)
   -- gmarc's 3D-BTL: false = native battle, true = on the map, "flatB" =
   -- the platform arena, whose discs a BATTLE BACKGROUND plate replaces.
   local locks = {
     -- the voxel sky reads Crystal's clock, which TIME OF DAY drives
     daytime = "sync",
-    voxelBattleSprites = "native",
+    voxelBattleSprites = function()
+      return bwStatus().active and "gen5_bw" or "native"
+    end,
     battles = function()
       if not (Backdrop and Backdrop.stageEnabled()) then return false end
       -- BATTLE SPRITES = STADIUM 2 with the model cache built: gmarc's
@@ -863,7 +898,7 @@ local GM_ART = { battles = true, stadiumImport = true, daytime = true,
     { key = "arenaBackground", label = "BATTLE BACKGROUND", type = "choice", default = "kim_hd",
       choices = { { "DEFAULT (WHITE)", "white" }, { "KIM HD", "kim_hd" },
         { "KENNEY HD", "kenney" }, { "VOXEL WORLD", "voxel" } },
-      visible_if = { key = "battleSprites", equals = true },
+      visible_if = { key = "battleSprites", not_equals = false },
       help = "What KIM's battle Pokemon stand on. DEFAULT is the plain Crystal battle. "
         .. "KIM HD uses Kanto in Motion's painted backgrounds (download them from KIM's "
         .. "asset screen). KENNEY HD renders a painted 3D scene for the place, framed for "
@@ -1270,6 +1305,7 @@ local GM_ART = { battles = true, stadiumImport = true, daytime = true,
     if opt("diagnostics", false) == true then
       pcall(function()
         diagSet("wilds", wildsOk and "running" or "not running")
+        pcall(bwStatus)   -- BATTLE SPRITES = BLACK/WHITE: in use, or why not
         local G = love.graphics
         G.push("all"); G.origin()
         local f = G.getFont()

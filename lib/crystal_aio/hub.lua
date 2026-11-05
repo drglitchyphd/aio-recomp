@@ -369,6 +369,23 @@ return function(host)
       if not row then return nil end
       row.help = row.help or HELP[key] or helpOf(spec)
       if LABELS[key] then row.label = LABELS[key] end
+      -- 1.0.0: BLACK/WHITE (IMPORTED) falls back to KIM HD; say so on the row
+      if key == "battleSprites" then
+        local statusFn = rawget(mod, "_kimArenaBattleSpritesStatus")
+        local function fellBack()
+          local okS, st = pcall(statusFn)
+          if okS and type(st) == "table" and st.chosen and not st.active then return st end
+          return nil
+        end
+        local st = fellBack()
+        if st then row.help = (row.help or "") .. " NOW USING KIM HD: " .. tostring(st.why) end
+        local value = row.value
+        row.value = function(...)
+          if fellBack() then return "B/W > KIM HD" end
+          if type(value) == "function" then return value(...) end
+          return value
+        end
+      end
       if key:sub(1, 4) == "wok_" and type(row.value) == "function" then
         local value = row.value
         row.value = function(...) return tostring(value(...) or ""):upper() end

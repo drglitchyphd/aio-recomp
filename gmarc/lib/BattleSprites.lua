@@ -98,8 +98,16 @@ end
 -- slides and attack effects stay owned by the game. Only its picture changes.
 function B.withFrame(state,side,draw)
  local frame=B.frame(state,side)
+ -- gen2-aio: whether this side's card is the provider's picture (GoldBattle
+ -- then mirrors it like a native front instead of treating it as KIM's back)
+ B.provided=B.provided or {}
+ B.provided[side]=frame~=nil
  if not frame then return draw()end
  local pic,front,scale,drawPic=state.pic,state.frontAnimFrame,state.picScale,state.drawPic
+ -- gen2-aio: Kanto in Motion replaces BattleState.drawPic with its HD
+ -- painter, which ignores state.pic; the provider's frame goes through the
+ -- native drawPic KIM keeps (nil without KIM: the plain path below)
+ local nativeDraw=state._kantoInMotionGen2HdDrawPic or drawPic
  local mon=state:activeMon(side)
  local k=math.min(1,56/frame.width,56/frame.height)
  state.pic=function(self,m,back)
@@ -117,11 +125,12 @@ function B.withFrame(state,side,draw)
  -- Native oversized fronts pin to the box's top-left. Recenter them before
  -- applying native animation transforms, without resampling a new texture.
  state.drawPic=function(self,m,back)
+  if m==mon and back then return nativeDraw(self,m,back)end
   if m~=mon or back then return drawPic(self,m,back)end
   local G=love.graphics
   G.push()
   G.translate(-math.max(0,math.floor((frame.width-56)/2)),-math.max(0,frame.height-56))
-  local ok,err=pcall(drawPic,self,m,back)
+  local ok,err=pcall(nativeDraw,self,m,back)
   G.pop()
   if not ok then error(err,0)end
  end

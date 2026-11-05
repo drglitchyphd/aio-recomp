@@ -80,6 +80,7 @@ mod = {
   content = U("content"), assets = U("assets"), cache = U("cache"),
   ui = U("ui"), save = U("save"), storage = U("storage"),
   find = function() return nil end,
+  packs = HARNESS_PACKS,   -- a test's stand-in for the engine's mod.packs
 }
 mod.content.screens = { registered = {}, register = function(self, name, def) self.registered[name] = def end, override = function() end }
 mod.ui = { insertBefore = function(list, label, row)

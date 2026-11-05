@@ -103,7 +103,7 @@ local function sideTexture(s,e,side)
   else draw()end
  end
  -- upstream 1.0.17: an optional imported-sprite provider swaps the picture
- -- (BattleSprites; the host pins it to NATIVE, so this is a plain capture)
+ -- (BattleSprites; the host drives it from BATTLE SPRITES = BLACK/WHITE)
  local ok,canvas=pcall(function()
   return V.require('BattleSprites').withFrame(s,side,function()
    return capture(e,side,drawSide,nil,nil,host('_kimArenaCardScale') or 1)
@@ -118,7 +118,9 @@ local function sideTexture(s,e,side)
  -- KIM draws a real BACK sprite for the player's mon (gmarc's own pics are
  -- front views mirrored to face the foe); a back view already faces up the
  -- field, so like the trainer it must not be mirrored.
+ local provided=V.require('BattleSprites').provided
  local kimBack=back and not trainer and host('_kimArenaKimSprites')==true
+  and not (provided and provided[side])
  return {canvas=canvas,ax=back and 40 or 124,ay=back and 96 or 56,trainer=trainer,back=kimBack,shadow=(not trainer) and shadow or nil}
 end
 local function entry(s)
