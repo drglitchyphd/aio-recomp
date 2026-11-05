@@ -271,6 +271,37 @@ return function(mod)
     return w
   end
 
+  -- gen2-aio 0.9.93: YES / NO inside the text box, the way the battle panel
+  -- asks them: two buttons at the right end of the box, side by side and as
+  -- tall as the box allows (a two-line box is too short to stack two
+  -- thumb-sized buttons).  This replaces the separate YES / NO window that
+  -- stood above the box.  set(state,i) writes the engine's own cursor
+  -- field; a tap sets it and presses A, B stays NO, the keys move the
+  -- cursor exactly as before.
+  local function inlineYesNoWidth(body,scale)
+    return math.max(118*scale,body:getWidth("YES")*2.4)*2+10*scale
+  end
+  local function inlineYesNo(c,px,body,bx,by,bw,bh,scale,selected,set,labels)
+    local gap=10*scale
+    local cw=(bw-gap)*.5
+    for i=1,2 do
+      local cx=bx+(i-1)*(cw+gap)
+      DTap.add(cx,by,cw,bh,function(st) set(st,i) end)
+      if i==selected then
+        color(c.selected); G.rectangle("fill",cx,by,cw,bh,6,6)
+        color(c.accent); G.rectangle("fill",cx,by,4*scale,bh,2,2)
+      else
+        color(c.raised or c.surface); G.rectangle("fill",cx,by,cw,bh,6,6)
+        color(c.divider or c.muted); G.setLineWidth(math.max(1,1.5*scale))
+        G.rectangle("line",cx,by,cw,bh,6,6)
+      end
+      local label=resolveLabel((labels or {})[i] or (i==1 and "YES" or "NO"))
+      local f=fittedFont(px,label,cw-12*scale)
+      drawText(label,f,cx+6*scale,by+(bh-f:getHeight())*.5,cw-12*scale,"center",
+        i==selected and c.text or c.muted)
+    end
+  end
+
   local function drawDialogBox(box, choice)
     local c = theme()
     local sx, sy, sw, sh = playfield()
@@ -285,7 +316,17 @@ return function(mod)
     local x = sx + (sw - w) / 2
     local y = sy + sh - h - math.max(18 * scale, sh * .025)
 
-    panel(x,y,w,h,c,.97)
+    -- the question's buttons widen the box to the right; the box keeps its
+    -- place and height and the text does not move (unless the screen is
+    -- too narrow for the wider box, when it slides left just enough)
+    local textW, boxW = w, w
+    if choice then
+      boxW = w - padX * .5 + inlineYesNoWidth(body,scale) + 14 * scale
+      local right = sx + sw - math.max(10 * scale, sw * .02)
+      if x + boxW > right then x = math.max(sx, right - boxW) end
+    end
+
+    panel(x,y,boxW,h,c,.97)
 
     local padY = 20 * scale
     local lines = textBoxLines(box)
@@ -323,28 +364,10 @@ return function(mod)
     end
 
     if choice then
-      local labels = choice.labels or {"YES","NO"}
-      local cw = math.max(250 * scale, w * .20)
-      local rowH = math.max(48 * scale, body:getHeight() + 14 * scale)
-      local ch = rowH * 2 + 20 * scale
-      local cx = x + w - cw - 18 * scale
-      local cy = y - ch - 10 * scale
-      panel(cx,cy,cw,ch,c,.99)
-      for i=1,2 do
-        local yy = cy + 10*scale + (i-1)*rowH
-        local barY,barH=centeredRowRect(yy,rowH,2*scale)
-        DTap.add(cx+8*scale,barY,cw-16*scale,barH,function(st) st.index=i end)
-        if i == (choice.index or 1) then
-          color(c.selected)
-          G.rectangle("fill", cx+8*scale, barY, cw-16*scale,barH,6,6)
-          color(c.accent)
-          G.rectangle("fill", cx+8*scale, barY, 4*scale,barH,2,2)
-        end
-        drawText(resolveLabel(labels[i]), body,
-          cx+24*scale, centeredTextY(barY,barH,body),
-          cw-40*scale, "left",
-          i==(choice.index or 1) and c.text or c.muted)
-      end
+      local inset = 12 * scale
+      local bx = x + textW - padX * .5
+      inlineYesNo(c, 28 * scale, body, bx, y + inset, x + boxW - inset - bx, h - inset * 2,
+        scale, choice.index or 1, function(st,i) st.index=i end, choice.labels)
     end
   end
 
@@ -639,29 +662,35 @@ return function(mod)
 
     if mart.message or mart.confirm then
       local lines=martMessageLines(mart)
+      -- gen2-aio 0.9.93: a question keeps the right end of the box for its
+      -- YES / NO buttons (inside the box, not a window above it); the text
+      -- wraps short of them from its first page, so the box keeps one size
+      -- (a narrow screen keeps the full text width and reserves a row for
+      -- them along the bottom of the box instead)
+      local yesW=mart.confirm and inlineYesNoWidth(body,scale)+14*scale or 0
+      local textW=w-84*scale-yesW
+      local inset=12*scale
+      local bh=math.max(96*scale,body:getHeight()*2.6)
+      local rowMode=mart.confirm and textW<(w-84*scale)*.55
+      if rowMode then textW=w-84*scale end
       local textH=0
-      for _,line in ipairs(lines) do textH=textH+wrappedHeight(line,body,w-84*scale)+8*scale end
+      for _,line in ipairs(lines) do textH=textH+wrappedHeight(line,body,textW)+8*scale end
       local dh=math.max(140*scale,textH+40*scale)
+      if rowMode then dh=textH+28*scale+bh+inset end
       local fb=Style and Style.footerHeight and Style.footerHeight() or 0
       local dy=y+h-dh-fb-8*scale
       panel(x+18*scale,dy,w-36*scale,dh,c,.99)
-      wrappedLines(lines,body,x+42*scale,dy+20*scale,w-84*scale,c.text,8*scale)
+      wrappedLines(lines,body,x+42*scale,dy+20*scale,textW,c.text,8*scale)
       if mart.confirm and type(mart.yesNoVisible)=="function" and mart:yesNoVisible() then
-        local cw=250*scale; local ch=104*scale
-        local cx=x+w-cw-32*scale; local cy=dy-ch-10*scale
-        panel(cx,cy,cw,ch,c,.99)
-        for i,label in ipairs({"YES","NO"}) do
-          local rowH=44*scale
-          local yy=cy+10*scale+(i-1)*rowH
-          local barY,barH=centeredRowRect(yy,rowH,2*scale)
-          DTap.add(cx+8*scale,barY,cw-16*scale,barH,function(st)
-            if st.confirm then st.confirm.choice=i end end)
-          if i==(mart.confirm.choice or 1) then
-            color(c.selected); G.rectangle("fill",cx+8*scale,barY,cw-16*scale,barH,5,5)
-          end
-          drawText(label,body,cx+24*scale,centeredTextY(barY,barH,body),cw-42*scale,"left",
-            i==(mart.confirm.choice or 1) and c.text or c.muted)
+        local bw=inlineYesNoWidth(body,scale)
+        local bx,by=x+w-18*scale-inset-bw,dy+(dh-math.min(bh,dh-inset*2))*.5
+        if rowMode then
+          bw=math.min(w-36*scale-inset*2,bw*1.2); bx=x+w-18*scale-inset-bw; by=dy+dh-inset-bh
+        else
+          bh=math.min(bh,dh-inset*2)
         end
+        inlineYesNo(c,28*scale,body,bx,by,bw,bh,scale,
+          mart.confirm.choice or 1,function(st,i) if st.confirm then st.confirm.choice=i end end)
       end
     end
 
@@ -1270,7 +1299,16 @@ return function(mod)
   local function isMart(state)
     return okMart and type(state)=="table" and getmetatable(state)==MartMenu
   end
+  -- gen2-aio 0.9.93: the Modern battle panel asks its YES / NO questions
+  -- itself (inside its own box, which never moves); this presenter keeps
+  -- them only when that panel is off.
+  local BATTLE_YES_NO={["ask-nickname"]=true,["ask-forget"]=true,
+    ["stop-learning"]=true,["ask-shift"]=true,["ask-next-mon"]=true}
   local function isBattleSpecial(state)
+    if okBattle and type(state)=="table" and BATTLE_YES_NO[tostring(state.phase or "")]
+        and battlePanelOwnsMessage(state) then
+      return false
+    end
     return okBattle and type(state)=="table" and getmetatable(state)==BattleState
       and (BATTLE_DIALOG_PHASE[tostring(state.phase or "")] == true
         or levelStatsMon(state) ~= nil)
