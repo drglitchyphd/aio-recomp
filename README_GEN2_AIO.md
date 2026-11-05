@@ -63,6 +63,21 @@ GitHub and overlay patches are not the updater's install package. The custom
 index is independent of the community index; a community listing would require
 a separate submission.
 
+## 0.9.93 changes
+
+- Battles: the HP cards, message box and touch buttons now stay put.
+  Choosing FIGHT, throwing a Poke Ball or answering a question no longer
+  shifts anything.
+- YES / NO are now big buttons inside the message box: in battle (switch
+  Pokemon, nickname, stop learning...), in the regular text box, at the
+  Mart and at the Day-Care. Tap one to answer; the buttons, A and B (NO)
+  work as before.
+- Mart: when selling, the quantity screen now names and describes the item
+  you are selling. It used to show the buy list's row (often ICE HEAL).
+- Nuzlocke: the catch message now appears after "Gotcha! ... was caught!",
+  not the moment the Poke Ball is thrown. A Pokemon that breaks free shows
+  no catch message.
+
 ## 0.9.92 changes
 
 - The Modern PACK is redesigned:

@@ -1,10 +1,41 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.92)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.93)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.93 (2026-11-05)
+
+- Battle panel:
+  - one rect for the whole battle, sized for the tallest phase, published
+    every phase (`tapTargets.drawn = false` when nothing is drawn);
+  - the move list used to grow the panel, and the ball throw and the
+    dialog-drawn questions published no rect, so the HP cards and floating
+    controls moved;
+  - battle YES/NO (switch, nickname, next Pokemon, forget, stop learning)
+    draws inside the panel as stacked buttons on the right, or a bottom row
+    if a line is too wide; a tap selects and presses A;
+  - dialog_ui draws these questions only when the modern battle panel is
+    off;
+  - touch puts the B / START / SELECT cluster below the panel on tall
+    screens.
+- Inline YES/NO also covers the overworld text box, the Mart buy question
+  and the Day-Care.
+- Tests: `tests/battle_layout` (768 checks, 14 phases x 3 sizes),
+  ui_regressions.
+- Mart SELL: the sellQuantity title and description use `mart.qtyItem`
+  through the engine's own `description` (with a `selected` proxy); no buy
+  row is highlighted. It used to use `mart:selected()`, the stale buy
+  cursor. Test: ui_regressions.
+- Nuzlocke: `pokemon.caught` fires in `BattleState:useItem` (via
+  `pushCaught`) before the ball animation and "Gotcha!" play.
+  - The catch and Nickname Rule lines now go into the battle's message
+    queue through `worldMechanicAfterCatch`, landing after "Gotcha!" and
+    before the nickname prompt.
+  - It falls back to the old TextBox when no battle screen is found.
+  - Test: `tests/nuzlocke_catch_message.lua` (fails on 0.9.92).
 
 ## 0.9.92 (2026-11-05)
 
