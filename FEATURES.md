@@ -271,7 +271,14 @@ and rows are tappable.
 - **POKéMON (party):** big HD icons and SWITCH / STATS / ITEM popups.
   - Long-press and drag a Pokémon to move it.
   - **RELEARN** opens a move reminder.
-- **SUMMARY**, **PACK** (pockets, quantities, item descriptions), **POKéGEAR**
+- **PACK:** pocket tabs with item counts, a dense list with a scroll bar,
+  and **SORT** (A–Z / TYPE / COUNT, saved with your game; also START).
+  - The detail panel shows the item's category, sell price, where it
+    works, a TM's move stats and who is holding it, with **USE / GIVE /
+    TOSS / REGISTER** buttons (Crystal's own item menu and rules).
+  - A party strip shows who can learn a TM/HM, who a medicine would help,
+    or who is holding the item.
+- **SUMMARY**, **POKéGEAR**
   (a time-of-day clock dial, phone cards and incoming caller ID), **TRAINER
   CARD** (Johto and Kanto Gym Leader pages with animated badges), and
   **POKéDEX** (list, entries, area map and search).

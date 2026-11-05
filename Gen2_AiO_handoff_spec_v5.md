@@ -1,10 +1,37 @@
-# Gen2-AIO — Handoff Spec v5 (build 0.9.91)
+# Gen2-AIO — Handoff Spec v5 (build 0.9.92)
 
 Mod ID `gen2-aio` from 0.9.50 onward. One-time full install and legacy data migration; see below.
 Engine: Gen1Recomp **v0.3.95** (clone: `github.com/bryanthaboi/gen1recomp`, tag `v0.3.95`).
 Device: Galaxy Z Fold (outer ~1080x2520 tall/narrow, inner ~2184x1968). Player: Steven.
 Older sections below run newest-first back to 0.9.8; the spec before that is
 `Gen2_AiO_handoff_spec_v2.md` (0.9.7).
+
+## 0.9.92 (2026-11-05)
+
+- Modern PACK redesign: new `lib/gen2_aio/modern_pack.lua` (loaded from
+  main.lua's Modern list). core_menus' `drawPack` hands it its helpers in a
+  ctx table (no new main-chunk locals) and keeps the old layout as the
+  fallback if it errors.
+  - List: row height from the font, spread to ~16 rows (18 portrait);
+    the window type grows up to 1.5x on a roomy screen (`fit` vs uiScale).
+    freeScroll, `pack` / `pocket` / `modal` cells as before.
+  - SORT: `MP.sort` runs `Bag.move` per row (the PACK's own SELECT rotate
+    over save.bagOrder), then `PackMenu:rebuild`, keeps the cursor on the
+    same item and `storeCursor`s. Persisted in the save; no SORT in TM/HM
+    (rebuild always sorts it by tmhmKey). START in the PACK cycles it
+    (wrapped `PackMenu.update`, only while the Modern PACK shows and
+    nothing is open).
+  - Buttons: `MP.actions` = `PackMenu:submenuRows` minus QUIT (CHOOSE for
+    a chooser pack, none for the tutorial). A tap opens `openSubmenu` with
+    that row selected and presses A, so the engine's `chooseSubmenu` runs
+    it. New touch cell kind `packAction` (touch/main.lua: select, then
+    `button` unless select returned false; no swipe on it).
+  - Category / helps / learn: `ItemEffects.partyAction` + `HEAL_STATUS` /
+    `healClassOf`, `Mon.partyMoves` / `maxPpOf`, `Evolution.checkMon`
+    (stones), species `tmhm`, `Mail.isMail`, ItemAttributes menu nibbles
+    and `heldEffect`; price via `MartMenu.sellPrice`.
+- Tests: `tests/modern_pack/` (engine PackMenu/Bag; 3 sizes, light theme,
+  battle, chooser, MODERN UI off); `tests/touch_taps.lua` packAction case.
 
 ## 0.9.91 (2026-10-30)
 
