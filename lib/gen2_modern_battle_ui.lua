@@ -427,12 +427,19 @@ return function(mod)
     return false
   end
 
+  -- gen2-aio 0.9.93: the YES / NO questions are no longer handed over to
+  -- the dialogue presenter (its own box, with a YES / NO window above it,
+  -- moved the HP cards and the touch controls).  The panel asks them
+  -- itself: the prompt on the left, YES / NO as two buttons on the right.
+  -- The value names the engine's own cursor field for that question.
+  local ASKING = {
+    ["ask-nickname"] = "nicknameIndex",
+    ["ask-forget"] = "forgetChoice",
+    ["stop-learning"] = "forgetChoice",
+    ["ask-shift"] = "shiftIndex",
+    ["ask-next-mon"] = "nextMonIndex",
+  }
   local UNSUPPORTED = {
-    ["ask-nickname"] = true,
-    ["ask-forget"] = true,
-    ["stop-learning"] = true,
-    ["ask-shift"] = true,
-    ["ask-next-mon"] = true,
     -- gen2-aio: "stats-box" is NOT here.  Its "grew to level" line stays in
     -- this panel, exactly where the line itself was drawn, and the dialog
     -- presenter adds only the STATS card; handing the whole phase over made
@@ -962,6 +969,80 @@ return function(mod)
     end
   end
 
+  -- gen2-aio 0.9.93: a battle YES / NO inside the panel.  While the prompt
+  -- still types (the engine's messageTimer) it is a plain message, as the
+  -- cart opens YesNoBox only after it.  Then the prompt keeps the left of
+  -- the panel and YES / NO stand as two buttons on the right; a prompt
+  -- line too wide for the left part puts them in a row along the bottom of
+  -- the same panel instead (the panel never changes size).  A tap sets the
+  -- engine's own cursor field and presses A (KIM Touch's generic screen
+  -- cells), so the answer runs the engine's YES / NO arm; B is NO there and
+  -- the keys move the cursor exactly as before.
+  local function drawYesNo(state, phase, x, y, w, h, bodyFont, captionFont, scale, portrait)
+    local field = ASKING[phase]
+    if (tonumber(state.messageTimer) or 0) > 0 then
+      return drawMessage(state, x, y, w, h, bodyFont, captionFont, scale)
+    end
+    local pad = math.max(4, 4 * scale)
+    local gap = math.max(3, 3 * scale)
+    local bodyH = bodyFont:getHeight()
+    local lines = stateMessageLines(state)
+    local widest = 0
+    for _, line in ipairs(lines) do
+      local ok, lw = pcall(bodyFont.getWidth, bodyFont, tostring(line))
+      if ok and lw > widest then widest = lw end
+    end
+    local colW = portrait and w * 0.34
+      or math.min(w * 0.30, math.max(w * 0.20, bodyFont:getWidth("YES") * 3.4))
+    local btnH = math.min((h - gap) * 0.5, bodyH * 2.8)
+    local row = widest + pad * 2 > w - colW - gap
+    local cells = {}
+    local textW
+    if row then
+      -- the buttons side by side along the bottom, the prompt above them
+      local textNeed = pad * 2 + math.min(#lines, 2) * bodyH
+      btnH = math.max(bodyH * 1.4, math.min(bodyH * 2.6, h - textNeed - gap))
+      local bw = math.min((w - gap) * 0.5, math.max(w * 0.3, bodyFont:getWidth("YES") * 4))
+      local by = y + h - btnH
+      local bx = x + w - bw * 2 - gap
+      for i = 1, 2 do cells[i] = { x = bx + (i - 1) * (bw + gap), y = by, w = bw, h = btnH } end
+      textW = w
+      drawMessage(state, x, y, w, by - y - gap * 0.5, bodyFont, captionFont, scale)
+    else
+      local cx = x + w - colW
+      local top = y + (h - btnH * 2 - gap) * 0.5
+      for i = 1, 2 do cells[i] = { x = cx, y = top + (i - 1) * (btnH + gap), w = colW, h = btnH } end
+      textW = w - colW - gap
+      drawMessage(state, x, y, textW, h, bodyFont, captionFont, scale)
+      color(COLORS.divider, nil, true)
+      G.rectangle("fill", cx - gap * 0.5, y + pad, math.max(1, scale * .45), h - pad * 2)
+    end
+    local selected = tonumber(state[field]) or 1
+    local labels = { localized("YES"), localized("NO") }
+    local screen = { state = state, kind = "generic", generic = true, mode = "list",
+      phase = state.phase, time = tapTargets.time, cells = {} }
+    for i, c in ipairs(cells) do
+      local r = math.max(2, 2 * scale)
+      if i == selected then
+        selectedCell(c.x, c.y, c.w, c.h, scale)
+      else
+        color(COLORS.raised or COLORS.surface, nil, true)
+        G.rectangle("fill", c.x, c.y, c.w, c.h, r, r)
+        color(COLORS.divider, nil, true)
+        G.setLineWidth(math.max(1, scale * .45))
+        G.rectangle("line", c.x, c.y, c.w, c.h, r, r)
+      end
+      local f = fitBattleFont(bodyH, labels[i], c.w - pad * 2, c.h * 0.7)
+      drawText(labels[i], f, c.x + pad, c.y + (c.h - f:getHeight()) * 0.5, c.w - pad * 2,
+        "center", i == selected and COLORS.text or COLORS.muted)
+      tapCell("yesno", i, c.x, c.y, c.w, c.h)
+      screen.cells[i] = { kind = "row", x = c.x, y = c.y, w = c.w, h = c.h, index = i,
+        select = function(st) st[field] = i end }
+    end
+    tapTargets.yesNo = { mode = row and "row" or "column", textW = textW }
+    mod._kimScreenTapTargets = screen
+  end
+
   local function drawMoves(state, x, y, w, h, bodyFont, captionFont, scale, portrait)
     local moves = type(state.playerMoves) == "function" and state:playerMoves() or {}
     local selected = tonumber(state.moveIndex) or 1
@@ -1096,7 +1177,16 @@ return function(mod)
   local function drawModernBattleUi(game, state, viewport)
     tapTargets = { cells = {}, state = state, phase = state and state.phase,
       time = love.timer and love.timer.getTime and love.timer.getTime() or 0 }
-    if not supportedSurface(state) then tapTargets.state = nil; return end
+    -- gen2-aio 0.9.93: the panel's rect is published for EVERY phase of a
+    -- Modern battle, drawn or not (the ball throw and the other beats with
+    -- the box empty draw nothing): the HP cards, the floating touch
+    -- controls and the KENNEY camera all sit against it, and without it they
+    -- fell back to an estimate a few dozen pixels away -- the jump the user
+    -- saw while a Poke Ball was thrown.
+    if not (enabled() and type(state) == "table" and state.isBattle == true) then
+      tapTargets.state = nil; return
+    end
+    local drawn = supportedSurface(state)
 
     -- Theme changes are live; no restart/reinstall is needed while testing.
     local themeId = tostring(opt("gen2UiTheme", "default"))
@@ -1170,38 +1260,48 @@ return function(mod)
     local moveLayout = tostring(opt("battleMoveLayout", "grid")):lower()
     local showMoveInfo = opt("battleMoveInfo", true) ~= false
     local bodyH, captionH = bodyFont:getHeight(), captionFont:getHeight()
-    local minH
-    if phase == "moves" then
-      if moveLayout == "vertical" then
-        minH = (bodyH + 3 * fit) * 4 + 11 * fit
-      else
-        -- A grid cell contains both a move name and a PP caption. Account for
-        -- BOTH when calculating panel height; the old formula only counted the
-        -- name, which is why 150% text collapsed back down or lost move info.
-        local rowNeed = bodyH + captionH + 5 * fit
-        minH = rowNeed * 2 + 9 * fit
-      end
-      if showMoveInfo then
-        if portrait then
-          local infoNeed = bodyH + captionH * 1.25 + 8 * fit
-          minH = minH + infoNeed
+    -- gen2-aio 0.9.93: ONE height for the whole battle, the tallest any
+    -- phase needs (the move list, the command menu, a message, a YES / NO).
+    -- Each phase used to size the panel for itself, so FIGHT grew it and a
+    -- message shrank it again, and with it the HP card above it and the
+    -- touch controls clear of that card moved up and down.
+    local function phaseMinH(kind)
+      local minH
+      if kind == "moves" then
+        if moveLayout == "vertical" then
+          minH = (bodyH + 3 * fit) * 4 + 11 * fit
         else
-          -- Landscape info is beside the move grid, so require enough height
-          -- for the selected name plus TYPE/PP/POW/ACC rows.
-          local infoNeed = bodyH + captionH * 4.15 + 10 * fit
-          minH = math.max(minH, infoNeed)
+          -- A grid cell contains both a move name and a PP caption. Account for
+          -- BOTH when calculating panel height; the old formula only counted the
+          -- name, which is why 150% text collapsed back down or lost move info.
+          local rowNeed = bodyH + captionH + 5 * fit
+          minH = rowNeed * 2 + 9 * fit
         end
+        if showMoveInfo then
+          if portrait then
+            local infoNeed = bodyH + captionH * 1.25 + 8 * fit
+            minH = minH + infoNeed
+          else
+            -- Landscape info is beside the move grid, so require enough height
+            -- for the selected name plus TYPE/PP/POW/ACC rows.
+            local infoNeed = bodyH + captionH * 4.15 + 10 * fit
+            minH = math.max(minH, infoNeed)
+          end
+        end
+        if portrait and showMoveInfo then minH = math.max(minH, 86 * fit * uiScale) end
+      elseif kind == "menu" then
+        minH = bodyH * 2 + 14 * fit
+        if portrait then minH = math.max(minH, 62 * fit * uiScale) end
+      elseif kind == "yesno" then
+        -- two YES / NO buttons stacked beside the prompt
+        minH = bodyH * 2.8 + 10 * fit
+      else
+        minH = bodyH * 2 + 10 * fit
       end
-    elseif phase == "menu" then
-      minH = bodyH * 2 + 14 * fit
-    else
-      minH = bodyH * 2 + 10 * fit
+      return minH
     end
-    if portrait and phase=="moves" and showMoveInfo then
-      minH=math.max(minH,86*fit*uiScale)
-    elseif portrait and phase=="menu" then
-      minH=math.max(minH,62*fit*uiScale)
-    end
+    local minH = math.max(phaseMinH("moves"), phaseMinH("menu"),
+      phaseMinH("message"), phaseMinH("yesno"))
     -- 100% remains the same default footprint, but larger BATTLE UI SIZE and
     -- BATTLE TEXT SIZE settings are now allowed to consume more of the free
     -- lower playfield instead of being hard-capped at the old 100% geometry.
@@ -1276,6 +1376,8 @@ return function(mod)
     local h = panelH
 
     tapTargets.panel = { x = x, y = y, w = w, h = h }
+    tapTargets.drawn = drawn
+    if not drawn then return end
     G.push("all")
     G.origin()
     roundedPanel(x, y, w, h, opacity, fit)
@@ -1291,6 +1393,12 @@ return function(mod)
       drawMoves(state, ix, iy, iw, ih, bodyFont, captionFont, fit, portrait)
     elseif phase == "choose-forget" and (tonumber(state.messageTimer) or 0) <= 0 then
       drawForget(state, ix, iy, iw, ih, bodyFont, captionFont, fit)
+    elseif ASKING[phase] then
+      drawYesNo(state, phase, ix, iy, iw, ih, bodyFont, captionFont, fit, portrait)
+      -- with the buttons up and tappable, the floating B (NO, which the NO
+      -- button already is) and START / SELECT (nothing here) go, as in the
+      -- command menu
+      if tapTargets.yesNo and touchControls() then tapTargets.touchUi = true end
     else
       drawMessage(state, ix, iy, iw, ih, bodyFont, captionFont, fit)
     end
@@ -1342,8 +1450,12 @@ return function(mod)
     active = function(state) return supportedSurface(state) end,
     -- gen2-aio: cells drawn on the last panel frame, in window units:
     -- { state, phase, time, panel = {x,y,w,h}, cells = {{kind,index,x,y,w,h}},
-    --   touchUi = true when the panel drew its own touch controls (0.9.85) }
-    -- kinds: menu, move, forget, ball (the quick Poke Ball)
+    --   touchUi = true when the panel drew its own touch controls (0.9.85),
+    --   drawn = false when this phase draws no panel (0.9.93: the rect is
+    --   still the battle's one panel rect, for the HUD to sit against) }
+    -- kinds: menu, move, forget, ball (the quick Poke Ball), yesno (0.9.93;
+    -- a tap on them goes through the generic screen cells, the engine's
+    -- cursor field and A)
     tapTargets = function() return tapTargets end,
   }
 end
