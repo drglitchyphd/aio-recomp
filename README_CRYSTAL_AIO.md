@@ -160,6 +160,27 @@ Gen2-AIO is now **Crystal-AiO**, and this is a full-install release.
   - Saved values of these settings are ignored. The 3D disk cache rebuilds
     once, because the world's geometry changed.
 
+## 0.9.92 changes
+
+- The Modern PACK is redesigned:
+  - About twice as many items on screen, with a scroll bar. The quantity is
+    a badge, and each pocket tab has an icon and its item count. The item
+    registered to SELECT is tagged SEL.
+  - **SORT** (top of the window, or START): A–Z, TYPE or COUNT. It reorders
+    the pocket itself, so the order is saved with your game. The TM/HM
+    pocket stays in TM number order, as on the cart.
+  - The detail panel shows a category tag (MEDICINE, BERRY, BATTLE, HOLD,
+    BALL, KEY, TM, HM, MAIL, OTHER), the sell price, where the item works,
+    a TM's move type / power / accuracy / PP, and who is holding it.
+  - **USE / GIVE / TOSS / REGISTER** buttons. They open the PACK's own item
+    menu, so every rule still applies (no TOSS for key items, only USE in
+    battle, eggs, mail).
+  - A party strip at the bottom: for a TM/HM, who can learn it (or already
+    knows it); for medicine, who it would help (hurt, fainted, paralyzed,
+    missing PP...); for anything else, who is holding it.
+  - Keys and pad work as before. With MODERN UI off, the native PACK is
+    unchanged.
+
 ## 0.9.91 changes
 
 - New FEATURES.md: a tour of everything Gen2-AIO does and where each

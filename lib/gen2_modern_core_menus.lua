@@ -908,6 +908,23 @@ return function(mod)
 
   local function drawPack(s)
     screenTaps(s, "pack")
+    -- gen2-aio 0.9.92: the redesigned PACK (lib/gen2_aio/modern_pack.lua)
+    -- draws with these helpers; the layout below is its fallback.
+    do
+      local MP=rawget(mod,"_aioModernPack")
+      if MP and type(MP.draw)=="function" then
+        local ok,done=pcall(MP.draw,s,{theme=theme,playfield=playfield,uiScale=uiScale,
+          mobilePortrait=mobilePortrait,mobileHost=mobileHost,layoutStyle=layoutStyle,panel=panel,
+          closeButton=closeButton,closeReserve=closeReserve,font=font,fittedFont=fittedFont,text=text,
+          chromeFooter=chromeFooter,chromeFooterH=chromeFooterH,modal=modal,freeScroll=freeScroll,
+          screenTap=screenTap,normalize=normalizeUiText})
+        if ok and done then return end
+        if not ok and not rawget(mod,"_aioModernPackWarned") then
+          rawset(mod,"_aioModernPackWarned",true); print("[gen2-aio] modern pack: "..tostring(done))
+        end
+        screenTaps(s, "pack")
+      end
+    end
     local c=theme(); local sx,sy,sw,sh=playfield()
     local scale=uiScale(sw,sh); local den=density()
     local portrait=mobilePortrait(sw,sh)
