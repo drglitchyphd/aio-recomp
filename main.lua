@@ -1225,7 +1225,9 @@ return function(mod)
       -- 0.9.77: BUILD 3D CACHE (the one-time question and ADVANCED row)
       "lib/gen2_aio/voxel_cache.lua",
       -- 0.9.77: a traded mon's first "won't obey!" says why (OT ID + badge cap)
-      "lib/gen2_aio/obedience_hint.lua" }) do
+      "lib/gen2_aio/obedience_hint.lua",
+      -- 0.9.92: the redesigned Modern PACK (SORT, detail panel, party strip)
+      "lib/gen2_aio/modern_pack.lua" }) do
     local f = loadOwn(rel)
     if type(f) == "function" then
       local okM, err = pcall(f, { mod = mod })
