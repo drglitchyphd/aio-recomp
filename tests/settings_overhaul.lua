@@ -4,8 +4,8 @@
 local H = dofile("tests/settings_overhaul/harness.lua")
 local mod, OPTS = H.mod, H.OPTS
 local Hub = mod._kimArenaHub
-local game = { stack = { states = {} }, save = { options = { modOptions = { ["gen2-aio"] = OPTS } } },
-  options = {}, mods = { modOptions = { ["gen2-aio"] = OPTS } } }
+local game = { stack = { states = {} }, save = { options = { modOptions = { ["crystal-aio"] = OPTS } } },
+  options = {}, mods = { modOptions = { ["crystal-aio"] = OPTS } } }
 game.stack.push = function(_, page) game.stack.states[#game.stack.states + 1] = page end
 local function page(id)
   game.stack.states = {}
@@ -111,10 +111,14 @@ check(mid(s4.attack) == mid(4) and mid(s4.defense) == mid(2) and mid(s4.speed) =
 check(s4.attack >= 9 and s4.defense >= 9, "unown raised")
 -- every row lands on a named page: nothing falls through to ADVANCED
 local _, adv = page("advanced")
-local known = { PERFORMANCE = 1, ["VOXEL PRECACHE"] = 1, ["VOXEL DISK CACHE"] = 1,
+local known = { PERFORMANCE = 1, ["VOXEL DISK CACHE"] = 1,
   ["ASSET MANAGER"] = 1, DIAGNOSTICS = 1, ["MOD LIST"] = 1, ["SETUP WIZARD ON NEW GAME"] = 1,
   ["BUILD 3D CACHE"] = 1 }
 for label in pairs(adv) do check(known[label], "unplaced row on ADVANCED: " .. label) end
+-- 1.0.0: door precache and world edge fill went back to gmarc upstream
+check(adv["VOXEL PRECACHE"] == nil, "VOXEL PRECACHE row removed")
+local _, wo = page("world")
+check(wo["WORLD EDGE FILL"] == nil and wo["VOXEL EDGE"] == nil, "edge fill rows removed")
 local _, root = (function() game.stack.states = {}; local r = Hub.open(game); local m = {}
   for _, x in ipairs(r.rows) do m[x.label] = x end; return r, m end)()
 check(root.GAMEPLAY and root["NUZLOCKE & RULES"] and root.ADVANCED and not root["QOL TOGGLES"], "nine pages")

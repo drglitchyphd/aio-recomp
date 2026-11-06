@@ -1,11 +1,11 @@
 
 local StadiumFragment = {}
-local Fx = require("mods.gen2-aio.stadium2.lib.fx")
-local Flame = require("mods.gen2-aio.stadium2.lib.render_callbacks.flame")
-local Phase5Geometry = require("mods.gen2-aio.stadium2.lib.render_callbacks.phase5_geometry")
-local HandlerRegistry = require("mods.gen2-aio.stadium2.lib.handler_registry")
-local VertexSemantics = require("mods.gen2-aio.stadium2.lib.vertex_semantics")
-local ArenaLighting = require("mods.gen2-aio.stadium2.lib.arena_lighting")
+local Fx = require("mods.crystal-aio.stadium2.lib.fx")
+local Flame = require("mods.crystal-aio.stadium2.lib.render_callbacks.flame")
+local Phase5Geometry = require("mods.crystal-aio.stadium2.lib.render_callbacks.phase5_geometry")
+local HandlerRegistry = require("mods.crystal-aio.stadium2.lib.handler_registry")
+local VertexSemantics = require("mods.crystal-aio.stadium2.lib.vertex_semantics")
+local ArenaLighting = require("mods.crystal-aio.stadium2.lib.arena_lighting")
 
 local byte = string.byte
 local char = string.char

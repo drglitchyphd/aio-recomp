@@ -1,5 +1,5 @@
 -- Bounded world-space rain: one mesh, no textures, readbacks or shadow maps.
-local Surface=require('mods.gen2-aio.stadium2.lib.weather_surface')
+local Surface=require('mods.crystal-aio.stadium2.lib.weather_surface')
 local W={};W.__index=W
 local corners={{-1,0},{1,0},{1,1},{-1,0},{1,1},{-1,1}}
 local format={{'VertexPosition','float',3},{'VertexTexCoord','float',2},{'VertexColor','float',4}}

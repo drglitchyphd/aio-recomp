@@ -1,5 +1,5 @@
 -- 0.9.70: the touch Poke Ball button in wild battles (touch/main.lua) and
--- the quick ball it throws (lib/gen2_aio/quick_ball.lua).
+-- the quick ball it throws (lib/crystal_aio/quick_ball.lua).
 -- Run from the repo root: luajit tests/quick_ball_button.lua
 local n = 0
 local function check(c, m) if not c then error("FAIL: " .. m, 2) end n = n + 1 end
@@ -26,7 +26,7 @@ local game = { stack = { top = function() return battle end } }
 local host = { exports = {}, save = { get = function(_, k) return store[k] end,
   set = function(_, k, v) store[k] = v end } }
 host._kantoInMotionActiveGame = function() return game end
-assert(loadfile("lib/gen2_aio/quick_ball.lua"))()({ mod = host })
+assert(loadfile("lib/crystal_aio/quick_ball.lua"))()({ mod = host })
 
 check(host._kimArenaQuickBallReady() == true, "ready in a wild battle's command menu")
 local info = host._kimArenaQuickBallInfo()
@@ -51,7 +51,7 @@ check(host._kimArenaQuickBallReady() == false, "not before the battle's intro sl
 battle.slideFrame = 80
 -- a relaunch in the same Lua state rebinds the session's hooks
 local host2 = { exports = {}, save = host.save, _kantoInMotionActiveGame = host._kantoInMotionActiveGame }
-assert(loadfile("lib/gen2_aio/quick_ball.lua"))()({ mod = host2 })
+assert(loadfile("lib/crystal_aio/quick_ball.lua"))()({ mod = host2 })
 check(type(host2._kimArenaQuickBallThrow) == "function" and host2._kimArenaQuickBallReady(),
   "second session gets its own hooks")
 

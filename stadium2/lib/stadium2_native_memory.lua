@@ -10,7 +10,7 @@
 -- when this module happens to load where it is allowed.
 local ok, ffi = pcall(require, "ffi")
 local cell = ok and ffi and ffi.new("union { float f; uint32_t u; }") or nil
-local f32 = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_float")
+local f32 = require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_float")
 local floor = math.floor
 
 local Memory = {}

@@ -2,7 +2,7 @@
 -- ring on a polished floor, tiered stands down both sides, banners, statues
 -- by the entrance and tall windows under a lit ceiling. Kenney Mini Arena
 -- meshes (CC0), painted with the shared watercolor kit.
-local Kit=require('mods.gen2-aio.stadium2.lib.scene_kit')
+local Kit=require('mods.crystal-aio.stadium2.lib.scene_kit')
 
 local HX,HZ,H=130,150,96
 

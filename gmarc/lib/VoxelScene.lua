@@ -497,12 +497,6 @@ function VoxelScene.prefetch(state)
     live[nb.map.id] = true
     liveKey = liveKey .. "|" .. nb.map.id
   end
-  -- gen2-aio VOXEL PRECACHE: the current map's door destinations stay live
-  -- (and are queued below) so walking through a door swaps in a ready mesh
-  for _, id in ipairs(V.require("Prefetch").ids(state)) do
-    live[id] = true
-    liveKey = liveKey .. "|p" .. id
-  end
   if liveKey ~= lastLiveKey then
     lastLiveKey = liveKey
     ChunkMesher.setLive(live)
@@ -536,7 +530,6 @@ function VoxelScene.prefetch(state)
   -- always come from the same slot and a lake is never drawn twice or left
   -- as a hole.
   ChunkMesher.request(state.map, false, masks, true)
-  pcall(V.require("Prefetch").request, state, ChunkMesher)
   local terrain, water = ChunkMesher.pair(state.map, false)
   if not terrain then
     terrain, water = ChunkMesher.pair(state.map, true)
@@ -1022,9 +1015,6 @@ function VoxelScene.render(state, w, h, vw, vh, paletteFor)
               water, nbWater)
 
   local function drawScene()
-
-  -- gen2-aio: the border block's floor past the meshed ring (VoidFloor)
-  pcall(function() V.require("VoidFloor").draw(state, cx, cy, atlasFor(state.map)) end)
 
   -- Opaque rock goes first so its depth rejects the hidden terrain pixels.
   local cave=CaveInterior.mesh(state.map)

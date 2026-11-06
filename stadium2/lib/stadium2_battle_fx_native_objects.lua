@@ -157,7 +157,7 @@ local function builtinPresentation(mode,event,callbacks,drawCallbacks)
   return nil
 end
 
-local single=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_float")
+local single=require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_float")
 local function clampByte(value)
   value = tonumber(value) or 0
   if value < 0 then return 0 end

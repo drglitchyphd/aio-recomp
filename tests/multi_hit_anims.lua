@@ -4,7 +4,7 @@ function Battle:emit(e) self.events[#self.events+1] = e; return e end
 function Battle:sideOf(m) return m.side end
 function Battle:hitOnce(a, d, def) return self:emit({ kind = "damage", side = d.side }) end
 package.loaded["src.battle.gen2.Battle"] = Battle
-local f = dofile("lib/gen2_aio/multi_hit_anims.lua")
+local f = dofile("lib/crystal_aio/multi_hit_anims.lua")
 print("install", f({ diag = function() end }), f({}))  -- second install must not re-wrap
 local b = setmetatable({ events = {} }, Battle)
 local me, foe = { side = "player" }, { side = "enemy" }

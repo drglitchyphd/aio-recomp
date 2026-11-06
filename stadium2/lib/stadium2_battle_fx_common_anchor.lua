@@ -1,5 +1,5 @@
 -- 84104A00 / 84104D28. Inputs and results remain in native world units.
-local f=require('mods.gen2-aio.stadium2.lib.stadium2_battle_fx_float')
+local f=require('mods.crystal-aio.stadium2.lib.stadium2_battle_fx_float')
 local Anchor={}
 local function has(n,m)return math.floor((n or 0)/m)%2==1 end
 local function vec(v)return v and {v[1],v[2],v[3]} end

@@ -1,21 +1,21 @@
 -- Runtime/packet/renderer coordinator. Battle mechanics remain host-owned.
-local Runtime=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_runtime")
-local Attachment=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_attachment")
-local Packets=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_draw_packets")
-local NativePackets=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_native_object_packets")
-local LifecyclePackets=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_lifecycle_packets")
-local Ribbon=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_ribbon")
-local WaveGrid=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_wave_grid")
-local TerrainGrid=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_terrain_grid")
-local Beam=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_beam")
-local CommonAnchor=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_common_anchor")
-local BattleState=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_battle_state")
-local ModelAnimation=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_model_animation")
+local Runtime=require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_runtime")
+local Attachment=require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_attachment")
+local Packets=require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_draw_packets")
+local NativePackets=require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_native_object_packets")
+local LifecyclePackets=require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_lifecycle_packets")
+local Ribbon=require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_ribbon")
+local WaveGrid=require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_wave_grid")
+local TerrainGrid=require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_terrain_grid")
+local Beam=require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_beam")
+local CommonAnchor=require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_common_anchor")
+local BattleState=require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_battle_state")
+local ModelAnimation=require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_model_animation")
 -- FREE CAMERA ADDITION (non-native; see the module): enabled by the battle adapter.
-local CameraFollow=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_camera_follow")
-local Batch=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_batch")
+local CameraFollow=require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_camera_follow")
+local Batch=require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_batch")
 local Player={};Player.__index=Player
-local NativeObjects=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_native_objects")
+local NativeObjects=require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_native_objects")
 local function copy(v,s)if type(v)~="table"then return v end;s=s or{};if s[v]then return s[v]end;local o={};s[v]=o;for k,x in pairs(v)do o[copy(k,s)]=copy(x,s)end;return o end
 local function diagnosticKey(d)
   return table.concat({tostring(d.code),tostring(d.effectId),tostring(d.programId),
@@ -107,7 +107,7 @@ function Player.new(options)
       local position={}
       for k=1,3 do position[k]=(particle.nativeAnchor and particle.nativeAnchor[k] or 0)+particle.position[k] end
       local matrix=Packets.nativeMatrix(position,particle.scale,particle.rotation)
-      local f=require('mods.gen2-aio.stadium2.lib.stadium2_battle_fx_float')
+      local f=require('mods.crystal-aio.stadium2.lib.stadium2_battle_fx_float')
       local out={}
       for k=1,3 do local j=(k-1)*4
         out[k]=f(matrix[j+1]*point[1]+matrix[j+2]*point[2]+matrix[j+3]*point[3]+matrix[j+4])
@@ -153,7 +153,7 @@ function Player.new(options)
         end
         local result=CommonAnchor.resolve(event,input or {},savedOrigin)
         if initial and event.mode==0 and result.saveOrigin then
-          local f=require('mods.gen2-aio.stadium2.lib.stadium2_battle_fx_float')
+          local f=require('mods.crystal-aio.stadium2.lib.stadium2_battle_fx_float')
           savedOrigin={}
           for axis=1,3 do savedOrigin[axis]=f(result.anchor[axis]+
             (result.clearCommonOffset and 0 or state.nativeSpawnOffset[axis])) end

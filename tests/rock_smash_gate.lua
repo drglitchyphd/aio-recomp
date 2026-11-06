@@ -29,7 +29,7 @@ local stubs = {
 local realRequire = require
 require = function(n) if stubs[n] then return stubs[n] end; local v = U(n); stubs[n] = v; return v end
 local wraps = {}
-local mod = { exports = {}, generation = 2, id = "gen2-aio",
+local mod = { exports = {}, generation = 2, id = "crystal-aio",
   events = { on = function() end, once = function() end, emit = function() end },
   hooks = { wrap = function(_, name, fn) wraps[name] = fn end },
   options = { get = function(_, k) return opts["qt_" .. k] end, define = function() end },

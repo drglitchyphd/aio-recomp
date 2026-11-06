@@ -8,8 +8,8 @@
 --
 -- Material IDs: 1 foliage, 2 wood, 3 stone, 4 plaster/sand, 5 cloth,
 -- 6 painted, 7 light (emissive), 8 ice, 9 metal, 10 floor tiles, 11 snow.
-local Chunks=require('mods.gen2-aio.stadium2.lib.scenery_chunks')
-local Nature=require('mods.gen2-aio.stadium2.lib.battle_nature')
+local Chunks=require('mods.crystal-aio.stadium2.lib.scenery_chunks')
+local Nature=require('mods.crystal-aio.stadium2.lib.battle_nature')
 local Kit={}
 local modRef
 local paint,sky,skyMesh
@@ -23,7 +23,7 @@ function Kit.bind(mod)
 end
 
 local function image(g,path,name)
- local data=modRef and love.filesystem.newFileData(assert(modRef:read(path)),name) or 'mods/gen2-aio/stadium2/'..path
+ local data=modRef and love.filesystem.newFileData(assert(modRef:read(path)),name) or 'mods/crystal-aio/stadium2/'..path
  return g.newImage(data,{mipmaps=true})
 end
 local function ensurePaint(g)
@@ -226,10 +226,10 @@ end
 local libraries
 local function model(name)
  if not libraries then
-  libraries={require('mods.gen2-aio.stadium2.assets.kenney_kit.models'),
-   require('mods.gen2-aio.stadium2.assets.kenney_ocean.models'),
-   require('mods.gen2-aio.stadium2.assets.kenney_nature.models'),
-   require('mods.gen2-aio.stadium2.assets.kenney_town.models')}
+  libraries={require('mods.crystal-aio.stadium2.assets.kenney_kit.models'),
+   require('mods.crystal-aio.stadium2.assets.kenney_ocean.models'),
+   require('mods.crystal-aio.stadium2.assets.kenney_nature.models'),
+   require('mods.crystal-aio.stadium2.assets.kenney_town.models')}
  end
  for _,lib in ipairs(libraries) do if lib[name] then return lib[name] end end
  error('scene kit: unknown model '..tostring(name))
@@ -431,13 +431,13 @@ function Kit.scene(spec)
   local rows={}
   local k=builder(rows,spec)
   local ground=spec.build(k) or 0
-  require("mods.gen2-aio.stadium2.lib.visitor_navigation").build(spec.id,rows)
+  require("mods.crystal-aio.stadium2.lib.visitor_navigation").build(spec.id,rows)
   S.triangles=#rows/3
   return rows,ground
  end
  local function ensure(g)
   if not mesh then local rows,ground=S.vertices();mesh=Chunks.new(g,FORMAT,rows,ground) end
-  if not shader then shader=g.newShader(require('mods.gen2-aio.stadium2.lib.scenery_instances').shader(LAND)) end
+  if not shader then shader=g.newShader(require('mods.crystal-aio.stadium2.lib.scenery_instances').shader(LAND)) end
   if spec.water and not water then
    local w=spec.water;local rows,radii={},w.radii or {0,40,90,160,260,420,700,1100,1700}
    for r=1,#radii-1 do for i=0,127 do
@@ -482,7 +482,7 @@ function Kit.scene(spec)
   ensure(g)
   -- Enclosed rooms: walls and ceiling would shade the whole floor.
   if spec.sceneShadows==false then return end
-  if not shadowShader then shadowShader=g.newShader(require('mods.gen2-aio.stadium2.lib.scenery_instances').shader([[
+  if not shadowShader then shadowShader=g.newShader(require('mods.crystal-aio.stadium2.lib.scenery_instances').shader([[
   varying float depth;
   #ifdef VERTEX
   uniform mat4 lightVP;vec4 position(mat4 tp,vec4 p){vec4 v=lightVP*p;depth=v.z*.5+.5;return v;}
@@ -539,7 +539,7 @@ function Kit.scene(spec)
  end
  function S.endBattle() end
  function S.release()
-  require("mods.gen2-aio.stadium2.lib.visitor_navigation").clear(spec.id)
+  require("mods.crystal-aio.stadium2.lib.visitor_navigation").clear(spec.id)
   for _,r in pairs({mesh,water,shader,waterShader,shadowShader,skyShader}) do if r and r.release then r:release() end end
   mesh,water,shader,waterShader,shadowShader,skyShader=nil,nil,nil,nil,nil,nil
  end

@@ -3784,7 +3784,7 @@ return function(mod)
   end
 
   local function nextGscCapInfo(save, scope)
-      local GscCaps = require("mods.gen2-aio.lib.gen2_aio.gsc_caps")
+      local GscCaps = require("mods.crystal-aio.lib.crystal_aio.gsc_caps")
       local cap, name = GscCaps.next(VersionCompat.gscStages, save, gscProgress(save), scope)
       if cap then return cap, name end
       if scope >= 4 then
@@ -5885,7 +5885,7 @@ return function(mod)
           end
 
           -- gen2-aio 0.9.72: the tracker as its own Modern UI page
-          -- (lib/gen2_aio/modern_pages.lua kind "tracker"): LOG / MAP tabs,
+          -- (lib/crystal_aio/modern_pages.lua kind "tracker"): LOG / MAP tabs,
           -- a Pokemon icon and a status per row, totals at the top.
           function self:_aioModernData()
               syncCurrentArea(self.game)
@@ -6199,7 +6199,7 @@ return function(mod)
           end
       end
       -- gen2-aio 0.9.68: the bundle's SETUP WIZARD picks the run's rules at
-      -- NEW GAME (and GEN2-AIO -> RUN RULES edits them), so the host can ask
+      -- NEW GAME (and CRYSTAL-AIO -> RUN RULES edits them), so the host can ask
       -- for no separate SETUP row on the title screen
       if rawget(mod, "_kimArenaNoTitleSetup") then newGameRow = nil end
       if newGameRow then
@@ -6348,7 +6348,7 @@ return function(mod)
       })
 
       -- gen2-aio 0.9.77: no START -> RULES row. The run's rules live in
-      -- GEN2-AIO -> RULES -> RUN RULES (lib/gen2_aio/nuz_rules.lua).
+      -- CRYSTAL-AIO -> RULES -> RUN RULES (lib/crystal_aio/nuz_rules.lua).
 
       return result
   end)

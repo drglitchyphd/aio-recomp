@@ -2,11 +2,11 @@
 -- Stadium 2 move-FX player. It translates fragment-79 source units at the
 -- final renderer boundary; battle mechanics and battle RNG remain untouched.
 local Attachment = require(
-  "mods.gen2-aio.stadium2.lib.stadium2_battle_fx_attachment")
-local Dispatch = require("mods.gen2-aio.stadium2.lib.animation_dispatch")
-local Endpoints = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_endpoints")
-local Sequence = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_sequence")
-local EmissionMarkers = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_emission_markers")
+  "mods.crystal-aio.stadium2.lib.stadium2_battle_fx_attachment")
+local Dispatch = require("mods.crystal-aio.stadium2.lib.animation_dispatch")
+local Endpoints = require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_endpoints")
+local Sequence = require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_sequence")
+local EmissionMarkers = require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_emission_markers")
 
 local Adapter = {}
 Adapter.__index = Adapter
@@ -52,7 +52,7 @@ function Adapter.cameraRayPoint(camera,distance,units)
   distance=tonumber(distance)
   local eye,focus=camera and camera.eye,camera and camera.focus
   if distance==nil or type(eye)~="table" or type(focus)~="table" then return nil end
-  local f32=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_float")
+  local f32=require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_float")
   units=tonumber(units) or .05
   local e={(eye[1] or eye.x)/units,(eye[2] or eye.y)/units,(eye[3] or eye.z)/units}
   local t={(focus[1] or focus.x)/units,(focus[2] or focus.y)/units,(focus[3] or focus.z)/units}
@@ -256,7 +256,7 @@ local function placementContextFor(particle, sceneContext, side)
   end
   if type(dispatch)=="string" and moveRow and moveRow>=0
       and #dispatch>=(moveRow+1)*20 then
-    local f32=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_float")
+    local f32=require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_float")
     nativeSpawnScale=f32(dispatch:byte(moveRow*20+scaleByte+1)*f32(.01))
   end
   if host and actor and host.modelMatrix then
@@ -394,7 +394,7 @@ function Adapter.beamInputs(context,sceneContext)
     local moveRow=(tonumber(context.moveId) or 0)-1
     if pair[1]==source and bytes and moveRow>=0 and #bytes>=(moveRow+1)*20 then
       -- 8411AF6C copies dispatch +0F to owner+661; 84109544 multiplies by .01f.
-      local f32=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_float")
+      local f32=require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_float")
       modelScale=f32(bytes:byte(moveRow*20+16)*f32(.01))
     end
     -- 841095DC (family 29 setup): the owner's 8411E358 context scale for this
@@ -412,7 +412,7 @@ function Adapter.beamInputs(context,sceneContext)
       or (tonumber(context.moveId) or 0)-1
     local offsetRow=isTarget and current or row
     if bytes and offsetRow>=0 and #bytes>=(offsetRow+1)*20 then
-      local f32=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_float")
+      local f32=require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_float")
       local scale=f32(bytes:byte(offsetRow*20+16)*f32(.01))
       if isTarget then ribbonTargetScale=scale end
       if pair[1]==owner then ribbonOwnerScale=scale end
@@ -978,7 +978,7 @@ function Adapter:playMoveAndImpact(moveId, source, actor, nativeResult, target, 
   local fallback = timing.impact
   if not fallback and timing.defenderHit then
     -- +0x61A is 0: the attack ends with its clip
-    local okP, Pack = pcall(require, "mods.gen2-aio.stadium2.lib.pack")
+    local okP, Pack = pcall(require, "mods.crystal-aio.stadium2.lib.pack")
     local index = okP and model and Pack.moveIndex(model, moveId)
     local anim = index and model.anims and model.anims[index]
     if anim and tonumber(anim.frames) then

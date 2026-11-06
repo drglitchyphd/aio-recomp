@@ -131,7 +131,7 @@ function love.load()
     local chunk=assert(loadstring(assert(readFile(rel)),"@"..rel))
     return chunk()(...)
   end
-  run("lib/gen2_aio/font.lua",{mod=mod})
+  run("lib/crystal_aio/font.lua",{mod=mod})
   local S=run("lib/gen2_modern_style.lua",mod) or mod._kantoInMotionGen2Ui
   -- every panel and text drawn, for the box / fit checks
   local panels,texts={},{}
@@ -143,8 +143,8 @@ function love.load()
   end
   run("lib/gen2_modern_battle_ui.lua",mod)
   run("lib/gen2_modern_dialog_ui.lua",mod)
-  run("lib/gen2_aio/modern_hud.lua",{mod=mod})
-  run("lib/gen2_aio/quick_ball.lua",{mod=mod})
+  run("lib/crystal_aio/modern_hud.lua",{mod=mod})
+  run("lib/crystal_aio/quick_ball.lua",{mod=mod})
   mod.exports.menuCloseRect=function()return rawget(mod,"_kimMenuClose")end
   mod.exports.screenTapTargets=function()return rawget(mod,"_kimScreenTapTargets")end
 

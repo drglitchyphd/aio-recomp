@@ -1,4 +1,4 @@
--- gen2-aio 0.9.75: the Modern service screens (lib/gen2_aio/modern_services.lua)
+-- gen2-aio 0.9.75: the Modern service screens (lib/crystal_aio/modern_services.lua)
 -- over the ENGINE's own classes: ItemPcMenu (with the real PackMenu for
 -- DEPOSIT), BankOfMom, MailboxMenu, MailMenu, MailRead, MailCompose and
 -- DayCareMenu.
@@ -102,9 +102,9 @@ function love.load()
   local function run(rel,...)
     return assert(loadstring(assert(readFile(rel)),"@"..rel))()(...)
   end
-  run("lib/gen2_aio/font.lua",{mod=mod})
+  run("lib/crystal_aio/font.lua",{mod=mod})
   local S=run("lib/gen2_modern_style.lua",mod)
-  run("lib/gen2_aio/modern_services.lua",{mod=mod})
+  run("lib/crystal_aio/modern_services.lua",{mod=mod})
   mod.exports.screenTapTargets=function()return rawget(mod,"_kimScreenTapTargets") end
   mod.exports.menuCloseRect=function()return rawget(mod,"_kimMenuClose")end
 

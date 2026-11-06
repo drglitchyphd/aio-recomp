@@ -296,6 +296,8 @@ function Structures.forMap(map)
   Budget.mark("s.pixels"); local px = pixels(tileset)
   Budget.mark("s.buildings")
   Buildings.build(S, map, px, perRow)
+  -- upstream 1.0.17: Cherrygrove's unwrapped rock terraces (explicit placements)
+  if map.id=='CHERRYGROVE_CITY'then V.require('CoastalTerraces').build(S,map,px,perRow,keyOf)end
   Budget.mark("s.doors")
   if map.tileset.id=='TILESET_KANTO'then V.require('RoomGeometry').build(S,map,keyOf)end
   if map.id=='TIN_TOWER_ROOF'then
@@ -520,7 +522,9 @@ function Structures.forMap(map)
         reg.minY = math.min(reg.minY, c[2])
         reg.maxY = math.max(reg.maxY, c[2])
       end
+      local firstQuad=#S.objectQuads
       Structures.extractObjects(S, map, reg, data, perRow, "opaque")
+      if map.id=='ROUTE_39'then V.require('FenceRails').buildCell(S,map,reg,keyOf,firstQuad)end
     end
 
     -- ---- profile-pinned relief props: top-down drawings that extrude ----

@@ -155,10 +155,10 @@ function love.load()
   local function run(rel,...)
     return assert(loadstring(assert(readFile(rel)),"@"..rel))()(...)
   end
-  run("lib/gen2_aio/font.lua",{mod=mod})
+  run("lib/crystal_aio/font.lua",{mod=mod})
   local S=run("lib/gen2_modern_style.lua",mod)
   assert(run("lib/gen2_modern_core_menus.lua",mod))
-  local Moves=run("lib/gen2_aio/modern_moves.lua",{mod=mod})
+  local Moves=run("lib/crystal_aio/modern_moves.lua",{mod=mod})
   local DEX={QUILAVA=156,CYNDAQUIL=155,TOTODILE=158,PIDGEY=16,MEW=151}
   mod._kantoInMotionHdMenuIconForModernUi=function(_,m)
     local d=DEX[m.species];return d and ("assets/menu_icons/hd/normal/%03d.png"):format(d) or nil

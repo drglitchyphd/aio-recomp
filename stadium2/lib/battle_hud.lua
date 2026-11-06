@@ -1,5 +1,5 @@
 local Hud = { FROST=.55, TINT=.26, HEIGHT=72 }
-local BattleViewport = require("mods.gen2-aio.stadium2.lib.battle_viewport")
+local BattleViewport = require("mods.crystal-aio.stadium2.lib.battle_viewport")
 
 -- Exact native Gold HUD spans.  Snap the RECT to the window edge and move the
 -- full source band by the matching amount; moving a 160px band to x=0 leaves

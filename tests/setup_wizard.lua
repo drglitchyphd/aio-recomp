@@ -12,8 +12,8 @@ local n = 0
 local function check(c, m) if not c then error("FAIL: " .. m, 2) end n = n + 1 end
 check(Wizard ~= nil, "wizard installed")
 
-local game = { save = { options = { modOptions = { ["gen2-aio"] = OPTS } } }, options = {},
-  mods = { modOptions = { ["gen2-aio"] = OPTS } } }
+local game = { save = { options = { modOptions = { ["crystal-aio"] = OPTS } } }, options = {},
+  mods = { modOptions = { ["crystal-aio"] = OPTS } } }
 game.stack = { states = {} }
 function game.stack:push(p) self.states[#self.states + 1] = p end
 function game.stack:pop() self.states[#self.states] = nil end
@@ -34,7 +34,7 @@ end
 
 -- root page has SETUP WIZARD first
 Hub.open(game)
-check(top().rows[1].label == "SETUP WIZARD", "SETUP WIZARD heads GEN2-AIO")
+check(top().rows[1].label == "SETUP WIZARD", "SETUP WIZARD heads CRYSTAL-AIO")
 game.stack.states = {}
 
 -- profile -> REVIEW, nothing applied until APPLY

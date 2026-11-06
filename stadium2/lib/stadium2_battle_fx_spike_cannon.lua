@@ -1,7 +1,7 @@
 -- US fragment 79 family 16: 84158370/8415839C/84158520 and
 -- 841647D0/84164924/84164C28/84165008/841650A8.
-local f=require('mods.gen2-aio.stadium2.lib.stadium2_battle_fx_float')
-local Needle=require('mods.gen2-aio.stadium2.lib.stadium2_battle_fx_needle')
+local f=require('mods.crystal-aio.stadium2.lib.stadium2_battle_fx_float')
+local Needle=require('mods.crystal-aio.stadium2.lib.stadium2_battle_fx_needle')
 local Spike={}
 local function vec(v)return {f(v[1]),f(v[2]),f(v[3])}end
 local function copy(v)if type(v)~='table' then return v end local t={} for k,x in pairs(v)do t[k]=copy(x)end return t end

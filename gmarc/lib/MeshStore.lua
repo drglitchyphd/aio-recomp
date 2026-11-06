@@ -77,8 +77,19 @@ do
   if ok and type(B) == "table" then tick, check = B.tick, B.check end
 end
 
+-- gen2-aio 1.0.0 (gmarc 1.0.17 merge): a companion's additive region profile
+-- (ProfileExtensions) changes geometry the build id does not fingerprint, so
+-- no map is read from or written to the disk cache while one is registered.
+local function extended()
+  local px = type(V) == "table" and rawget(V, "profileExtensions")
+  if type(px) ~= "table" or type(px.list) ~= "function" then return false end
+  local ok, ids = pcall(px.list, px)
+  return ok and type(ids) == "table" and ids[1] ~= nil
+end
+
 function MeshStore.enabled()
   if disabled then return false end
+  if extended() then return false end
   local fn = hostFn("_kimArenaMeshStore")
   if fn then
     local ok, on = pcall(fn)
@@ -204,6 +215,7 @@ function MeshStore.whyOff()
     local ok, on = pcall(fn)
     if ok and on == false then return "VOXEL DISK CACHE is OFF" end
   end
+  if extended() then return "a companion voxel profile is registered" end
   if not disabled then start() end
   if disabled then return "the disk cache could not start (" .. tostring(offReason or "?") .. ")" end
   return nil

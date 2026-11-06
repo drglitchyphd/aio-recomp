@@ -365,7 +365,9 @@ local pendingHeldItemRestores = {}
 -- false = OFF (vanilla), then 0x, 1.5x, 2x, 3x, 4x.  A stored `true` is a
 -- legacy EXP x2 bucket (options.lua from before the selector) and reads
 -- as 2x -- see normalizeMult.
-local MULT_CYCLE = { false, 0, 1.5, 2, 3, 4 }
+-- 0X last (1.0.0): it was the first step from OFF, so one stray tap on
+-- MONEY MULT silently stopped every prize (EXP MULT: every EXP gain)
+local MULT_CYCLE = { false, 1.5, 2, 3, 4, 0 }
 
 -- BATTERY INDICATOR: one persisted cycle controls the placement.  The
 -- strings are deliberately stable storage values; the menu shows the
@@ -685,17 +687,61 @@ return function(mod)
   -- own storage -- was never reached: on device QUICK NURSE read false while
   -- its settings row showed ON. Look for an explicitly STORED value in every
   -- place one can live first; only then fall back to the defaults.
+  -- Returns the value and whether it sits under the key the settings row
+  -- reads ("qt_<key>"); the other two are legacy spellings.
   local function storedIn(t, key)
     if type(t) ~= "table" then return nil end
     local bucket = t[mod.id]
     if type(bucket) ~= "table" then return nil end
     local prefix = rawget(mod, "_kimKeyPrefix") or ""
-    if bucket[prefix .. key] ~= nil then return bucket[prefix .. key] end
-    if bucket[key] ~= nil then return bucket[key] end
+    if bucket[prefix .. key] ~= nil then return bucket[prefix .. key], true end
+    if bucket[key] ~= nil then return bucket[key], prefix == "" end
     -- 0.9.58 and earlier: the hub saved these as "qt_qt_<key>"; honour a
     -- choice made there until the row is changed again (it now writes qt_)
-    if prefix ~= "" then return bucket[prefix .. prefix .. key] end
+    if prefix ~= "" then return bucket[prefix .. prefix .. key], false end
     return nil
+  end
+
+  -- Crystal-AiO 1.0.1: the settings row reads only the live loader's
+  -- "qt_<key>", so a value honoured from anywhere else (a legacy key above,
+  -- the save's or the options file's bucket, this mod's own storage) was in
+  -- effect while the row showed the default. MONEY MULT = 0x left over from
+  -- 0.9.58's "qt_qt_money_mult" read as OFF in the hub and yet dropped every
+  -- trainer's prize and its "got ¥N for winning!" line. Copy such a value
+  -- under the row's key, in the row's own encoding (choice rows store "off"
+  -- / "0" / "1.5"), so the row shows what is in effect and changing it wins.
+  -- A key the host holds (REPELS, the removed toggles) answers the same
+  -- whatever is stored and is left alone.
+  local function rowCode(key, value)
+    for _, spec in ipairs(TOGGLES) do
+      if spec.key == key and type(spec.cycle) == "table" then
+        -- the legacy EXP x2 `true` (normalizeMult)
+        if value == true and spec.cycle == MULT_CYCLE then value = 2 end
+        if value == false or value == nil then return "off" end
+        return tostring(value)
+      end
+    end
+    return value
+  end
+  local function promote(key, value)
+    local prefix = rawget(mod, "_kimKeyPrefix") or ""
+    local live = Game and Game.mods
+    local options = live and live.modOptions
+    if prefix == "" or type(options) ~= "table" then return end
+    local filter = rawget(mod, "_kimArenaQtFilter")
+    if type(filter) == "function" then
+      local okOn, on = pcall(filter, key, true)
+      local okOff, off = pcall(filter, key, false)
+      if okOn and okOff and on == off then return end
+    end
+    local bucket = options[mod.id]
+    if type(bucket) ~= "table" then
+      bucket = {}
+      options[mod.id] = bucket
+    end
+    if bucket[prefix .. key] == nil then
+      bucket[prefix .. key] = rowCode(key, value)
+    end
   end
   local lastSource = {}
   local sessionGetRaw
@@ -721,16 +767,31 @@ return function(mod)
       { "options", Game and Game.options and Game.options.modOptions },
     }
     for _, place in ipairs(places) do
-      local value = storedIn(place[2], key)
-      if value ~= nil then lastSource[key] = place[1]; return value end
+      local value, current = storedIn(place[2], key)
+      if value ~= nil then
+        lastSource[key] = place[1]
+        if not (current and place[1] == "loader") then promote(key, value) end
+        return value
+      end
     end
     local saved = loadStoredSettings()
-    if saved and saved[key] ~= nil then lastSource[key] = "storage"; return saved[key] end
+    if saved and saved[key] ~= nil then
+      lastSource[key] = "storage"
+      promote(key, saved[key])
+      return saved[key]
+    end
     local value = publicOption(key)
     if value ~= nil then lastSource[key] = "default"; return value end
     lastSource[key] = "fallback"
     return mod.exports.defaultFor(key)
   end
+  -- the rows are read before any toggle is: line them up once the save (and
+  -- with it every place a value can live) is loaded
+  local function lineUpRows()
+    for _, spec in ipairs(TOGGLES) do pcall(sessionGetRaw, spec.key) end
+  end
+  mod.events:on("game.ready", lineUpRows)
+  mod.events:on("save.loaded", lineUpRows)
 
   -- gen2-aio 0.9.54: engine modules (src.world.gen2.*, Prize, TextBox, ...)
   -- outlive a session. Android's exit -> launcher -> Play reloads mods in the

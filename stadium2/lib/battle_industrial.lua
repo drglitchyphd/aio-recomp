@@ -2,7 +2,7 @@
 -- tiles with painted safety lines, steel walls with ribs and high windows,
 -- conveyors, hoppers, tanks, a gantry crane, pipes and glowing control
 -- panels. Kenney Factory, City Industrial and Space Station meshes (CC0).
-local Kit=require('mods.gen2-aio.stadium2.lib.scene_kit')
+local Kit=require('mods.crystal-aio.stadium2.lib.scene_kit')
 
 local HX,HZ,H=140,150,100
 

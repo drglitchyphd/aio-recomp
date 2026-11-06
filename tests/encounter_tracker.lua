@@ -81,11 +81,11 @@ store[prefix .. "caught_areas"] = {}
 store[prefix .. "nuzlocke_enabled"] = false
 check(at("CHERRYGROVE_CITY") == false, "Nuzlocke off: no dot")
 store[prefix .. "nuzlocke_enabled"] = nil
--- 0.9.77: START has no RULES row (GEN2-AIO -> RULES -> RUN RULES has them)
+-- 0.9.77: START has no RULES row (CRYSTAL-AIO -> RULES -> RUN RULES has them)
 game.save.player = { name = "KRIS" }
 local items = H.Runtime.call("ui.start_menu.items", function(_, list) return list end, game,
   { { label = "POKeDEX" }, { label = "KRIS" }, { label = "OPTION" }, { label = "EXIT" } })
 local labels = {}
 for _, it in ipairs(items) do labels[it.label] = true end
-check(labels.TRACKER and labels["GEN2-AIO"] and not labels.RULES, "START: TRACKER, GEN2-AIO, no RULES")
+check(labels.TRACKER and labels["CRYSTAL-AIO"] and not labels.RULES, "START: TRACKER, CRYSTAL-AIO, no RULES")
 print(("encounter tracker: %d checks PASS"):format(n))

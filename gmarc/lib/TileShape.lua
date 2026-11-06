@@ -258,6 +258,10 @@ function TileShape.heights()
   return out
 end
 
+function TileShape.builtinHeights()
+  local out={}for name,h in pairs(FALLBACK_HEIGHTS)do out[name]=h end return out
+end
+
 -- Class names identify authored groups; the base selects existing geometry.
 -- Keeping both prevents neighboring custom classes from merging by accident.
 function TileShape.baseClass(shape)
@@ -554,8 +558,9 @@ function TileShape.at(map, shapes, tile, tx, ty)
   end
   local s=resolvedEdgeAt(map,shapes,tile,tx,ty)
   if map.id=='SILPH_CO_1F'or map.tileset.id=='TILESET_KANTO'or map.tileset.id=='TILESET_ELITE_FOUR_ROOM'then s=V.require('RoomGeometry').at(map,s,tile)end
+  if map.id=='CHERRYGROVE_CITY'then s=V.require('CoastalPlatforms').at(map,shapes,s,tile,tx,ty)end
   if not shapes.mountain then return s end
-  return MountainShape.at(map,shapes,s,tx,ty,resolvedEdgeAt)
+  return V.require('RockMaterial').shape(map,MountainShape.at(map,shapes,s,tx,ty,resolvedEdgeAt))
 end
 
 -- Hand-authored FIGURES for one tileset: a drawing painted INTO furniture,

@@ -601,7 +601,7 @@ return function(mod)
     return follower.spriteService:resolveFollowerSprite(opts or {})
   end
   -- gen2-aio 0.9.24: the host's NPC Pokemon swap reuses Wilds' display
-  -- geometry and presentation helpers (lib/gen2_aio/npc_mons.lua).
+  -- geometry and presentation helpers (lib/crystal_aio/npc_mons.lua).
   mod.exports.require = V.require
   mod.exports.hud = hud
   mod.exports.overlay = overlay

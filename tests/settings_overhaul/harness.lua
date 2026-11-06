@@ -1,5 +1,5 @@
 -- Boots the bundle's main.lua on engine stubs (Crystal, Android) so the
--- GEN2-AIO hub and the settings it files can be checked without the engine.
+-- CRYSTAL-AIO hub and the settings it files can be checked without the engine.
 local ROOT = (io.popen("pwd"):read("*l")) .. "/"
 local OPTS = {}
 local function U(name)
@@ -58,7 +58,7 @@ local defineCalls = {}
 local mod
 local listeners = {}
 mod = {
-  id = "gen2-aio", generation = 2, path = ROOT:sub(1, -2), exports = {},
+  id = "crystal-aio", generation = 2, path = ROOT:sub(1, -2), exports = {},
   log = setmetatable({}, { __index = function(_, k) return function(_, fmt, ...)
     if k == "error" or k == "warn" then
       local ok, s = pcall(string.format, tostring(fmt), ...)
@@ -80,6 +80,7 @@ mod = {
   content = U("content"), assets = U("assets"), cache = U("cache"),
   ui = U("ui"), save = U("save"), storage = U("storage"),
   find = function() return nil end,
+  packs = HARNESS_PACKS,   -- a test's stand-in for the engine's mod.packs
 }
 mod.content.screens = { registered = {}, register = function(self, name, def) self.registered[name] = def end, override = function() end }
 mod.ui = { insertBefore = function(list, label, row)
@@ -122,5 +123,5 @@ local ok, err = pcall(entry, mod)
 io.stderr:write("main ok " .. tostring(ok) .. " " .. tostring(err) .. "\n")
 for _, fn in ipairs(listeners["game.ready"] or {}) do pcall(fn, { game = {} }) end
 
-return { mod = mod, hooks = hooks, Runtime = Runtime, defined = function() return defined end,
-  defineCalls = defineCalls, OPTS = OPTS, readFile = readFile, listeners = listeners }
+return { mod = mod, hooks = hooks, Runtime = Runtime, listeners = listeners, defined = function() return defined end,
+  defineCalls = defineCalls, OPTS = OPTS, readFile = readFile }

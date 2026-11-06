@@ -1,4 +1,4 @@
--- 0.9.76: STOP EVOLUTION (lib/gen2_aio/evolution_stop.lua) on the engine's
+-- 0.9.76: STOP EVOLUTION (lib/crystal_aio/evolution_stop.lua) on the engine's
 -- real EvolutionAnim: a B press or a STOP tap at any moment of the animation
 -- stops it at the cart's next wait; a stone evolution cannot be stopped.
 -- Run from the repo root with AIO_ENGINE=<engine>/src (skips without it):
@@ -11,7 +11,7 @@ package.path = engine .. "/?.lua;" .. engine .. "/?/init.lua;" .. package.path
 local Evo = require("src.ui.gen2.EvolutionAnim")
 local n = 0
 local function check(c, m) if not c then error("FAIL: " .. m, 2) end n = n + 1 end
-assert(loadfile("lib/gen2_aio/evolution_stop.lua"))()({ mod = {} })
+assert(loadfile("lib/crystal_aio/evolution_stop.lua"))()({ mod = {} })
 
 local pressed = {}
 local input = { wasPressed = function(_, b) return pressed[b] == true end, isDown = function() return false end }

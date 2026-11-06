@@ -99,7 +99,7 @@ function love.load()
   local function run(rel,...)
     return assert(loadstring(assert(readFile(rel)),"@"..rel))()(...)
   end
-  run("lib/gen2_aio/font.lua",{mod=mod})
+  run("lib/crystal_aio/font.lua",{mod=mod})
   local S=run("lib/gen2_modern_style.lua",mod)
   assert(run("lib/gen2_modern_core_menus.lua",mod))
   mod.exports.screenTapTargets=function()return rawget(mod,"_kimScreenTapTargets") end

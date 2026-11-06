@@ -30,9 +30,9 @@ function love.load()
   end
   assert(loadfile(root.."lib/gen2_modern_dialog_ui.lua"))()(mod)
   assert(assert(loadfile(root.."lib/gen2_modern_core_menus.lua"))()(mod))
-  assert(loadfile(root.."lib/gen2_aio/modern_pages.lua"))()({mod=mod})
-  assert(loadfile(root.."lib/gen2_aio/modern_trade.lua"))()({mod=mod})
-  assert(loadfile(root.."lib/gen2_aio/modern_caller.lua"))()({mod=mod})
+  assert(loadfile(root.."lib/crystal_aio/modern_pages.lua"))()({mod=mod})
+  assert(loadfile(root.."lib/crystal_aio/modern_trade.lua"))()({mod=mod})
+  assert(loadfile(root.."lib/crystal_aio/modern_caller.lua"))()({mod=mod})
   local function chain(name,base,...)
     local h=hooks[name] or {}
     table.sort(h,function(a,b)return a.p<b.p end)

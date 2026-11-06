@@ -1,9 +1,9 @@
-local Chunks=require('mods.gen2-aio.stadium2.lib.scenery_chunks')
+local Chunks=require('mods.crystal-aio.stadium2.lib.scenery_chunks')
 -- Cached, fully enclosed cavern built from Kenney's Modular Cave Kit.
-local Mat=require('mods.gen2-aio.stadium2.lib.renderer')
-local Nature=require('mods.gen2-aio.stadium2.lib.battle_nature')
-local Torches=require('mods.gen2-aio.stadium2.lib.battle_torches')
-local Shadows=require('mods.gen2-aio.stadium2.lib.battle_torch_shadows').new()
+local Mat=require('mods.crystal-aio.stadium2.lib.renderer')
+local Nature=require('mods.crystal-aio.stadium2.lib.battle_nature')
+local Torches=require('mods.crystal-aio.stadium2.lib.battle_torches')
+local Shadows=require('mods.crystal-aio.stadium2.lib.battle_torch_shadows').new()
 local Cave={}
 local mesh,shader,texture,vertices,modRef
 local FORMAT={{'VertexPosition','float',3},{'SurfaceNormal','float',3},{'SurfaceColor','float',3},{'SurfaceMaterial','float',1}}
@@ -18,7 +18,7 @@ vec4 position(mat4 tp,vec4 p){world=p.xyz;normal=SurfaceNormal;pigment=SurfaceCo
 uniform Image stone;uniform vec3 eye;uniform Image torchMap1;uniform Image torchMap2;
 uniform vec3 torch1;uniform vec3 torch2;uniform float torchShadows;uniform float power;
 uniform Image sunMap;uniform float sunEnabled;uniform vec2 sunTexel;
-]]..require('mods.gen2-aio.stadium2.lib.torch_projection').source..[[
+]]..require('mods.crystal-aio.stadium2.lib.torch_projection').source..[[
 vec3 paperStone(vec2 uv,float bark){
  vec2 tile=abs(fract(uv*.5)*2.-1.);
  return Texel(stone,mix(vec2(.008,.508),vec2(.508,.008),bark)+tile*.484).rgb;
@@ -87,7 +87,7 @@ function Cave.lighting(env)
 end
 Cave.frame=Nature.frame
 function Cave.vertices()
- local models=require('mods.gen2-aio.stadium2.assets.kenney_cave.models')
+ local models=require('mods.crystal-aio.stadium2.assets.kenney_cave.models')
  local out={}
  local function v(p,n,c,material) out[#out+1]={p[1],p[2],p[3],n[1],n[2],n[3],c[1],c[2],c[3],material or 3} end
  local function tri(a,b,c,tone,material)
@@ -163,7 +163,7 @@ function Cave.vertices()
    end
   end
  end
- require("mods.gen2-aio.stadium2.lib.visitor_navigation").build("cave",out)
+ require("mods.crystal-aio.stadium2.lib.visitor_navigation").build("cave",out)
  Cave.triangles=#out/3;vertices=out;return out
 end
 local function ensure(g)
@@ -171,7 +171,7 @@ local function ensure(g)
  if not shader then shader=g.newShader(SOURCE) end
  if not texture then
   local path='assets/kenney_nature/watercolor-materials.png'
-  local data=modRef and love.filesystem.newFileData(assert(modRef:read(path)),'watercolor-materials.png') or 'mods/gen2-aio/stadium2/'..path
+  local data=modRef and love.filesystem.newFileData(assert(modRef:read(path)),'watercolor-materials.png') or 'mods/crystal-aio/stadium2/'..path
   texture=g.newImage(data,{mipmaps=true});texture:setFilter('linear','linear',4);texture:setMipmapFilter('linear')
  end
 end
@@ -199,7 +199,7 @@ function Cave.draw(g,frame,environment,shadow)
 end
 function Cave.endBattle() Shadows.resetDynamic() end
 function Cave.release()
- require("mods.gen2-aio.stadium2.lib.visitor_navigation").clear("cave")
+ require("mods.crystal-aio.stadium2.lib.visitor_navigation").clear("cave")
  Shadows.release()
  for _,v in pairs({mesh,shader,texture}) do v:release() end
  mesh,shader,texture,vertices=nil,nil,nil,nil

@@ -1,4 +1,4 @@
--- gen2-aio 0.9.75: the Modern windows of lib/gen2_aio/modern_extras.lua over
+-- gen2-aio 0.9.75: the Modern windows of lib/crystal_aio/modern_extras.lua over
 -- the ENGINE's own small Crystal screens.
 --
 --   AIO_ENGINE_SRC=/path/to/engine/src xvfb-run -a love tests/modern_extras
@@ -96,10 +96,10 @@ function love.load()
   local function run(rel,...)
     return assert(loadstring(assert(readFile(rel)),"@"..rel))()(...)
   end
-  run("lib/gen2_aio/font.lua",{mod=mod})
+  run("lib/crystal_aio/font.lua",{mod=mod})
   local S=run("lib/gen2_modern_style.lua",mod)
   run("lib/gen2_modern_dialog_ui.lua",mod)
-  check(run("lib/gen2_aio/modern_extras.lua",{mod=mod})==true,"modern_extras loads")
+  check(run("lib/crystal_aio/modern_extras.lua",{mod=mod})==true,"modern_extras loads")
   -- MENU SPRITES: the HD menu icons on disk
   local DEX={SCYTHER=123,CATERPIE=10,PINSIR=127,TOTODILE=158,MAREEP=179,LUGIA=249}
   mod._kantoInMotionHdMenuIconForModernUi=function(_,mon)

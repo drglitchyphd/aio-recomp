@@ -139,7 +139,7 @@ return function(mod)
     local ww,wh=G.getDimensions()
     local mult=Style.fontScale(ww,wh)
     px=math.max(8,math.floor((tonumber(px) or 12)*mult+.5))
-    -- gen2-aio 0.9: Pixel Operator (lib/gen2_aio/font.lua) unless UI FONT = KIM
+    -- gen2-aio 0.9: Pixel Operator (lib/crystal_aio/font.lua) unless UI FONT = KIM
     local arenaFont=rawget(mod,"_kimArenaFont")
     if type(arenaFont)=="function" then
       local okA,fA=pcall(arenaFont,px)

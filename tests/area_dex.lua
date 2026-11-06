@@ -1,7 +1,7 @@
 local engine=os.getenv("AIO_ENGINE") or ".work/engine"
 package.path=engine.."/?.lua;"..package.path
 local mod={exports={},hooks={wrap=function()end},events={on=function()end}}
-local quick=assert(loadfile("lib/gen2_aio/quick_menu.lua"))()({mod=mod})
+local quick=assert(loadfile("lib/crystal_aio/quick_menu.lua"))()({mod=mod})
 local game={save={version="crystal"},world={map={id="TEST"},encounters={
   trees={TEST="TREEMON_SET_CITY"},rocks={TEST="TREEMON_SET_ROCK"},treeSets={
     TREEMON_SET_CITY={common={{species="SPEAROW",level=10,chance=50},{species="SPEAROW",level=15,chance=50}},

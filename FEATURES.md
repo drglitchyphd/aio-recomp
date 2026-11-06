@@ -1,12 +1,13 @@
-# Gen2-AIO features
+# Crystal-AiO features
 
-Gen2-AIO is one mod for **Pokémon Crystal** on the Gen1Recomp engine. It bundles
-Kanto in Motion, a 3D voxel overworld, Kenney battle scenes, Wilds of Kanto
-Revival, Nuzlocke, KIM Touch, QoL Toggles and Gen1Wild QOL. It also adds its own
-Crystal-specific work on top. This page walks through what you get as a player
-and where each feature lives in the menus. For who made each part, see
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Version-by-version changes are
-in [README_GEN2_AIO.md](README_GEN2_AIO.md).
+Crystal-AiO (formerly Gen2-AIO) is one mod for **Pokémon Crystal** on the
+Gen1Recomp engine. It bundles Kanto in Motion, a 3D voxel overworld, Kenney
+battle scenes, Wilds of Kanto Revival, Nuzlocke, KIM Touch, QoL Toggles and
+Gen1Wild QOL. It also adds its own Crystal-specific work on top. This page walks
+through what you get as a player and where each feature lives in the menus. For
+who made each part, see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Version-by-version changes are in
+[README_CRYSTAL_AIO.md](README_CRYSTAL_AIO.md).
 
 Everything here changes how the game looks or adds conveniences around it.
 Battles, catching, items, saves and scripts still run through Crystal's own
@@ -26,8 +27,9 @@ screen off brings back Crystal's original one.
 
 ## Getting around the settings
 
-- **GEN2-AIO hub.** Open it from **START → GEN2-AIO**, **OPTION → GEN2-AIO** or
-  the engine's **MOD MANAGER**. Every bundled part's settings are filed into
+- **CRYSTAL-AIO hub.** Open it from **START → CRYSTAL-AIO** (**CRYS-AIO** when
+  Crystal's own START box is showing), **OPTION → CRYSTAL-AIO** or the engine's
+  **MOD MANAGER**. Every bundled part's settings are filed into
   nine topic pages:
   - GAMEPLAY
   - NUZLOCKE & RULES
@@ -51,7 +53,7 @@ screen off brings back Crystal's original one.
 ## Setup wizard
 
 - Opens when you start a **NEW GAME**. You can also open it at any time from
-  **GEN2-AIO → SETUP WIZARD** (the first row).
+  **CRYSTAL-AIO → SETUP WIZARD** (the first row).
 - **One-tap profiles:** RECOMMENDED, CASUAL, NUZLOCKE, HARDCORE NUZLOCKE and
   CLASSIC CRYSTAL.
 - **STEP BY STEP:** seven short questions, each with 3–5 choices plus KEEP AS IS:
@@ -87,14 +89,7 @@ screen off brings back Crystal's original one.
   - **WATER:** FULL / SKY / OFF.
   - **FOREST FX:** light shafts and drifting motes.
   - **AA:** anti-aliasing. Only shown with PERFORMANCE = QUALITY.
-- **Edges of the map:**
-  - **WORLD EDGE FILL** repeats the map's own border (trees, water, walls) out
-    to the horizon instead of showing a black void.
-  - **VOXEL EDGE** continues forest canopy and walls as low 3D blocks before the
-    flat fill takes over.
 - **Building areas ahead of time:**
-  - **VOXEL PRECACHE** pre-builds the areas behind nearby doors in the
-    background.
   - **VOXEL DISK CACHE** saves each built area to storage, so later visits and
     restarts load it instead of rebuilding it. This works on phones and
     tablets too. Visiting everything can use roughly 0.5–2 GB.
@@ -135,15 +130,25 @@ screen off brings back Crystal's original one.
 ## Battles
 
 *(Kanto in Motion, gmarc 3D battles, Stadium 2 Importer's Kenney scenes and
-Gen2-AIO additions. Settings: BATTLE page.)*
+Crystal-AiO additions. Settings: BATTLE page.)*
 
 **HD art and backgrounds**
 
 - **HD Pokémon:** Kanto in Motion's animated HD battle sprites for all 251
   Pokémon, front and back, normal and shiny. This includes every Unown letter.
-  - BATTLE SPRITES turns them on.
+  - BATTLE SPRITES = **KIM HD** turns them on (OFF shows Crystal's own
+    sprites).
   - The large HD pack is downloaded once from **ADVANCED → ASSET MANAGER** and
     kept between updates.
+- **Black/White sprites:** BATTLE SPRITES = **BLACK/WHITE (IMPORTED)** shows
+  the animated Pokémon Black/White battle sprites in 3D battles (gmarc's
+  imported sprite support).
+  - They are not included. To get them, import your own Pokémon Black or White
+    cartridge dump in the game's **IMPORT** screen (IMPORTERS → Pokemon Black /
+    White), then restart the game.
+  - They show with any BATTLE BACKGROUND except DEFAULT. Without an import, or
+    in a DEFAULT battle, KIM HD is used: the row reads **B/W > KIM HD**, its
+    help says why, and DIAGNOSTICS shows a `battle sprites` line.
 - **ANIMATED SPRITES** can be ON, BATTLE ONLY or OFF.
 - **BATTLE BACKGROUND** sets what the battlers stand on:
   - **KIM HD:** painted HD scenes picked to match your location, with
@@ -257,7 +262,7 @@ Gen2-AIO additions. Settings: BATTLE page.)*
 
 ## Modern UI screens
 
-*(Kanto in Motion's Modern UI, extended by Gen2-AIO. Turn screens on or off on
+*(Kanto in Motion's Modern UI, extended by Crystal-AiO. Turn screens on or off on
 DISPLAY & MENUS with MODERN UI, MENU UI, DIALOGUE UI and POKéMON SCREENS.)*
 
 Every full menu has the same footer and a close (X) or back (arrow) button.
@@ -267,7 +272,7 @@ and rows are tappable.
 - **Title and NEW GAME:** the title menu, the CONTINUE card, the intro and the
   naming keyboard (with real key caps), plus the clock setup.
 - **START menu**, with START MENU UI SIZE and TEXT SIZE, plus **PC** and
-  **GEN2-AIO** entries.
+  **CRYSTAL-AIO** entries.
 - **POKéMON (party):** big HD icons and SWITCH / STATS / ITEM popups.
   - Long-press and drag a Pokémon to move it.
   - **RELEARN** opens a move reminder.
@@ -381,7 +386,7 @@ and rows are tappable.
 
 ## Quality of life
 
-*(Gen1Wild QOL, QoL Toggles and Gen2-AIO. Settings: QUALITY OF LIFE page unless
+*(Gen1Wild QOL, QoL Toggles and Crystal-AiO. Settings: QUALITY OF LIFE page unless
 noted.)*
 
 - **Moving around:**
@@ -490,12 +495,13 @@ and loads when you fold, unfold or rotate.)*
   - **QUALITY** restores your own settings.
 - **ASSET MANAGER:** download, repair or remove Kanto in Motion's HD Pokémon
   and background pack.
-- **VOXEL PRECACHE**, **VOXEL DISK CACHE** and **BUILD 3D CACHE** (see the 3D
-  voxel world section).
+- **VOXEL DISK CACHE** and **BUILD 3D CACHE** (see the 3D voxel world
+  section).
 - **DIAGNOSTICS** (off by default) shows short status lines on screen for bug
   reports. They cover the battle background, voxel build timing and disk
   cache, Wilds, followers, NPC Pokémon, quick nurse, performance and the GPU.
 - **MOD LIST:** the engine's own list of installed mods.
 - **Updates:** install and update through the launcher's custom mod index
-  (see [README_GEN2_AIO.md](README_GEN2_AIO.md#installing-and-updating)).
-  Settings, the HD cache and the 3D cache carry over between updates.
+  (see [README_CRYSTAL_AIO.md](README_CRYSTAL_AIO.md#installing-and-updating)).
+  Settings, the HD cache and the 3D cache carry over between updates. Coming
+  from Gen2-AIO, Crystal-AiO imports its settings and data on first launch.

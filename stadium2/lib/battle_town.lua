@@ -1,13 +1,13 @@
-local Instances=require('mods.gen2-aio.stadium2.lib.scenery_instances')
-local Chunks=require('mods.gen2-aio.stadium2.lib.scenery_chunks')
+local Instances=require('mods.crystal-aio.stadium2.lib.scenery_instances')
+local Chunks=require('mods.crystal-aio.stadium2.lib.scenery_chunks')
 -- Cached town scenery with two shadowed street lamps beside the square.
-local Nature=require('mods.gen2-aio.stadium2.lib.battle_nature')
-local Mat=require('mods.gen2-aio.stadium2.lib.renderer')
+local Nature=require('mods.crystal-aio.stadium2.lib.battle_nature')
+local Mat=require('mods.crystal-aio.stadium2.lib.renderer')
 local Town={}
 -- Opposite pavement corners, clear of doorways and the battle space.
 -- Shadow positions use the shared +1 light-center convention.
 Town.lamps={{-43,1.386*18-1,-51},{43,1.386*18-1,51}}
-local LampShadows=require('mods.gen2-aio.stadium2.lib.battle_torch_shadows').new({
+local LampShadows=require('mods.crystal-aio.stadium2.lib.battle_torch_shadows').new({
  positions=Town.lamps,power=function(night) return night and 1.6 or 0 end,
 })
 local shadowVertices
@@ -28,7 +28,7 @@ float shadow(){
  vec4 d=Texel(sunMap,sunPosition.xy);return .64+.36*step(sunPosition.z-.003,d.r+d.g/255.);
 }
 ]]
-local LAND=COMMON..require("mods.gen2-aio.stadium2.lib.torch_lighting_shader").pixel..[[
+local LAND=COMMON..require("mods.crystal-aio.stadium2.lib.torch_lighting_shader").pixel..[[
 uniform Image paint;uniform Image townPaint;
 vec3 tile(vec2 p,vec2 quadrant){return Texel(paint,quadrant*.5+vec2(.008)+abs(fract(p*.5)*2.-1.)*.484).rgb;}
 vec4 effect(vec4 c,Image t,vec2 uv,vec2 px){
@@ -83,8 +83,8 @@ function Town.lighting(env)
 end
 Town.sky=Nature.sky
 function Town.vertices()
- local buildings=require('mods.gen2-aio.stadium2.assets.kenney_town.models')
- local plants=require('mods.gen2-aio.stadium2.assets.kenney_nature.models')
+ local buildings=require('mods.crystal-aio.stadium2.assets.kenney_town.models')
+ local plants=require('mods.crystal-aio.stadium2.assets.kenney_nature.models')
  local rows={}
  local function v(x,y,z,nx,ny,nz,c,m) rows[#rows+1]={x,y,z,nx,ny,nz,c[1],c[2],c[3],m} end
  local function hash(i) return (math.sin(i*127.1+311.7)*43758.5453)%1 end
@@ -145,7 +145,7 @@ function Town.vertices()
    v(math.cos(p[1])*p[2],-.18,math.sin(p[1])*p[2],0,1,0,{.37,.49,.29},1)
   end
  end
- require("mods.gen2-aio.stadium2.lib.visitor_navigation").build("town",rows)
+ require("mods.crystal-aio.stadium2.lib.visitor_navigation").build("town",rows)
  Town.triangles=#rows/3;return rows
 end
 local function ensure(g)
@@ -153,12 +153,12 @@ local function ensure(g)
  if not shader then shader=g.newShader(Instances.shader(LAND)) end
  if not townPaint then
   local path='assets/kenney_town/watercolor-town.png'
-  local data=modRef and love.filesystem.newFileData(assert(modRef:read(path)),'watercolor-town.png') or 'mods/gen2-aio/stadium2/'..path
+  local data=modRef and love.filesystem.newFileData(assert(modRef:read(path)),'watercolor-town.png') or 'mods/crystal-aio/stadium2/'..path
   townPaint=g.newImage(data,{mipmaps=true});townPaint:setFilter('linear','linear',4);townPaint:setMipmapFilter('linear')
  end
  if not paint then
   local path='assets/kenney_nature/watercolor-materials.png'
-  local data=modRef and love.filesystem.newFileData(assert(modRef:read(path)),'watercolor-materials.png') or 'mods/gen2-aio/stadium2/'..path
+  local data=modRef and love.filesystem.newFileData(assert(modRef:read(path)),'watercolor-materials.png') or 'mods/crystal-aio/stadium2/'..path
   paint=g.newImage(data,{mipmaps=true});paint:setFilter('linear','linear',4);paint:setMipmapFilter('linear')
  end
 end
@@ -196,7 +196,7 @@ function Town.draw(g,frame,env,shadow)
 end
 function Town.endBattle() LampShadows.resetDynamic() end
 function Town.release()
- require("mods.gen2-aio.stadium2.lib.visitor_navigation").clear("town")
+ require("mods.crystal-aio.stadium2.lib.visitor_navigation").clear("town")
  LampShadows.release();shadowVertices=nil
  for _,r in pairs({mesh,shader,paint,townPaint,shadowShader}) do r:release() end
  mesh,shader,paint,townPaint,shadowShader=nil,nil,nil,nil,nil

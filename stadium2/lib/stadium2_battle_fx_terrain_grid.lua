@@ -4,8 +4,8 @@
 -- stadium2_battle_fx_terrain_grid_native.lua, run on Stadium's own memory
 -- layout; this module steps it at 30 Hz and reads the grid and the camera
 -- cover back into renderer geometry. No procedural wave substitute is used.
-local Native=require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_terrain_grid_native")
-local Memory=require("mods.gen2-aio.stadium2.lib.stadium2_native_memory")
+local Native=require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_terrain_grid_native")
+local Memory=require("mods.crystal-aio.stadium2.lib.stadium2_native_memory")
 
 local Terrain={families={[7]=true}}
 

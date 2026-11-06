@@ -627,7 +627,7 @@ function BattleScene.render(state, arena, textures, token)
           fill = kimPlate.fill }
         if not BattleScene._kimFitWarned and V.mod and V.mod.log then
           BattleScene._kimFitWarned = true
-          pcall(V.mod.log.info, V.mod.log, "gen2-aio plate: art fitted to the cards (%s)", tostring(why))
+          pcall(V.mod.log.info, V.mod.log, "crystal-aio plate: art fitted to the cards (%s)", tostring(why))
         end
       end
       -- Stadium 3D models are posed on the arena slots before this scene
@@ -673,7 +673,7 @@ function BattleScene.render(state, arena, textures, token)
       if not okRender then
         diag("plate render ERROR: " .. tostring(rendered))
         if V.mod and V.mod.log then
-          pcall(V.mod.log.warn, V.mod.log, "gen2-aio plate render: %s", tostring(rendered))
+          pcall(V.mod.log.warn, V.mod.log, "crystal-aio plate render: %s", tostring(rendered))
         end
       end
     else

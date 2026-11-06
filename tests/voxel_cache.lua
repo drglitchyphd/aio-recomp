@@ -1,5 +1,5 @@
 -- 0.9.77 BUILD 3D CACHE: gmarc/lib/CacheBuilder.lua over a stand-in
--- ChunkMesher / MeshStore, and lib/gen2_aio/voxel_cache.lua's question and
+-- ChunkMesher / MeshStore, and lib/crystal_aio/voxel_cache.lua's question and
 -- build page over a stand-in hub. Run from the repo root: luajit tests/voxel_cache.lua
 local n = 0
 local function check(c, m) if not c then error("FAIL: " .. m, 2) end n = n + 1 end
@@ -80,7 +80,7 @@ check(#requests >= 1, "carries on once it catches up")
 b2:stop()
 check(b2.done and invalidated[1] == requests[1]:match("^(%w+)"), "STOP drops the map in progress")
 
--- ---- lib/gen2_aio/voxel_cache.lua
+-- ---- lib/crystal_aio/voxel_cache.lua
 local options, pages, hooks = {}, {}, {}
 local stack = { states = {} }
 function stack:push(s) self.states[#self.states + 1] = s end
@@ -104,12 +104,12 @@ local mod = { exports = { voxel = { lib = lib } },
   hooks = { wrap = function(_, name, fn) hooks[name] = fn end } }
 mod._kimArenaHub = Hub
 mod._kimArenaQuick = { overworld = function() return free end }
-local VC = assert(loadfile("lib/gen2_aio/voxel_cache.lua"))()({ mod = mod })
+local VC = assert(loadfile("lib/crystal_aio/voxel_cache.lua"))()({ mod = mod })
 check(VC and hooks["core.update"], "installed")
 local game = { world = world, stack = stack }
 local function tick(dt) hooks["core.update"](function() end, game, dt or 0.5) end
 local row = Hub.extras.voxelCache(game)[1]
-check(row and row.id == "gen2-aio:voxel_cache" and row.value() == nil, "ADVANCED row, not built yet")
+check(row and row.id == "crystal-aio:voxel_cache" and row.value() == nil, "ADVANCED row, not built yet")
 tick(); tick()
 check(#pages == 0, "waits until the player has been free a moment")
 tick(); tick(); tick()
@@ -147,19 +147,19 @@ check(#requests == before, "nothing more is built after leaving")
 local mod2 = { exports = mod.exports, hooks = { wrap = function(_, name, fn) hooks[name] = fn end } }
 mod2._kimArenaHub = Hub; mod2._kimArenaQuick = mod._kimArenaQuick
 pages = {}
-assert(loadfile("lib/gen2_aio/voxel_cache.lua"))()({ mod = mod2 })
+assert(loadfile("lib/crystal_aio/voxel_cache.lua"))()({ mod = mod2 })
 for _ = 1, 6 do tick() end
 check(#pages == 1, "asks again next start (LATER)")
 pages[1].rows[3].activate(game)
 check(options.voxelCacheAsk == false and #stack.states == 0, "DON'T ASK AGAIN")
 pages = {}
-assert(loadfile("lib/gen2_aio/voxel_cache.lua"))()({ mod = mod2 })
+assert(loadfile("lib/crystal_aio/voxel_cache.lua"))()({ mod = mod2 })
 for _ = 1, 6 do tick() end
 check(#pages == 0, "not asked after DON'T ASK AGAIN")
 -- not asked with the 3D world off
 options.voxelCacheAsk = nil
 voxelActive = false
-assert(loadfile("lib/gen2_aio/voxel_cache.lua"))()({ mod = mod2 })
+assert(loadfile("lib/crystal_aio/voxel_cache.lua"))()({ mod = mod2 })
 for _ = 1, 6 do tick() end
 check(#pages == 0, "not asked with the 3D world off")
 -- 0.9.82: the row stays listed when a build cannot run, and says why
@@ -192,7 +192,7 @@ local fakeCache = {
   exists = function(_, rel) return files[rel] ~= nil end,
   delete = function(_, rel) files[rel] = nil; return true end,
 }
-local mainMod = { id = "gen2-aio", cache = fakeCache }
+local mainMod = { id = "crystal-aio", cache = fakeCache }
 local proxy = setmetatable({}, { __index = mainMod })
 proxy._kimArenaBuildId = function() return "b1" end
 local noData = realStore(proxy)
@@ -206,7 +206,7 @@ check(realCB(real).available(world), "BUILD 3D CACHE is available")
 check(real.save("b1-A_body_1.kms", "blob") and files["voxel/b1-A_body_1.kms"] == "blob", "writes through mod.cache")
 check(real.exists("b1-A_body_1.kms") and real.load("b1-A_body_1.kms") == "blob", "and reads back")
 check(files["voxel/index.txt"] == "b1-A_body_1.kms\n", "the index lists it for the old-build sweep")
-local bare = realStore(setmetatable({}, { __index = { id = "gen2-aio" } }))
+local bare = realStore(setmetatable({}, { __index = { id = "crystal-aio" } }))
 check(bare.whyOff():find("no mod.cache", 1, true), "no mod.cache: OFF with the reason: " .. tostring(bare.whyOff()))
 love.data = nil
 print(("voxel cache: %d checks PASS"):format(n))

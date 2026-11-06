@@ -4,8 +4,8 @@
 -- layout; this module steps it at 30 Hz and reads the display list back
 -- into renderer geometry. Draw-side RNG/spawns run once per 30 Hz tick;
 -- host redraws only consume the captured geometry.
-local Native=require('mods.gen2-aio.stadium2.lib.stadium2_battle_fx_tri_attack_native')
-local Memory=require('mods.gen2-aio.stadium2.lib.stadium2_native_memory')
+local Native=require('mods.crystal-aio.stadium2.lib.stadium2_battle_fx_tri_attack_native')
+local Memory=require('mods.crystal-aio.stadium2.lib.stadium2_native_memory')
 local bit=require('bit')
 local Tri={}
 local POOL,AUX,DL,VERT=0x85000000,0x85010000,0x85200000,0x85300000

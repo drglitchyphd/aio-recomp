@@ -72,7 +72,7 @@ end
 function RenderMode.fromNodeLayer(layer)
   layer = tonumber(layer)
   if not layer then return nil end
-  local Materials = require("mods.gen2-aio.stadium2.lib.materials")
+  local Materials = require("mods.crystal-aio.stadium2.lib.materials")
   local word = Materials.layerRenderMode(1, layer)
   if not word then return nil end
   local function field(shift) return math.floor(word / 2 ^ shift) % 4 end

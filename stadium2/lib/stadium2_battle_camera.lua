@@ -64,10 +64,10 @@
 --     program 26. Stadium waits for the ball's throw and the Pokemon's
 --     appearance before counting frames; the host starts at its send-out.
 -- A handler that is not ported yet is reported once and skipped.
-local Native = require("mods.gen2-aio.stadium2.lib.stadium2_battle_camera_native")
+local Native = require("mods.crystal-aio.stadium2.lib.stadium2_battle_camera_native")
 local bit = require("bit")
-local Layout = require("mods.gen2-aio.stadium2.lib.stadium_battle_layout")
-local Endpoints = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_endpoints")
+local Layout = require("mods.crystal-aio.stadium2.lib.stadium_battle_layout")
+local Endpoints = require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_endpoints")
 
 local StadiumCamera = {}
 StadiumCamera.__index = StadiumCamera
@@ -94,8 +94,8 @@ local MOTION = { player = 0x85010000, enemy = 0x85012000 }
 -- The species' compressed motion records (the animation-dispatch archive),
 -- kept so a record can be decoded when its species appears.
 function StadiumCamera.motionArchive(rom)
-  local Rom = require("mods.gen2-aio.stadium2.lib.rom")
-  local Dispatch = require("mods.gen2-aio.stadium2.lib.animation_dispatch")
+  local Rom = require("mods.crystal-aio.stadium2.lib.rom")
+  local Dispatch = require("mods.crystal-aio.stadium2.lib.animation_dispatch")
   local archive = type(rom) == "string" and Rom.archiveAt(rom, Dispatch.ARCHIVE_START)
   if not archive then return nil end
   local out = {}
@@ -109,7 +109,7 @@ StadiumCamera.DOLL = 0xFC
 local function f32be(s, o)
   local b1, b2, b3, b4 = s:byte(o + 1, o + 4)
   local word = ((b1 * 256 + b2) * 256 + b3) * 256 + b4
-  return require("mods.gen2-aio.stadium2.lib.stadium2_native_memory").wordFloat(word)
+  return require("mods.crystal-aio.stadium2.lib.stadium2_native_memory").wordFloat(word)
 end
 
 -- opts: rom (normalised ROM bytes), fragment79, warn, seed
@@ -197,7 +197,7 @@ function StadiumCamera:motionRecord(species)
   if self.motionCache[species] then return self.motionCache[species] end
   local blob = self.motionBlobs and self.motionBlobs[species]
   if not blob then return nil end
-  local Rom = require("mods.gen2-aio.stadium2.lib.rom")
+  local Rom = require("mods.crystal-aio.stadium2.lib.rom")
   local payload = Rom.decompress(blob)
   if type(payload) ~= "string" or #payload ~= 0x1530 then return nil end
   self.motionCache[species] = payload
@@ -450,7 +450,7 @@ function StadiumCamera:markerPosition(address)
       .. "; its anchor point stands in for 8411DD8C")
     return fallback
   end
-  local Adapter = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_battle_adapter")
+  local Adapter = require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_battle_adapter")
   local units = Adapter.worldUnits({ scene = { host = scene } }, side)
   local toStadium = type(scene.worldToStadium) == "function" and function(w) return scene:worldToStadium(w) end
   local markers = {}
@@ -1505,9 +1505,9 @@ end
 -- the cached battle-FX catalog (fragment 79). nil plus a reason if missing.
 function StadiumCamera.assets()
   if StadiumCamera.cachedAssets then return StadiumCamera.cachedAssets end
-  local Discovery = require("mods.gen2-aio.stadium2.lib.discovery")
-  local Rom = require("mods.gen2-aio.stadium2.lib.rom")
-  local Importer = require("mods.gen2-aio.stadium2.lib.importer")
+  local Discovery = require("mods.crystal-aio.stadium2.lib.discovery")
+  local Rom = require("mods.crystal-aio.stadium2.lib.rom")
+  local Importer = require("mods.crystal-aio.stadium2.lib.importer")
   local candidate = Discovery.find()
   if not candidate then return nil, "the Stadium 2 ROM is unavailable" end
   local bytes, err = Discovery.read(candidate)

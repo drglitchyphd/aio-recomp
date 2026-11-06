@@ -1,7 +1,7 @@
 -- Mountain: an alpine meadow on a high ledge. Ahead the ground drops into a
 -- hazy valley below snow-capped peaks; pines climb the slope behind.
 -- Kenney Nature Kit meshes (CC0), painted with the shared watercolor kit.
-local Kit=require('mods.gen2-aio.stadium2.lib.scene_kit')
+local Kit=require('mods.crystal-aio.stadium2.lib.scene_kit')
 
 -- The default camera looks along VIEW. The ledge drops away that way into a
 -- valley, with snowy peaks on the far side; behind the camera a slope rises.

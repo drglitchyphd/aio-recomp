@@ -427,7 +427,7 @@ end
 function BattleCam.rig(arena, groundY, canonical)
   groundY = groundY or 0
   -- gen2-aio: a locked KENNEY HD battle uses the host's solved camera
-  -- (lib/gen2_aio/kenney_camera.lua); anything else keeps this rig.
+  -- (lib/crystal_aio/kenney_camera.lua); anything else keeps this rig.
   if BattleCam.hostLocked() then
     local mod = V and V.mod
     local preset = mod and rawget(mod, "_kimArenaCameraPreset")

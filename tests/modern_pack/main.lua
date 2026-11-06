@@ -1,4 +1,4 @@
--- gen2-aio 0.9.92: the redesigned Modern PACK (lib/gen2_aio/modern_pack.lua)
+-- gen2-aio 0.9.92: the redesigned Modern PACK (lib/crystal_aio/modern_pack.lua)
 -- over the ENGINE's own PackMenu, Bag, ItemEffects and Mon.
 --
 --   AIO_ENGINE_SRC=/path/to/engine/src xvfb-run -a love tests/modern_pack
@@ -104,10 +104,10 @@ function love.load()
   local function run(rel,...)
     return assert(loadstring(assert(readFile(rel)),"@"..rel))()(...)
   end
-  run("lib/gen2_aio/font.lua",{mod=mod})
+  run("lib/crystal_aio/font.lua",{mod=mod})
   local S=run("lib/gen2_modern_style.lua",mod)
   assert(run("lib/gen2_modern_core_menus.lua",mod),"core menus installed")
-  local MP=run("lib/gen2_aio/modern_pack.lua",{mod=mod})
+  local MP=run("lib/crystal_aio/modern_pack.lua",{mod=mod})
   check(type(MP)=="table" and rawget(mod,"_aioModernPack")==MP,"modern pack module installed")
 
   local draws={}

@@ -9,7 +9,7 @@
 -- Positions are Stadium world units relative to the battler's home slot
 -- (8411EFE4); the scene scales them like the slot itself. Yaw is the battler's
 -- facing (8411E140: +0x4000 for the first battler, -0x4000 for the other).
-local f = require("mods.gen2-aio.stadium2.lib.stadium2_battle_fx_float")
+local f = require("mods.crystal-aio.stadium2.lib.stadium2_battle_fx_float")
 
 local Special = {}
 
